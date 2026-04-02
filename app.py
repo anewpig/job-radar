@@ -279,7 +279,17 @@ def main() -> None:
                     horizontal=True,
                     label_visibility="collapsed",
                 )
+                crawl_refresh_mode = st.segmented_control(
+                    "資料更新模式",
+                    options=["使用快取", "強制更新"],
+                    default=st.session_state.crawl_refresh_mode,
+                    key="crawl_refresh_mode",
+                    help="使用快取會比較快；強制更新會重新向 104、1111、LinkedIn 抓取相同查詢的最新頁面。",
+                )
                 crawl_preset = get_crawl_preset(crawl_preset_label)
+                force_refresh = crawl_refresh_mode == "強制更新"
+                if force_refresh:
+                    st.caption("這次會跳過本地快取，重新抓取最新職缺與原文。")
         with search_control_right:
             with st.container(height=search_panel_height):
                 st.markdown("**搜尋資訊**")
@@ -376,10 +386,14 @@ def main() -> None:
             st.warning("請先勾選並填寫至少一筆目標職缺，或輸入額外查詢字詞。")
             return
 
-        crawl_status = st.status("正在抓取並分析職缺...", expanded=True)
+            crawl_status = st.status("正在抓取並分析職缺...", expanded=True)
         try:
             crawl_status.write("1. 整理搜尋條件與查詢字詞")
-            pipeline = JobMarketPipeline(settings=runtime_settings, role_targets=role_targets)
+            pipeline = JobMarketPipeline(
+                settings=runtime_settings,
+                role_targets=role_targets,
+                force_refresh=force_refresh,
+            )
             crawl_status.write("2. 抓取來源職缺並解析原文")
             st.session_state.snapshot = pipeline.run(queries=queries)
             st.session_state.last_crawl_signature = current_signature

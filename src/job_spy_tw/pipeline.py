@@ -16,9 +16,11 @@ class JobMarketPipeline:
         self,
         settings: Settings | None = None,
         role_targets: list[TargetRole] | None = None,
+        force_refresh: bool = False,
     ) -> None:
         self.settings = settings or load_settings()
         self.role_targets = role_targets or DEFAULT_TARGET_ROLES
+        self.force_refresh = bool(force_refresh)
         ensure_directory(self.settings.data_dir)
         self.fetcher = CachedFetcher(
             cache_dir=self.settings.cache_dir,
@@ -35,6 +37,8 @@ class JobMarketPipeline:
             self.connectors.append(
                 LinkedInConnector(settings=self.settings, fetcher=self.fetcher)
             )
+        for connector in self.connectors:
+            connector.force_refresh = self.force_refresh
 
     def run(self, queries: list[str] | None = None) -> MarketSnapshot:
         queries = queries or build_default_queries(self.role_targets)

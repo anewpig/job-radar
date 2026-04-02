@@ -28,6 +28,7 @@ class Site104Connector(BaseConnector):
         )
         return self.fetcher.fetch(
             url,
+            force_refresh=self.force_refresh,
             headers={
                 "Accept": "application/json, text/plain, */*",
                 "Referer": "https://www.104.com.tw/jobs/search/",
@@ -88,6 +89,7 @@ class Site104Connector(BaseConnector):
                 payload = json.loads(
                     self.fetcher.fetch(
                         detail_url,
+                        force_refresh=self.force_refresh,
                         headers={
                             "Accept": "application/json, text/plain, */*",
                             "Referer": job.url or f"{self.base_url}/job/{job_code}",

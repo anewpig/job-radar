@@ -32,6 +32,7 @@ class BaseConnector(ABC):
     def __init__(self, settings: Settings, fetcher: CachedFetcher) -> None:
         self.settings = settings
         self.fetcher = fetcher
+        self.force_refresh = False
 
     def search(self, queries: Iterable[str]) -> list[JobListing]:
         results: list[JobListing] = []
@@ -50,7 +51,7 @@ class BaseConnector(ABC):
         )
         if self.search_url_suffix:
             url = f"{url}{self.search_url_suffix}"
-        return self.fetcher.fetch(url)
+        return self.fetcher.fetch(url, force_refresh=self.force_refresh)
 
     def parse_search_page(self, html: str, query: str) -> list[JobListing]:
         soup = BeautifulSoup(html, "lxml")
@@ -113,7 +114,7 @@ class BaseConnector(ABC):
 
     def _populate_job_detail(self, job: JobListing) -> None:
         try:
-            html = self.fetcher.fetch(job.url)
+            html = self.fetcher.fetch(job.url, force_refresh=self.force_refresh)
         except Exception as exc:  # noqa: BLE001
             job.metadata["detail_error"] = str(exc)
             return

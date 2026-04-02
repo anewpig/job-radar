@@ -30,7 +30,7 @@ class LinkedInConnector(BaseConnector):
             f"https://tw.linkedin.com/jobs/search?keywords={quote_plus(query)}"
             f"&location={quote_plus(location)}&start={start}"
         )
-        return self.fetcher.fetch(url)
+        return self.fetcher.fetch(url, force_refresh=self.force_refresh)
 
     def parse_search_page(self, html: str, query: str) -> list[JobListing]:
         soup = BeautifulSoup(html, "lxml")

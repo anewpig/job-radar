@@ -142,6 +142,7 @@ def initialize_session_state(*, guest_user) -> list[dict[str, object]]:
         "search_role_rows": default_rows,
         "custom_queries_text": "",
         "crawl_preset_label": "快速",
+        "crawl_refresh_mode": "使用快取",
         "snapshot": None,
         "resume_profile": None,
         "resume_matches": [],
