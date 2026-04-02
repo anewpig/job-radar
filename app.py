@@ -279,30 +279,11 @@ def main() -> None:
                     horizontal=True,
                     label_visibility="collapsed",
                 )
-                crawl_refresh_mode = st.segmented_control(
-                    "資料更新模式",
-                    options=["使用快取", "強制更新"],
-                    default=st.session_state.crawl_refresh_mode,
-                    key="crawl_refresh_mode",
-                    help="使用快取會比較快；強制更新會重新向 104、1111、LinkedIn 抓取相同查詢的最新頁面。",
-                )
                 crawl_preset = get_crawl_preset(crawl_preset_label)
-                force_refresh = crawl_refresh_mode == "強制更新"
-                if force_refresh:
-                    st.caption("這次會跳過本地快取，重新抓取最新職缺與原文。")
         with search_control_right:
             with st.container(height=search_panel_height):
                 st.markdown("**搜尋資訊**")
-                st.caption("這組名稱會用在追蹤、通知和收藏綁定，建議取一個你看得懂的名字。")
-                current_search_name = st.text_input(
-                    "搜尋名稱",
-                    value=_suggest_saved_search_name(
-                        st.session_state.search_role_rows,
-                        st.session_state.custom_queries_text,
-                    ),
-                    key="saved_search_name_input",
-                    help="儲存後可重複載入，也能用來追蹤新職缺。",
-                )
+                st.caption("可額外補上地點、產業或其他查詢字詞，會和上方目標職缺一起搜尋。")
                 custom_queries = st.text_area(
                     "額外查詢字詞",
                     value=st.session_state.custom_queries_text,
@@ -319,10 +300,16 @@ def main() -> None:
             type="primary",
             use_container_width=True,
         )
-        save_search = search_action_cols[2].button(
-            "儲存目前搜尋",
-            use_container_width=True,
-        )
+        with search_action_cols[2]:
+            force_refresh = st.segmented_control(
+                "資料更新模式",
+                options=["使用快取", "強制更新"],
+                default=st.session_state.crawl_refresh_mode,
+                key="crawl_refresh_mode",
+                help="使用快取會比較快；強制更新會重新向 104、1111、LinkedIn 抓取相同查詢的最新頁面。",
+            ) == "強制更新"
+            if force_refresh:
+                st.caption("本次會跳過本地快取。")
 
     current_signature = product_store.build_signature(
         st.session_state.search_role_rows,
@@ -338,33 +325,6 @@ def main() -> None:
         )
         if matched_saved_search is not None:
             st.session_state.active_saved_search_id = matched_saved_search.id
-
-    if save_search:
-        if current_user_is_guest:
-            st.warning("登入後才能儲存搜尋條件、追蹤新職缺與綁定收藏。")
-        else:
-            snapshot_for_baseline = None
-            if (
-                st.session_state.snapshot is not None
-                and st.session_state.last_crawl_signature == current_signature
-            ):
-                snapshot_for_baseline = st.session_state.snapshot
-            saved_search_id = product_store.save_search(
-                user_id=current_user_id,
-                name=current_search_name,
-                rows=normalize_search_role_rows(st.session_state.search_role_rows),
-                custom_queries_text=st.session_state.custom_queries_text,
-                crawl_preset_label=st.session_state.crawl_preset_label,
-                snapshot=snapshot_for_baseline,
-                search_id=st.session_state.active_saved_search_id,
-            )
-            st.session_state.active_saved_search_id = saved_search_id
-            st.session_state.favorite_feedback = (
-                f"已儲存搜尋條件：{current_search_name}"
-                if snapshot_for_baseline is not None
-                else f"已儲存搜尋條件：{current_search_name}。下次抓取後會開始追蹤新職缺。"
-            )
-            st.rerun()
 
     pending_saved_search_refresh_id = st.session_state.pop(
         "pending_saved_search_refresh_id",
@@ -386,8 +346,9 @@ def main() -> None:
             st.warning("請先勾選並填寫至少一筆目標職缺，或輸入額外查詢字詞。")
             return
 
-        crawl_status = st.status("正在抓取並分析職缺...", expanded=True)
+        crawl_status = None
         try:
+            crawl_status = st.status("正在抓取並分析職缺...", expanded=True)
             crawl_status.write("1. 整理搜尋條件與查詢字詞")
             pipeline = JobMarketPipeline(
                 settings=runtime_settings,
@@ -468,7 +429,7 @@ def main() -> None:
                     )
             crawl_status.update(label="抓取與分析完成", state="complete", expanded=False)
         except Exception:
-            if "crawl_status" in locals():
+            if crawl_status is not None:
                 crawl_status.update(label="抓取與分析失敗", state="error", expanded=True)
             raise
 
@@ -513,6 +474,14 @@ def main() -> None:
             int(st.session_state.active_saved_search_id),
             user_id=current_user_id,
         )
+    current_search_name = (
+        active_saved_search.name
+        if active_saved_search is not None
+        else _suggest_saved_search_name(
+            st.session_state.search_role_rows,
+            st.session_state.custom_queries_text,
+        )
+    )
     parsed_job_count = int(
         (
             (job_frame["work_content_count"] > 0)
