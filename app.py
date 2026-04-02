@@ -386,7 +386,7 @@ def main() -> None:
             st.warning("請先勾選並填寫至少一筆目標職缺，或輸入額外查詢字詞。")
             return
 
-            crawl_status = st.status("正在抓取並分析職缺...", expanded=True)
+        crawl_status = st.status("正在抓取並分析職缺...", expanded=True)
         try:
             crawl_status.write("1. 整理搜尋條件與查詢字詞")
             pipeline = JobMarketPipeline(
@@ -468,7 +468,8 @@ def main() -> None:
                     )
             crawl_status.update(label="抓取與分析完成", state="complete", expanded=False)
         except Exception:
-            crawl_status.update(label="抓取與分析失敗", state="error", expanded=True)
+            if "crawl_status" in locals():
+                crawl_status.update(label="抓取與分析失敗", state="error", expanded=True)
             raise
 
     snapshot: MarketSnapshot | None = st.session_state.snapshot
