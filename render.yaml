@@ -2,15 +2,11 @@ services:
   - type: web
     name: job-radar
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /
     autoDeploy: true
-    disk:
-      name: data
-      mountPath: /app/data
-      sizeGB: 1
     envVars:
       - key: PORT
         value: 10000

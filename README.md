@@ -134,9 +134,15 @@ docker run --rm -p 8501:8501 --env-file .env -v "$(pwd)/data:/app/data" job-rada
 這份設定已經包含：
 
 - Docker Web Service
-- `/app/data` persistent disk
 - Render 指定的 `PORT`
 - 自動部署 `autoDeploy: true`
+
+如果你先用 Render 免費版：
+
+- [render.yaml](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/render.yaml) 已改成 `plan: free`
+- 不會掛 persistent disk
+- 本地 SQLite、收藏、搜尋條件、通知設定等資料可能在重新部署後消失
+- SMTP Email 通知在 Render free 方案上通常不適合直接使用，建議先把 Email 通知視為之後再補
 
 `JOB_RADAR_PUBLIC_BASE_URL` 在 Render 上通常填：
 
