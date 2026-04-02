@@ -61,7 +61,7 @@ st.set_page_config(
     page_title="職缺雷達",
     page_icon=":mag:",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 def main() -> None:
@@ -161,50 +161,6 @@ def main() -> None:
         )
 
     hero_placeholder = st.empty()
-
-    with st.sidebar:
-        st.markdown(
-            """
-<div class="summary-card" style="margin-bottom:0.8rem;">
-  <div class="info-card-title">追蹤捷徑</div>
-  <div class="summary-card-text">搜尋設定已移到主畫面，這裡保留追蹤搜尋的快速載入與目前綁定狀態。</div>
-</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if current_user_is_guest:
-            st.caption("登入後，這裡會顯示你自己的已儲存搜尋與綁定狀態。")
-        elif st.session_state.active_saved_search_id:
-            active_search = product_store.get_saved_search(
-                int(st.session_state.active_saved_search_id),
-                user_id=current_user_id,
-            )
-            if active_search is not None:
-                st.caption(f"目前綁定追蹤：{active_search.name}")
-
-        with st.expander("已儲存的搜尋", expanded=False):
-            if current_user_is_guest:
-                st.caption("登入後才能保存自己的搜尋條件。")
-            elif not saved_searches:
-                st.caption("尚未儲存搜尋條件。")
-            for saved_search in saved_searches:
-                st.markdown(f"**{saved_search.name}**")
-                st.caption(
-                    f"上次更新：{saved_search.last_run_at or '尚未抓取'} ｜ "
-                    f"職缺數：{saved_search.last_job_count} ｜ 新增：{saved_search.last_new_job_count}"
-                )
-                if st.button(
-                    f"載入 {saved_search.name}",
-                    key=f"load-saved-search-{saved_search.id}",
-                    use_container_width=True,
-                ):
-                    st.session_state.search_role_rows = saved_search.rows or default_rows
-                    st.session_state.search_role_widget_refresh = saved_search.rows or default_rows
-                    st.session_state.custom_queries_text = saved_search.custom_queries_text
-                    st.session_state.crawl_preset_label = saved_search.crawl_preset_label
-                    st.session_state.active_saved_search_id = saved_search.id
-                    st.session_state.saved_search_name_input = saved_search.name
-                    st.rerun()
 
     with st.container(border=True):
         setup_intro_cols = st.columns([4.3, 1.1], gap="large")

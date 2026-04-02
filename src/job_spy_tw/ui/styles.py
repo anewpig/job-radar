@@ -48,15 +48,11 @@ def inject_global_styles() -> None:
 }
 
 [data-testid="stSidebar"] {
-    background: rgba(255, 255, 255, 0.86);
-    border-right: 1px solid rgba(15, 23, 42, 0.05);
-    backdrop-filter: blur(10px);
+    display: none !important;
 }
 
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] .stCaption {
-    color: #4b5563;
+[data-testid="collapsedControl"] {
+    display: none !important;
 }
 
 h1, h2, h3, h4 {
