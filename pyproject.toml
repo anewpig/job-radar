@@ -1,0 +1,30 @@
+[project]
+name = "job-spy-tw"
+version = "0.1.0"
+description = "Taiwan job crawler and skill insights dashboard for 104, 1111, and LinkedIn."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12.3",
+  "certifi>=2026.2.25",
+  "lxml>=5.3.0",
+  "openai>=2.26.0",
+  "pandas>=2.2.3",
+  "pypdf>=5.4.0",
+  "python-docx>=1.1.2",
+  "streamlit>=1.44.1",
+]
+
+[project.scripts]
+job-spy = "job_spy_tw.cli:main"
+job-radar-line-webhook = "job_spy_tw.line_webhook:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

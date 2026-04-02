@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  job-radar:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      PORT: 8501
+      JOB_SPY_DATA_DIR: /app/data
+    volumes:
+      - ./data:/app/data

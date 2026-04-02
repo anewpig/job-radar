@@ -1,0 +1,66 @@
+services:
+  - type: web
+    name: job-radar
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: JOB_SPY_DATA_DIR
+        value: /app/data
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        sync: false
+      - key: JOB_SPY_LLM_MODEL
+        value: gpt-4.1-mini
+      - key: JOB_SPY_TITLE_MODEL
+        value: gpt-4.1-mini
+      - key: JOB_SPY_EMBEDDING_MODEL
+        value: text-embedding-3-large
+      - key: JOB_SPY_ASSISTANT_MODEL
+        value: gpt-4.1-mini
+      - key: JOB_SPY_REQUEST_TIMEOUT
+        value: "20"
+      - key: JOB_SPY_REQUEST_DELAY
+        value: "1.0"
+      - key: JOB_SPY_MAX_CONCURRENT_REQUESTS
+        value: "4"
+      - key: JOB_SPY_MAX_PAGES_PER_SOURCE
+        value: "1"
+      - key: JOB_SPY_MAX_DETAIL_JOBS_PER_SOURCE
+        value: "0"
+      - key: JOB_SPY_MIN_RELEVANCE_SCORE
+        value: "18"
+      - key: JOB_SPY_LOCATION
+        value: 台灣
+      - key: JOB_SPY_ENABLE_LINKEDIN
+        value: "true"
+      - key: JOB_RADAR_SMTP_HOST
+        sync: false
+      - key: JOB_RADAR_SMTP_PORT
+        value: "587"
+      - key: JOB_RADAR_SMTP_USERNAME
+        sync: false
+      - key: JOB_RADAR_SMTP_PASSWORD
+        sync: false
+      - key: JOB_RADAR_SMTP_FROM
+        sync: false
+      - key: JOB_RADAR_SMTP_USE_TLS
+        value: "true"
+      - key: JOB_RADAR_SMTP_USE_SSL
+        value: "false"
+      - key: JOB_RADAR_LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: JOB_RADAR_LINE_CHANNEL_SECRET
+        sync: false
+      - key: JOB_RADAR_PUBLIC_BASE_URL
+        sync: false
