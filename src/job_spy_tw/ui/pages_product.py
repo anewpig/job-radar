@@ -119,8 +119,15 @@ def render_tracking_page(ctx: PageContext) -> None:
                         f"<div class='chip-row'>{build_chip_row(role_names, tone='warm', limit=4, empty_text='尚未設定目標職缺')}</div>",
                         unsafe_allow_html=True,
                     )
+                    saved_search_stats = [
+                        f"模式 {saved_search.crawl_preset_label}",
+                        f"上次抓取 {saved_search.last_run_at or '尚未抓取'}",
+                        f"職缺 {saved_search.last_job_count}",
+                        f"新增 {saved_search.last_new_job_count}",
+                        f"收藏 {len(search_favorites)}",
+                    ]
                     st.markdown(
-                        f"<div class='chip-row' style='margin-top:0.55rem;'>{build_chip_row([f'模式 {saved_search.crawl_preset_label}', f'上次抓取 {saved_search.last_run_at or '尚未抓取'}', f'職缺 {saved_search.last_job_count}', f'新增 {saved_search.last_new_job_count}', f'收藏 {len(search_favorites)}'], tone='soft', limit=5)}</div>",
+                        f"<div class='chip-row' style='margin-top:0.55rem;'>{build_chip_row(saved_search_stats, tone='soft', limit=5)}</div>",
                         unsafe_allow_html=True,
                     )
                     edited_name = st.text_input(
