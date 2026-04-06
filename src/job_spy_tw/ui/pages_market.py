@@ -9,6 +9,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from .common import _escape, build_chip_row, render_section_header
+from .dev_annotations import render_dev_card_annotation
 from .frames import (
     build_export_bundle,
     filter_jobs_frame,
@@ -72,7 +73,24 @@ def render_overview_page(ctx: PageContext) -> None:
     st.markdown('<div id="overview-top-anchor"></div>', unsafe_allow_html=True)
     _render_overview_scroll_script()
     with st.container(border=True, key="overview-shell"):
-        pass
+        render_dev_card_annotation(
+            "職缺總覽頁主卡",
+            element_id="overview-shell",
+            description="職缺總覽的外層卡片，包含頁首、篩選器、列表與分頁。",
+            layers=[
+                "overview-body",
+                "overview-filter-shell",
+                "overview-job-card-shell-*",
+                "overview-pagination-shell",
+            ],
+            text_nodes=[
+                ("section-kicker", "總覽頁頁首小標。"),
+                ("section-title", "總覽頁主標題。"),
+                ("overview-filter-meta", "篩選後摘要 chip 列。"),
+            ],
+            show_popover=True,
+            popover_key="overview-shell",
+        )
         st.markdown(
             f"""
 <div class="section-shell overview-intro">
@@ -86,7 +104,24 @@ def render_overview_page(ctx: PageContext) -> None:
         )
         with st.container(key="overview-body"):
             with st.container(border=True, key="overview-filter-shell"):
-                pass
+                render_dev_card_annotation(
+                    "總覽篩選卡",
+                    element_id="overview-filter-shell",
+                    description="來源、匹配角色與技能的篩選控制區。",
+                    layers=[
+                        "overview_source_filter",
+                        "overview_role_filter",
+                        "overview_skill_filter",
+                    ],
+                    text_nodes=[
+                        ("來源", "來源 multiselect 標籤。"),
+                        ("匹配角色", "角色 multiselect 標籤。"),
+                        ("技能", "技能 multiselect 標籤。"),
+                    ],
+                    compact=True,
+                    show_popover=True,
+                    popover_key="overview-filter-shell",
+                )
                 filter_cols = st.columns(3, gap="medium")
                 source_filter = filter_cols[0].multiselect(
                     "來源",
@@ -222,7 +257,24 @@ def _render_tasks_section(ctx: PageContext) -> None:
         if top_task_labels
         else "目前已整理出職缺常見工作內容。"
     )
-    pass
+    render_dev_card_annotation(
+        "工作內容摘要卡",
+        element_id="task-summary-card",
+        description="工作內容統計區上方的摘要與導引卡片。",
+        layers=[
+            "summary-card",
+            "task_top_limit",
+            "task insight chart",
+        ],
+        text_nodes=[
+            ("info-card-title", "摘要卡主標文字。"),
+            ("summary-card-text", "摘要說明段落。"),
+            ("ui-chip ui-chip--warm", "工作內容焦點 tag。"),
+        ],
+        compact=True,
+        show_popover=True,
+        popover_key="task-summary-card",
+    )
     st.markdown(
         f"""
 <div class="summary-card">
@@ -287,7 +339,26 @@ def _render_skills_section(ctx: PageContext) -> None:
         if top_skill_labels
         else "目前已整理出市場常見技能，你可以先從高分項目開始看。"
     )
-    pass
+    render_dev_card_annotation(
+        "技能摘要卡",
+        element_id="skill-summary-card",
+        description="技能地圖區上方的摘要與篩選引導卡片。",
+        layers=[
+            "summary-card",
+            "skill_category_filter",
+            "skill_importance_filter",
+            "skill_top_limit",
+            "skill bubble chart",
+        ],
+        text_nodes=[
+            ("info-card-title", "摘要卡主標文字。"),
+            ("summary-card-text", "摘要說明段落。"),
+            ("ui-chip ui-chip--warm", "技能焦點 tag。"),
+        ],
+        compact=True,
+        show_popover=True,
+        popover_key="skill-summary-card",
+    )
     st.markdown(
         f"""
 <div class="summary-card">
@@ -529,7 +600,25 @@ def render_export_page(ctx: PageContext) -> None:
     )
 
     with st.container(border=True, key="export-shell"):
-        pass
+        render_dev_card_annotation(
+            "下載資料頁主卡",
+            element_id="export-shell",
+            description="資料匯出頁的外層卡片，包含常用下載、更多格式與預覽。",
+            layers=[
+                "export-body",
+                "primary download buttons",
+                "extra download formats",
+                "preview tabs",
+            ],
+            text_nodes=[
+                ("section-kicker", "頁首小標。"),
+                ("section-title", "頁面主標題。"),
+                ("section-desc", "頁面說明文字。"),
+                ("download_button label", "下載按鈕文字。"),
+            ],
+            show_popover=True,
+            popover_key="export-shell",
+        )
         st.markdown(
             f"""
 <div class="section-shell export-intro">

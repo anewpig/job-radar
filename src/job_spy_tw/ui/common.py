@@ -7,6 +7,7 @@ import html
 import streamlit as st
 
 from ..models import MarketSnapshot, TargetRole
+from .dev_annotations import render_dev_card_annotation
 
 
 def _escape(text: object) -> str:
@@ -93,6 +94,40 @@ def render_hero(snapshot: MarketSnapshot | None, role_targets: list[TargetRole])
     )
     secondary_line = "原文解析｜履歷匹配｜AI 助理｜投遞看板"
     synced_jobs_label = f"{total_jobs} 筆職缺" if total_jobs else "本日精選"
+    with st.container(key="hero-dev-annotation-shell"):
+        render_dev_card_annotation(
+            "首頁 Hero 卡",
+            element_id="hero-shell",
+            description="首頁最上方的品牌與產品展示區，左側是價值主張，右側是產品 mockup。",
+            layers=[
+                "hero-copy",
+                "hero-actions",
+                "hero-visual",
+                "hero-mockup-card--main",
+                "hero-mockup-card--overlay",
+                "hero-mockup-card--assistant",
+            ],
+            text_nodes=[
+                ("hero-kicker", "Hero 左上角英文小標。"),
+                ("hero-brand-title", "產品中文品牌名稱。"),
+                ("hero-headline", "Hero 主標題文字。"),
+                ("hero-description", "主敘述段落。"),
+                ("hero-action-button", "主要 CTA 按鈕文字。"),
+                ("hero-action-note", "CTA 旁的功能摘要小字。"),
+                ("hero-mockup-kicker", "右側 mockup 卡片上方的小標。"),
+                ("hero-mockup-title", "右側主卡的大標文字。"),
+                ("hero-mockup-job-title", "模擬職缺卡的職稱文字。"),
+                ("hero-mockup-job-meta", "模擬職缺卡的來源 / 團隊資訊。"),
+                ("hero-mini-tag", "Hero mockup 內的小技能 tag。"),
+                ("hero-mockup-job-footer", "模擬職缺卡底部地點文字。"),
+                ("hero-mockup-copy", "浮層 AI 建議內容文字。"),
+            ],
+            notes=[
+                "如果你想再細拆每一個 mockup badge 或分數 tag，可再從這張 Hero 卡往下拆子標註。",
+            ],
+            show_popover=True,
+            popover_key="hero-shell",
+        )
     st.markdown(
         f"""
 <div class="hero-shell">
@@ -223,7 +258,29 @@ def render_metrics_cta(
     snapshot: MarketSnapshot | None,
 ) -> None:
     """渲染搜尋設定右側的即時摘要卡。"""
-    pass
+    render_dev_card_annotation(
+        "搜尋摘要 CTA 卡",
+        element_id="metrics-cta-card",
+        description="搜尋設定右側的摘要卡，集中顯示本次抓取設定與主要統計。",
+        layers=[
+            "cta-summary-head",
+            "cta-summary-meta-wrap",
+            "cta-meta-row",
+            "cta-stat-grid",
+        ],
+        text_nodes=[
+            ("cta-title", "摘要卡主標題。"),
+            ("cta-copy", "摘要卡的說明文字。"),
+            ("cta-meta-label", "抓取速度 / 更新模式的小標文字。"),
+            ("cta-stat-label", "統計卡的小標文字。"),
+            ("cta-stat-value", "統計卡的大數字。"),
+        ],
+        notes=[
+            "這張卡主要用來幫你對照右側資訊，不是操作區。",
+        ],
+        show_popover=True,
+        popover_key="metrics-cta-card",
+    )
     has_snapshot = snapshot is not None
     total_jobs = f"{len(snapshot.jobs):,}" if has_snapshot else "尚未分析"
     total_skills = f"{len(snapshot.skills):,}" if has_snapshot else "尚未分析"
@@ -269,7 +326,25 @@ def render_metrics_cta(
 
 def render_newsletter_footer(total_visit_count: int) -> None:
     """渲染頁尾外框與累計來訪次數。"""
-    pass
+    render_dev_card_annotation(
+        "頁尾 CTA 卡",
+        element_id="newsletter-shell",
+        description="頁面最底部的品牌收尾區塊，包含功能摘要與累計來訪數。",
+        layers=[
+            "newsletter-actions",
+            "newsletter-footer-row",
+            "newsletter-footer-meta",
+        ],
+        text_nodes=[
+            ("newsletter-kicker", "頁尾上方小標。"),
+            ("newsletter-title", "頁尾主標題。"),
+            ("newsletter-copy", "頁尾說明段落。"),
+            ("newsletter-pill", "頁尾功能 tag。"),
+            ("newsletter-footer-visit", "右側累計來訪文字。"),
+        ],
+        show_popover=True,
+        popover_key="newsletter-shell",
+    )
     st.markdown(
         f"""
 <div class="newsletter-shell">

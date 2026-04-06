@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 from ..detail_parsing import split_structured_items
 from ..models import JobListing, ResumeProfile
@@ -16,10 +16,11 @@ from .common import (
     build_chip_row,
     build_html_list,
 )
+from .dev_annotations import render_dev_card_annotation
 
 
 def _build_work_preview_items(row: dict[str, object]) -> list[str]:
-    """優先使用拆好的工作內容條目，104 無條目時回退到原始工作內容文字。"""
+    """優先使用拆好的工作內容條目，必要時從 detail text 即時回推。"""
     structured_items = [
         str(item).strip()
         for item in (row.get("work_content_items") or [])
@@ -28,22 +29,33 @@ def _build_work_preview_items(row: dict[str, object]) -> list[str]:
     if structured_items:
         return structured_items
 
-    if str(row.get("source") or "").strip() != "104":
-        return []
-
+    source = str(row.get("source") or "").strip()
     raw_work_text = ""
     detail_sections = row.get("detail_sections")
     if isinstance(detail_sections, dict):
         raw_work_text = str(detail_sections.get("work_content") or "").strip()
-    if not raw_work_text:
-        raw_work_text = str(row.get("description") or "").strip()
-    if not raw_work_text:
-        return []
+    description_text = str(row.get("description") or "").strip()
 
-    fallback_items = split_structured_items(raw_work_text, keep_unspecified=True)
-    if fallback_items:
-        return fallback_items
-    normalized = normalize_text(raw_work_text)
+    candidate_texts = [raw_work_text]
+    if description_text and description_text != raw_work_text:
+        candidate_texts.append(description_text)
+
+    for candidate_text in candidate_texts:
+        if not candidate_text:
+            continue
+        fallback_items = split_structured_items(candidate_text, keep_unspecified=True)
+        if fallback_items:
+            if (
+                candidate_text == raw_work_text
+                and len(fallback_items) == 1
+                and len(fallback_items[0]) >= 180
+                and description_text
+                and description_text != raw_work_text
+            ):
+                continue
+            return fallback_items
+
+    normalized = normalize_text(raw_work_text or description_text)
     return [normalized] if normalized else []
 
 
@@ -80,14 +92,17 @@ def render_job_cards(
             meta_parts.append(
                 f'<span class="ui-chip ui-chip--accent">{_escape(matched_role)}</span>'
             )
+        relevance_label = f"分數 {row['relevance_score']}"
+        salary_label = f"薪資 {row['salary'] or '未提供'}"
+        posted_label = f"更新 {row['posted_at'] or '未提供'}"
         meta_parts.append(
-            f'<span class="ui-chip overview-chip--priority">{_escape(f"分數 {row["relevance_score"]}")}</span>'
+            f'<span class="ui-chip overview-chip--priority">{_escape(relevance_label)}</span>'
         )
         meta_parts.append(
-            f'<span class="ui-chip overview-chip--warm">{_escape(f"薪資 {row["salary"] or "未提供"}")}</span>'
+            f'<span class="ui-chip overview-chip--warm">{_escape(salary_label)}</span>'
         )
         meta_parts.append(
-            f'<span class="ui-chip ui-chip--soft">{_escape(f"更新 {row["posted_at"] or "未提供"}")}</span>'
+            f'<span class="ui-chip ui-chip--soft">{_escape(posted_label)}</span>'
         )
         if row.get("url"):
             meta_parts.append(
@@ -116,6 +131,11 @@ def render_job_cards(
                 else "展開後可查看必備技能與其他要求。"
             )
         )
+        preview_note_markup = (
+            f'<div class="overview-job-card-note">{_escape(preview_note)}</div>'
+            if preview_note
+            else ""
+        )
         required_empty_text = (
             ""
             if details_pending
@@ -133,7 +153,31 @@ def render_job_cards(
             limit=6,
         )
         with st.container(border=True, key=f"overview-job-card-shell-{index}"):
-            pass
+            render_dev_card_annotation(
+                "職缺列表卡片",
+                element_id=f"overview-job-card-shell-{index}",
+                description="職缺總覽中的單張職缺卡，含標題、公司、meta tag、內容預覽與收藏按鈕。",
+                layers=[
+                    "overview-job-card-header",
+                    "overview-job-card-meta",
+                    "overview-job-card-preview",
+                    "favorite button",
+                ],
+                text_nodes=[
+                    ("job-card-title", "職缺名稱大標。"),
+                    ("job-card-company", "公司名稱。"),
+                    ("ui-chip ui-chip--soft", "來源 / 地點 / 更新時間 tag。"),
+                    ("ui-chip ui-chip--accent", "匹配角色 tag。"),
+                    ("overview-chip--priority", "分數 tag。"),
+                    ("overview-chip--warm", "薪資 tag。"),
+                    ("job-card-block-title", "內容區塊的小標。"),
+                    ("overview-job-card-note", "內容預覽下方的小提醒。"),
+                    ("overview-job-card-footer-note", "收藏前提示小字。"),
+                ],
+                compact=True,
+                show_popover=True,
+                popover_key=f"overview-job-card-shell-{index}",
+            )
             st.markdown(
                 f"""
 <div class="overview-job-card">
@@ -147,7 +191,7 @@ def render_job_cards(
   <div class="job-card-block overview-job-card-preview">
     <div class="job-card-block-title">工作內容預覽</div>
     <ul class="job-card-list">{work_items_markup}</ul>
-    {"<div class=\"overview-job-card-note\">" + _escape(preview_note) + "</div>" if preview_note else ""}
+    {preview_note_markup}
   </div>
 </div>
                 """,
@@ -227,7 +271,23 @@ def render_resume_profile(profile: ResumeProfile) -> None:
     if profile.source_name:
         st.caption(f"履歷來源：{describe_resume_source(profile.source_name)}")
     st.caption(summary_caption)
-    pass
+    render_dev_card_annotation(
+        "履歷摘要卡",
+        element_id="resume-summary-card",
+        description="履歷分析後的摘要卡，顯示摘要段落與基本統計。",
+        layers=[
+            "summary-card",
+            "metrics row",
+        ],
+        text_nodes=[
+            ("info-card-title", "摘要卡標題。"),
+            ("summary-card-text", "履歷摘要文字。"),
+            ("st.caption", "來源與分析方式的小字。"),
+        ],
+        compact=True,
+        show_popover=True,
+        popover_key="resume-summary-card",
+    )
     st.markdown(
         f"""
 <div class="summary-card">
@@ -240,9 +300,37 @@ def render_resume_profile(profile: ResumeProfile) -> None:
 
     left, right = st.columns(2)
     with left:
-        pass
+        render_dev_card_annotation(
+            "履歷重點資訊卡",
+            element_id="resume-profile-left-info-card",
+            description="左側資訊卡，顯示目標職缺、核心技能與偏好工作內容。",
+            layers=["target roles", "core skills", "preferred tasks"],
+            text_nodes=[
+                ("info-card-title", "區塊標題文字。"),
+                ("ui-chip ui-chip--accent", "目標職缺 tag。"),
+                ("ui-chip ui-chip--soft", "核心技能 tag。"),
+                ("ui-chip ui-chip--warm", "偏好工作內容 tag。"),
+            ],
+            compact=True,
+            show_popover=True,
+            popover_key="resume-profile-left-info-card",
+        )
     with right:
-        pass
+        render_dev_card_annotation(
+            "履歷延伸資訊卡",
+            element_id="resume-profile-right-info-card",
+            description="右側資訊卡，顯示工具技能、領域關鍵字與匹配關鍵字。",
+            layers=["tool skills", "domain keywords", "match keywords"],
+            text_nodes=[
+                ("info-card-title", "區塊標題文字。"),
+                ("ui-chip ui-chip--soft", "工具技能 tag。"),
+                ("ui-chip ui-chip--accent", "領域關鍵字 tag。"),
+                ("ui-chip ui-chip--warm", "匹配關鍵字 tag。"),
+            ],
+            compact=True,
+            show_popover=True,
+            popover_key="resume-profile-right-info-card",
+        )
     left.markdown(
         f"""
 <div class="info-card">
@@ -285,7 +373,24 @@ def render_assistant_response(title: str, response) -> None:
     """渲染帶標題、引用與檢索說明的 AI 回答卡片。"""
     if response is None:
         return
-    pass
+    render_dev_card_annotation(
+        f"{title}卡",
+        element_id=f"assistant-response-{title}",
+        description="AI 助理輸出的回答 / 報告卡，內含段落標籤與引用。",
+        layers=[
+            "assistant-response-section",
+            "citations",
+            "retrieval notes",
+        ],
+        text_nodes=[
+            ("info-card-title", "回答卡標題。"),
+            ("assistant-response-label", "結論 / 重點 / 限制 / 下一步的小標。"),
+            ("summary-card-text", "回答內容本體。"),
+        ],
+        compact=True,
+        show_popover=True,
+        popover_key=f"assistant-response-{title}-{id(response)}",
+    )
     st.markdown(
         f"""
 <div class="summary-card">

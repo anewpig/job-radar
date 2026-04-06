@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from .common import _escape
+from .dev_annotations import render_dev_card_annotation
 from .session import set_main_tab
 
 
@@ -26,7 +27,26 @@ def render_main_navigation(
     with st.container(key="nav-sticky-row-shell"):
         nav_cols = st.columns([1.0, 0.085], gap="small")
         with nav_cols[0].container(border=True, key="nav-tab-bar-shell"):
-            pass
+            render_dev_card_annotation(
+                "主導覽 Sticky Bar",
+                element_id="nav-tab-bar-shell",
+                description="頂部主頁籤列，包含主要功能頁 tab 與狀態同步。",
+                layers=[
+                    "nav-tab-list-shell",
+                    "main_tab_control",
+                    "nav-drawer-toggle-shell",
+                ],
+                text_nodes=[
+                    ("main_tab_control", "頂部 tab 文字本體。"),
+                    ("tracking label", "追蹤中心 tab 可能附帶未讀數。"),
+                    ("nav-drawer-toggle-button", "右側漢堡 / 關閉按鈕。"),
+                ],
+                notes=[
+                    "drawer 展開後的項目會出現在 nav-drawer-panel-shell。",
+                ],
+                show_popover=True,
+                popover_key="nav-tab-bar-shell",
+            )
             with st.container(key="nav-tab-list-shell"):
                 chosen_tab = st.pills(
                     "頁面切換",

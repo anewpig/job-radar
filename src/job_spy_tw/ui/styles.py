@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from .base_theme_styles import BASE_THEME_STYLES
+from .dev_annotation_styles import DEV_ANNOTATION_STYLES
 from .navigation_styles import NAVIGATION_STYLES
 
 
@@ -10,6 +11,8 @@ def inject_global_styles() -> None:
     st.markdown(
         "<style>\n"
         + BASE_THEME_STYLES
+        + "\n"
+        + DEV_ANNOTATION_STYLES
         + "\n"
         + NAVIGATION_STYLES
         + "\n"

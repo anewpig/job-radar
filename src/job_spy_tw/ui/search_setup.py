@@ -13,6 +13,7 @@ from ..search_keyword_recommender import (
     normalize_search_role_rows,
 )
 from .common import _escape, build_chip_row, render_metrics_cta
+from .dev_annotations import render_dev_card_annotation
 from .search import (
     _default_search_row,
     _next_search_priority,
@@ -319,7 +320,25 @@ def render_search_setup(
 ) -> SearchSetupState:
     """渲染完整的搜尋設定卡片，並回傳目前選定的抓取參數。"""
     with st.container(border=True, key="search-setup-shell"):
-        pass
+        render_dev_card_annotation(
+            "搜尋設定主卡",
+            element_id="search-setup-shell",
+            description="首頁主輸入區，左側是搜尋條件與抓取方式，右側是摘要 CTA。",
+            layers=[
+                "search-setup-main",
+                "search-fields-group-shell",
+                "search-controls-group-shell",
+                "metrics-cta-card",
+            ],
+            text_nodes=[
+                ("section-title", "搜尋設定主標題。"),
+                ("section-desc", "搜尋設定說明文字。"),
+                ("search-card-title", "群組卡片的小標題。"),
+                ("search-card-copy", "群組卡片補充說明。"),
+            ],
+            show_popover=True,
+            popover_key="search-setup-shell",
+        )
         # 左欄放搜尋表單，右欄放摘要 CTA。
         setup_shell_cols = st.columns([1.68, 0.8], gap="large")
 
@@ -333,7 +352,25 @@ def render_search_setup(
                 draft_index = len(previous_role_rows) - 1
                 committed_rows = previous_role_rows[:-1]
                 with st.container(border=True, key="search-fields-group-shell"):
-                    pass
+                    render_dev_card_annotation(
+                        "搜尋欄位群組卡",
+                        element_id="search-fields-group-shell",
+                        description="上方是一列可編輯輸入，下方是已加入的職缺與關鍵字 tag。",
+                        layers=[
+                            "search-row-headers-shell",
+                            "search-role-rows-shell",
+                            "search-role-tags-shell",
+                        ],
+                        text_nodes=[
+                            ("search-row-header-label", "欄位表頭文字。"),
+                            ("search-row-inline-label", "每個輸入框上方的小標。"),
+                            ("search-role-badge-cluster", "已加入職缺的 badge / tag 群組。"),
+                            ("ui-chip ui-chip--accent", "職缺名稱 tag。"),
+                            ("ui-chip ui-chip--soft", "關鍵字 tag。"),
+                        ],
+                        show_popover=True,
+                        popover_key="search-fields-group-shell",
+                    )
                     _render_group_head(
                         title="想追蹤的職缺",
                     )
@@ -358,7 +395,23 @@ def render_search_setup(
                     _sync_autofill(previous_role_rows, committed_rows, draft_index, keyword_recommender)
                 st.markdown('<div class="search-controls-group-offset"></div>', unsafe_allow_html=True)
                 with st.container(border=True, key="search-controls-group-shell"):
-                    pass
+                    render_dev_card_annotation(
+                        "抓取控制群組卡",
+                        element_id="search-controls-group-shell",
+                        description="切換抓取速度、更新模式並送出分析。",
+                        layers=[
+                            "search-controls-options-shell",
+                            "crawl-preset-control-shell",
+                            "crawl-refresh-control-shell",
+                            "search-setup-run-shell",
+                        ],
+                        text_nodes=[
+                            ("segmented_control", "抓取速度與更新模式的切換文字。"),
+                            ("開始抓取並分析", "主要送出按鈕文字。"),
+                        ],
+                        show_popover=True,
+                        popover_key="search-controls-group-shell",
+                    )
                     _render_group_head(
                         title="抓取方式",
                     )

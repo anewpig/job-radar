@@ -6,6 +6,7 @@ import streamlit as st
 
 from ..models import JobListing, NotificationPreference
 from .common import build_chip_row, mask_identifier, render_section_header, _escape
+from .dev_annotations import render_dev_card_annotation
 from .page_context import PageContext
 from .search import get_committed_search_rows
 from .session import apply_notification_session_state, set_main_tab
@@ -52,7 +53,23 @@ def render_tracking_page(ctx: PageContext) -> None:
     )
 
     with st.container(border=True):
-        pass
+        render_dev_card_annotation(
+            "新職缺通知流卡",
+            element_id="tracking-notification-stream",
+            description="追蹤中心上半部的通知流卡片。",
+            layers=[
+                "notification header",
+                "notification item cards",
+                "mark-all-notifications-read",
+            ],
+            text_nodes=[
+                ("新職缺通知", "通知流主標題。"),
+                ("Email 推播 / LINE 推播", "通道狀態小字。"),
+                ("ui-chip ui-chip--warm", "通知狀態 tag。"),
+            ],
+            show_popover=True,
+            popover_key="tracking-notification-stream",
+        )
         notification_header_cols = st.columns([2.4, 1], gap="medium")
         notification_header_cols[0].markdown("**新職缺通知**")
         notification_header_cols[0].caption(
@@ -71,7 +88,24 @@ def render_tracking_page(ctx: PageContext) -> None:
         if ctx.notifications:
             for notification in ctx.notifications:
                 with st.container(border=True):
-                    pass
+                    render_dev_card_annotation(
+                        "通知紀錄卡",
+                        element_id=f"tracking-notification-item-{notification.id}",
+                        description="單次新職缺通知的紀錄卡。",
+                        layers=[
+                            "saved_search_name",
+                            "status chips",
+                            "new job expander",
+                        ],
+                        text_nodes=[
+                            ("saved_search_name", "通知對應的搜尋名稱。"),
+                            ("created_at / new_jobs_count", "通知建立時間與筆數。"),
+                            ("ui-chip ui-chip--warm", "未讀 / Email / LINE 狀態 tag。"),
+                        ],
+                        compact=True,
+                        show_popover=True,
+                        popover_key=f"tracking-notification-item-{notification.id}",
+                    )
                     count = len(notification.new_jobs)
                     status_labels: list[str] = []
                     status_labels.append("未讀" if not notification.is_read else "已讀")
@@ -119,7 +153,26 @@ def render_tracking_page(ctx: PageContext) -> None:
                     if row.get("enabled", True) and str(row.get("role", "")).strip()
                 ]
                 with st.container(border=True):
-                    pass
+                    render_dev_card_annotation(
+                        "已儲存搜尋卡",
+                        element_id=f"tracking-saved-search-{saved_search.id}",
+                        description="單組已儲存搜尋卡，含名稱、tag、統計與操作按鈕。",
+                        layers=[
+                            "saved-search title",
+                            "role chips",
+                            "saved-search stats",
+                            "saved-search actions",
+                        ],
+                        text_nodes=[
+                            ("saved_search.name", "搜尋名稱。"),
+                            ("ui-chip ui-chip--warm", "目標職缺 role tag。"),
+                            ("ui-chip ui-chip--soft", "模式 / 上次抓取 / 職缺數等統計 tag。"),
+                            ("搜尋名稱", "可編輯的搜尋名稱欄位標籤。"),
+                        ],
+                        compact=True,
+                        show_popover=True,
+                        popover_key=f"tracking-saved-search-{saved_search.id}",
+                    )
                     st.markdown(f"**{saved_search.name}**")
                     st.markdown(
                         f"<div class='chip-row'>{build_chip_row(role_names, tone='warm', limit=4, empty_text='尚未設定目標職缺')}</div>",
@@ -247,7 +300,25 @@ def render_tracking_page(ctx: PageContext) -> None:
         else:
             for favorite in ctx.favorite_jobs[:8]:
                 with st.container(border=True):
-                    pass
+                    render_dev_card_annotation(
+                        "收藏捷徑卡",
+                        element_id=f"tracking-favorite-shortcut-{favorite.id}",
+                        description="追蹤中心右側的收藏職缺快速卡。",
+                        layers=[
+                            "favorite title",
+                            "favorite chips",
+                            "favorite note",
+                            "favorite actions",
+                        ],
+                        text_nodes=[
+                            ("favorite.title", "職缺標題。"),
+                            ("favorite.company", "公司名稱。"),
+                            ("ui-chip ui-chip--warm", "狀態 / 來源 / 搜尋名稱 / 地點 tag。"),
+                        ],
+                        compact=True,
+                        show_popover=True,
+                        popover_key=f"tracking-favorite-shortcut-{favorite.id}",
+                    )
                     st.markdown(f"**{favorite.title}**")
                     st.caption(f"{favorite.company}")
                     st.markdown(
@@ -343,7 +414,19 @@ def render_board_page(ctx: PageContext) -> None:
                     border=True,
                     key=f"board-status-shell-{row_index}-{column_index}",
                 ):
-                    pass
+                    render_dev_card_annotation(
+                        "看板欄位標頭卡",
+                        element_id=f"board-status-shell-{row_index}-{column_index}",
+                        description="單一投遞狀態欄位的標頭卡。",
+                        layers=["status heading", "status count"],
+                        text_nodes=[
+                            ("status label", "欄位狀態名稱。"),
+                            ("status count", "欄位內職缺數量。"),
+                        ],
+                        compact=True,
+                        show_popover=True,
+                        popover_key=f"board-status-shell-{row_index}-{column_index}",
+                    )
                     st.markdown(f"**{status}**")
                     st.caption(f"{len(status_items)} 筆職缺")
                 if not status_items:
@@ -351,7 +434,17 @@ def render_board_page(ctx: PageContext) -> None:
                         border=True,
                         key=f"board-empty-shell-{row_index}-{column_index}",
                     ):
-                        pass
+                        render_dev_card_annotation(
+                            "看板空狀態卡",
+                            element_id=f"board-empty-shell-{row_index}-{column_index}",
+                            description="某個投遞欄位目前沒有卡片時的空狀態提示。",
+                            text_nodes=[
+                                ("board-empty-copy", "空狀態提示文字。"),
+                            ],
+                            compact=True,
+                            show_popover=True,
+                            popover_key=f"board-empty-shell-{row_index}-{column_index}",
+                        )
                         st.markdown(
                             f"""
 <div class="board-empty-shell">
@@ -362,7 +455,29 @@ def render_board_page(ctx: PageContext) -> None:
                         )
                 for favorite in status_items:
                     with st.container(border=True, key=f"board-card-container-{favorite.id}"):
-                        pass
+                        render_dev_card_annotation(
+                            "投遞看板卡片",
+                            element_id=f"board-card-container-{favorite.id}",
+                            description="單張投遞流程卡片，包含 meta、時間線、備註與編輯表單。",
+                            layers=[
+                                "board-card-head",
+                                "board-card-meta",
+                                "board-card-timeline",
+                                "board-card-section",
+                                f"board-editor-shell-{favorite.id}",
+                            ],
+                            text_nodes=[
+                                ("board-card-title", "看板卡的職缺標題。"),
+                                ("board-card-company", "公司名稱。"),
+                                ("ui-chip ui-chip--soft", "來源 / 搜尋條件 / 地點 tag。"),
+                                ("ui-chip ui-chip--warm", "投遞 / 面試日期 tag。"),
+                                ("board-card-section-title", "備註 / 面試紀錄的小標。"),
+                                ("board-card-copy", "備註與面試紀錄內容。"),
+                            ],
+                            compact=True,
+                            show_popover=True,
+                            popover_key=f"board-card-container-{favorite.id}",
+                        )
                         meta_items = [
                             favorite.saved_search_name or "未綁定搜尋",
                             favorite.source,
@@ -512,7 +627,24 @@ def render_notifications_page(ctx: PageContext) -> None:
     ]
 
     with st.container(border=True, key="notifications-shell"):
-        pass
+        render_dev_card_annotation(
+            "通知設定頁主卡",
+            element_id="notifications-shell",
+            description="通知設定頁的外層卡片，包含頁首、狀態 tag、三步驟設定與測試送出。",
+            layers=[
+                "notifications-body",
+                "notification setup steps",
+                "test notification actions",
+            ],
+            text_nodes=[
+                ("section-kicker", "頁首小標。"),
+                ("section-title", "頁面主標題。"),
+                ("section-desc", "頁面說明文字。"),
+                ("ui-chip ui-chip--warm", "目前通知狀態 tag。"),
+            ],
+            show_popover=True,
+            popover_key="notifications-shell",
+        )
         st.markdown(
             f"""
 <div class="section-shell notifications-intro">
@@ -533,7 +665,19 @@ def render_notifications_page(ctx: PageContext) -> None:
         step_cols = st.columns(3, gap="large")
         with step_cols[0]:
             with st.container():
-                pass
+                render_dev_card_annotation(
+                    "通知方式設定卡",
+                    element_id="notifications-step-channel",
+                    description="第一步，控制站內 / Email / LINE 哪些通道要開啟。",
+                    layers=["notify_site_enabled", "notify_email_enabled", "notify_line_enabled"],
+                    text_nodes=[
+                        ("1. 選擇通知方式", "步驟標題。"),
+                        ("checkbox label", "各通知通道的開關文字。"),
+                    ],
+                    compact=True,
+                    show_popover=True,
+                    popover_key="notifications-step-channel",
+                )
                 st.markdown("**1. 選擇通知方式**")
                 st.caption("先決定哪些提醒方式要開啟。")
                 st.checkbox(
@@ -554,7 +698,24 @@ def render_notifications_page(ctx: PageContext) -> None:
 
         with step_cols[1]:
             with st.container():
-                pass
+                render_dev_card_annotation(
+                    "通知收件設定卡",
+                    element_id="notifications-step-destination",
+                    description="第二步，設定 Email 收件者或 LINE 綁定資訊。",
+                    layers=[
+                        "notify_email_recipients",
+                        "notify_line_target",
+                        "line binding actions",
+                    ],
+                    text_nodes=[
+                        ("2. 收件設定", "步驟標題。"),
+                        ("通知 Email", "Email 輸入欄位標籤。"),
+                        ("LINE 收件者 ID / 綁定 ID", "LINE 欄位標籤。"),
+                    ],
+                    compact=True,
+                    show_popover=True,
+                    popover_key="notifications-step-destination",
+                )
                 st.markdown("**2. 收件設定**")
                 st.caption("只會顯示你目前有開啟的通知方式。")
                 if st.session_state.notify_email_enabled:
@@ -638,7 +799,23 @@ def render_notifications_page(ctx: PageContext) -> None:
 
         with step_cols[2]:
             with st.container():
-                pass
+                render_dev_card_annotation(
+                    "通知條件卡",
+                    element_id="notifications-step-rules",
+                    description="第三步，設定最低分數與每次最多通知筆數。",
+                    layers=[
+                        "notify_min_score",
+                        "notify_max_jobs",
+                    ],
+                    text_nodes=[
+                        ("3. 通知條件", "步驟標題。"),
+                        ("最低相關分數", "分數 slider 標籤。"),
+                        ("每次通知最多幾筆", "筆數 slider 標籤。"),
+                    ],
+                    compact=True,
+                    show_popover=True,
+                    popover_key="notifications-step-rules",
+                )
                 st.markdown("**3. 通知條件**")
                 st.caption("控制要提醒多少筆，以及哪些分數以上才通知。")
                 st.slider(

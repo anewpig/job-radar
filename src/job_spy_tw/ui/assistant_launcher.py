@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from .dev_annotations import render_dev_card_annotation
 from .session import set_main_tab
 
 
@@ -18,7 +19,23 @@ def render_assistant_launcher() -> None:
         return
 
     with st.container(border=True, key="assistant-launcher-card-shell"):
-        pass
+        render_dev_card_annotation(
+            "浮動 AI 助理卡",
+            element_id="assistant-launcher-card-shell",
+            description="右下角展開後的 AI 助理外框，包含品牌頭圖與提問表單。",
+            layers=[
+                "assistant-launcher-form-shell",
+                "assistant-launcher FAQ items",
+            ],
+            text_nodes=[
+                ("launcher brand text", "卡片頭部的品牌名稱。"),
+                ("AI Assistant", "右上與卡片內的功能標示文字。"),
+                ("您好，想問什麼？", "浮動卡的主標題。"),
+                ("assistant-launcher-faq-item", "底部快捷問題文字。"),
+            ],
+            show_popover=True,
+            popover_key="assistant-launcher-card-shell",
+        )
         st.markdown(
             """
 <div style="
@@ -72,7 +89,24 @@ def render_assistant_launcher() -> None:
 
         st.markdown("<div style='height:0.4rem;'></div>", unsafe_allow_html=True)
         with st.container(border=True, key="assistant-launcher-form-shell"):
-            pass
+            render_dev_card_annotation(
+                "浮動 AI 助理表單卡",
+                element_id="assistant-launcher-form-shell",
+                description="浮動 AI 助理卡內的輸入、送出與快捷問題區。",
+                layers=[
+                    "assistant_launcher_question_input",
+                    "assistant-launcher-submit-question",
+                    "assistant-launcher-open-page",
+                ],
+                text_nodes=[
+                    ("assistant-launcher-form-label", "輸入框上方的小標。"),
+                    ("assistant_launcher_question_input", "問題輸入框。"),
+                    ("assistant-launcher-faq-item", "底部快捷問題文字。"),
+                ],
+                compact=True,
+                show_popover=True,
+                popover_key="assistant-launcher-form-shell",
+            )
             st.markdown("<div class='assistant-launcher-form-label'>詢問客服</div>", unsafe_allow_html=True)
             assistant_launcher_question = st.text_input(
                 "詢問客服",

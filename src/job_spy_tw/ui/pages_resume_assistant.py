@@ -13,6 +13,7 @@ from ..resume_analysis import (
     summarize_match_gaps,
 )
 from .common import _escape, _format_ranked_terms, build_chip_row, render_section_header
+from .dev_annotations import render_dev_card_annotation
 from .frames import resume_matches_to_frame
 from .page_context import PageContext
 from .renderers import (
@@ -105,7 +106,26 @@ def render_resume_page(ctx: PageContext) -> None:
         return
     if ctx.current_user_is_guest:
         st.caption("目前是訪客模式。分析結果會留在這次使用期間；登入後可把履歷摘要保存到自己的帳號。")
-    pass
+    render_dev_card_annotation(
+        "履歷上傳表單",
+        element_id="resume_match_form",
+        description="上傳履歷、貼文字與送出分析的主要表單。",
+        layers=[
+            "uploaded_resume",
+            "pasted_resume_text",
+            "use_llm",
+            "collect_resume_profile",
+            "analyze_resume",
+        ],
+        text_nodes=[
+            ("上傳履歷檔", "檔案上傳欄位標籤。"),
+            ("或直接貼上履歷文字", "文字貼上區標籤。"),
+            ("使用 LLM 擷取履歷重點", "分析方式 checkbox。"),
+            ("同意保存匿名化履歷分析資料到資料庫", "資料保存 checkbox。"),
+        ],
+        show_popover=True,
+        popover_key="resume_match_form",
+    )
     with st.form("resume_match_form"):
         uploaded_resume = st.file_uploader(
             "上傳履歷檔",
@@ -225,7 +245,22 @@ def render_resume_page(ctx: PageContext) -> None:
         f"目前最適合先投遞的是 {top_match_row['title']}，"
         f"來自 {top_match_row['company']}；如果想優先補強，可以先看下方缺口分析。"
     )
-    pass
+    render_dev_card_annotation(
+        "履歷匹配摘要卡",
+        element_id="resume-match-summary-card",
+        description="本次履歷匹配結果的總結卡。",
+        layers=[
+            "summary-card",
+            "match metrics row",
+        ],
+        text_nodes=[
+            ("info-card-title", "摘要卡標題。"),
+            ("summary-card-text", "摘要說明文字。"),
+        ],
+        compact=True,
+        show_popover=True,
+        popover_key="resume-match-summary-card",
+    )
     st.markdown(
         f"""
 <div class="summary-card">
@@ -240,7 +275,27 @@ def render_resume_page(ctx: PageContext) -> None:
     match_metrics[1].metric("值得追蹤", watch_match_count)
     match_metrics[2].metric("平均職缺相似度", f"{average_market_fit:.1f}")
     match_metrics[3].metric("最高個人匹配度", f"{float(top_match_row['overall_score']):.1f}")
-    pass
+    render_dev_card_annotation(
+        "履歷缺口分析卡",
+        element_id="resume-gap-summary-card",
+        description="列出已命中與待補強技能 / 工作內容的分析卡。",
+        layers=[
+            "strength_skills",
+            "strength_tasks",
+            "gap_skills",
+            "gap_tasks",
+        ],
+        text_nodes=[
+            ("info-card-title", "分析卡段落標題。"),
+            ("summary-card-text", "分析卡導引段落。"),
+            ("ui-chip ui-chip--accent", "已命中技能 tag。"),
+            ("ui-chip ui-chip--soft", "已命中工作內容 tag。"),
+            ("ui-chip ui-chip--warm", "待補強項目 tag。"),
+        ],
+        compact=True,
+        show_popover=True,
+        popover_key="resume-gap-summary-card",
+    )
     st.markdown(
         f"""
 <div class="summary-card">
@@ -310,7 +365,27 @@ def render_resume_page(ctx: PageContext) -> None:
                 f"個人匹配度 {row['overall_score']:.1f}",
                 f"職缺相似度 {row['market_fit_score']:.1f}",
             ]
-            pass
+            render_dev_card_annotation(
+                "履歷推薦職缺卡",
+                element_id=f"resume-match-card-{index}",
+                description="履歷匹配頁中的單張推薦職缺卡。",
+                layers=[
+                    "surface-card",
+                    "reason chips",
+                    "gap chips",
+                    "score expander",
+                ],
+                text_nodes=[
+                    ("job-card-title", "職缺標題。"),
+                    ("job-card-company", "公司名稱。"),
+                    ("ui-chip ui-chip--soft", "來源 / 分數 tag。"),
+                    ("ui-chip ui-chip--accent", "命中原因 tag。"),
+                    ("ui-chip ui-chip--warm", "補強建議 tag。"),
+                ],
+                compact=True,
+                show_popover=True,
+                popover_key=f"resume-match-card-{index}",
+            )
             st.markdown(
                 f"""
 <div class="surface-card">
@@ -388,7 +463,18 @@ def render_assistant_page(ctx: PageContext) -> None:
         "Assistant",
     )
     if not ctx.settings.openai_api_key:
-        pass
+        render_dev_card_annotation(
+            "AI 助理未啟用提示卡",
+            element_id="assistant-disabled-card",
+            description="尚未設定 API key 時的提示卡。",
+            text_nodes=[
+                ("info-card-title", "提示卡標題。"),
+                ("summary-card-text", "提示卡說明文字。"),
+            ],
+            compact=True,
+            show_popover=True,
+            popover_key="assistant-disabled-card",
+        )
         st.markdown(
             """
 <div class="summary-card">
@@ -427,7 +513,23 @@ def render_assistant_page(ctx: PageContext) -> None:
     left_col, right_col = st.columns([1.02, 1.25], gap="large")
     with left_col:
         with st.container(border=True, key="assistant-profile-card-shell"):
-            pass
+            render_dev_card_annotation(
+                "AI 助理個人化背景卡",
+                element_id="assistant-profile-card-shell",
+                description="AI 助理左側的背景資料卡，顯示履歷或手動輸入的個人化資訊。",
+                layers=[
+                    "resume summary",
+                    "assistant_profile_form",
+                    "assistant-clear-profile",
+                ],
+                text_nodes=[
+                    ("個人化背景", "卡片標題。"),
+                    ("st.caption", "背景狀態說明小字。"),
+                    ("assistant_profile_form", "基本資料表單。"),
+                ],
+                show_popover=True,
+                popover_key="assistant-profile-card-shell",
+            )
             st.markdown("**個人化背景**")
             if resume_context_profile is not None:
                 st.caption("目前已載入履歷，AI 助理會優先依照履歷內容回答。")
@@ -502,7 +604,24 @@ def render_assistant_page(ctx: PageContext) -> None:
 
     with right_col:
         with st.container(border=True, key="assistant-quick-ask-card-shell"):
-            pass
+            render_dev_card_annotation(
+                "AI 助理快速提問卡",
+                element_id="assistant-quick-ask-card-shell",
+                description="AI 助理右側的快捷問題、輸入區與求職報告入口。",
+                layers=[
+                    "assistant suggestion buttons",
+                    "assistant_form",
+                    "assistant-next-question-batch",
+                ],
+                text_nodes=[
+                    ("快速提問", "卡片標題。"),
+                    ("assistant question buttons", "快捷問題按鈕文字。"),
+                    ("詢問客服", "文字輸入區標籤。"),
+                    ("送出問題 / 產生求職報告", "底部主操作按鈕。"),
+                ],
+                show_popover=True,
+                popover_key="assistant-quick-ask-card-shell",
+            )
             question_batches = assistant_question_batches(
                 SUGGESTED_ASSISTANT_QUESTIONS,
                 batch_size=4,
@@ -621,6 +740,17 @@ def render_assistant_page(ctx: PageContext) -> None:
         st.markdown("**問答紀錄**")
         for index, answer in enumerate(st.session_state.assistant_history, start=1):
             with st.container(border=True):
-                pass
+                render_dev_card_annotation(
+                    "AI 問答紀錄卡",
+                    element_id=f"assistant-history-card-{index}",
+                    description="AI 助理問答紀錄中的單筆問題卡。",
+                    layers=["question heading", "answer card"],
+                    text_nodes=[
+                        (f"Q{index}", "問題序號與問題標題。"),
+                    ],
+                    compact=True,
+                    show_popover=True,
+                    popover_key=f"assistant-history-card-{index}",
+                )
                 st.markdown(f"**Q{index}. {answer.question}**")
                 render_assistant_response("回答", answer)
