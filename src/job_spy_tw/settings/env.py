@@ -1,3 +1,5 @@
+"""Settings helpers for env."""
+
 from __future__ import annotations
 
 import os

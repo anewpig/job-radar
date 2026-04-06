@@ -1,5 +1,8 @@
+"""Helpers for splitting raw job descriptions into structured sections."""
+
 from __future__ import annotations
 
+from html import unescape
 import json
 import re
 from collections.abc import Iterable
@@ -56,7 +59,7 @@ def split_structured_items(text: str, keep_unspecified: bool = False) -> list[st
     if not text:
         return []
 
-    prepared = text.replace("\u3000", " ")
+    prepared = _normalize_structured_source_text(text)
     prepared = prepared.replace("\r\n", "\n").replace("\r", "\n")
     prepared = re.sub(r"<br\s*/?>", "\n", prepared, flags=re.IGNORECASE)
     prepared = re.sub(r"(?<!\n)(\d{1,2}[.)、．]\s*)", r"\n\1", prepared)
@@ -64,7 +67,7 @@ def split_structured_items(text: str, keep_unspecified: bool = False) -> list[st
 
     items: list[str] = []
     current_prefix = ""
-    for raw_line in lines:
+    for index, raw_line in enumerate(lines):
         line = normalize_text(raw_line)
         if not line:
             continue
@@ -75,7 +78,8 @@ def split_structured_items(text: str, keep_unspecified: bool = False) -> list[st
         numbered = NUMBERED_ITEM_PATTERN.match(line)
         if numbered:
             content = normalize_text(numbered.group(1))
-            if _should_be_prefix(content):
+            next_line = _next_meaningful_line(lines, index + 1)
+            if next_line and _should_be_prefix(content) and not _starts_structured_item(next_line):
                 current_prefix = content.rstrip("：:")
             else:
                 items.append(content)
@@ -176,3 +180,28 @@ def _should_be_prefix(content: str) -> bool:
     if ACTION_OR_REQUIREMENT_PREFIX_PATTERN.search(content):
         return False
     return len(content) <= 32 and not re.search(r"[。；;!?！？]", content)
+
+
+def _normalize_structured_source_text(text: str) -> str:
+    prepared = unescape(text).replace("\u3000", " ")
+    if "<" not in prepared or ">" not in prepared:
+        return prepared
+
+    soup = BeautifulSoup(prepared, "lxml")
+    if soup.find(["li", "br", "p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "ol", "ul"]):
+        return soup.get_text("\n", strip=False)
+    return prepared
+
+
+def _next_meaningful_line(lines: list[str], start_index: int) -> str:
+    for raw_line in lines[start_index:]:
+        normalized = normalize_text(raw_line).replace("展開全部", "").replace("收合內容", "").strip()
+        if normalized and normalized not in NOISE_LINES:
+            return normalized
+    return ""
+
+
+def _starts_structured_item(line: str) -> bool:
+    if not line:
+        return False
+    return bool(NUMBERED_ITEM_PATTERN.match(line) or BULLET_ITEM_PATTERN.match(line))

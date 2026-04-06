@@ -5,6 +5,7 @@ description = "Taiwan job crawler and skill insights dashboard for 104, 1111, an
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+  "Authlib>=1.3.2",
   "beautifulsoup4>=4.12.3",
   "certifi>=2026.2.25",
   "lxml>=5.3.0",
@@ -18,6 +19,13 @@ dependencies = [
 [project.scripts]
 job-spy = "job_spy_tw.cli:main"
 job-radar-line-webhook = "job_spy_tw.line_webhook:main"
+job-radar-crawl-worker = "job_spy_tw.crawl_worker:main"
+job-radar-crawl-scheduler = "job_spy_tw.crawl_scheduler:main"
+job-radar-runtime-maintenance = "job_spy_tw.runtime_maintenance:main"
+job-radar-sqlite-maintenance = "job_spy_tw.sqlite_backup:main"
+job-radar-sqlite-restore-drill = "job_spy_tw.sqlite_restore_drill:main"
+job-radar-backend-maintenance = "job_spy_tw.backend_maintenance:main"
+job-radar-backend-status = "job_spy_tw.backend_status:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

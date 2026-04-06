@@ -1,3 +1,5 @@
+"""Store-layer helpers for auth."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,6 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from ..models import UserAccount
+from ..sqlite_utils import connect_sqlite
 from .common import generate_password_reset_code, now_iso
 
 
@@ -42,7 +45,7 @@ class UserRepository:
         return user
 
     def get_user(self, user_id: int) -> UserAccount | None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
                 SELECT id, email, display_name, is_guest, created_at, updated_at, last_login_at
@@ -54,7 +57,7 @@ class UserRepository:
         return self._row_to_user(row) if row else None
 
     def get_user_by_email(self, email: str) -> UserAccount | None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
                 SELECT id, email, display_name, is_guest, created_at, updated_at, last_login_at
@@ -64,6 +67,19 @@ class UserRepository:
                 (email.strip(),),
             ).fetchone()
         return self._row_to_user(row) if row else None
+
+    def list_users(self, *, include_guest: bool = False) -> list[UserAccount]:
+        with connect_sqlite(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT id, email, display_name, is_guest, created_at, updated_at, last_login_at
+                FROM users
+                WHERE (? = 1 OR is_guest = 0)
+                ORDER BY id ASC
+                """,
+                (1 if include_guest else 0,),
+            ).fetchall()
+        return [user for row in rows if (user := self._row_to_user(row)) is not None]
 
     def register_user(
         self,
@@ -84,7 +100,7 @@ class UserRepository:
         salt = secrets.token_hex(16)
         password_hash = hash_password(password, salt)
         now = now_iso()
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO users (
@@ -116,7 +132,7 @@ class UserRepository:
         return user
 
     def authenticate_user(self, email: str, password: str) -> UserAccount | None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
                 SELECT id, email, display_name, is_guest, created_at, updated_at, last_login_at,
@@ -144,6 +160,98 @@ class UserRepository:
             connection.commit()
         return self.get_user(int(row[0]))
 
+    def authenticate_oidc_user(
+        self,
+        *,
+        provider: str,
+        subject: str,
+        email: str,
+        display_name: str = "",
+    ) -> UserAccount:
+        cleaned_provider = provider.strip() or "oidc"
+        cleaned_subject = subject.strip()
+        cleaned_email = email.strip().lower()
+        cleaned_name = display_name.strip()
+        if not cleaned_email or "@" not in cleaned_email:
+            raise ValueError("OIDC 回傳的 Email 無效。")
+        if not cleaned_subject:
+            raise ValueError("OIDC 回傳的 subject 無效。")
+
+        now = now_iso()
+        with connect_sqlite(self.db_path) as connection:
+            identity_row = connection.execute(
+                """
+                SELECT user_id
+                FROM user_identities
+                WHERE provider = ? AND subject = ?
+                """,
+                (cleaned_provider, cleaned_subject),
+            ).fetchone()
+            if identity_row is not None:
+                user_id = int(identity_row[0])
+                self._touch_oidc_user(
+                    connection=connection,
+                    user_id=user_id,
+                    email=cleaned_email,
+                    display_name=cleaned_name,
+                    now=now,
+                )
+            else:
+                user_row = connection.execute(
+                    """
+                    SELECT id
+                    FROM users
+                    WHERE lower(email) = lower(?)
+                    LIMIT 1
+                    """,
+                    (cleaned_email,),
+                ).fetchone()
+                if user_row is not None:
+                    user_id = int(user_row[0])
+                    self._touch_oidc_user(
+                        connection=connection,
+                        user_id=user_id,
+                        email=cleaned_email,
+                        display_name=cleaned_name,
+                        now=now,
+                    )
+                else:
+                    user_id = self._create_oidc_user(
+                        connection=connection,
+                        email=cleaned_email,
+                        display_name=cleaned_name,
+                        now=now,
+                    )
+                connection.execute(
+                    """
+                    INSERT INTO user_identities (
+                        provider,
+                        subject,
+                        user_id,
+                        email,
+                        created_at,
+                        updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(provider, subject) DO UPDATE SET
+                        user_id = excluded.user_id,
+                        email = excluded.email,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        cleaned_provider,
+                        cleaned_subject,
+                        user_id,
+                        cleaned_email,
+                        now,
+                        now,
+                    ),
+                )
+            connection.commit()
+        user = self.get_user(user_id)
+        if user is None:
+            raise RuntimeError("OIDC 登入後無法讀回使用者資料。")
+        return user
+
     def issue_password_reset(self, email: str, *, ttl_minutes: int = 15) -> tuple[UserAccount, str]:
         user = self.get_user_by_email(email)
         if user is None or user.is_guest:
@@ -153,7 +261,7 @@ class UserRepository:
         expires_at = (datetime.now() + timedelta(minutes=max(1, ttl_minutes))).isoformat(
             timespec="seconds"
         )
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 UPDATE password_reset_tokens
@@ -192,7 +300,7 @@ class UserRepository:
         if user is None or user.is_guest:
             raise ValueError("找不到這個 Email 對應的帳號。")
 
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             token_row = connection.execute(
                 """
                 SELECT id, expires_at, consumed_at
@@ -247,4 +355,66 @@ class UserRepository:
             created_at=str(row[4] or ""),
             updated_at=str(row[5] or ""),
             last_login_at=str(row[6] or ""),
+        )
+
+    def _create_oidc_user(
+        self,
+        *,
+        connection: sqlite3.Connection,
+        email: str,
+        display_name: str,
+        now: str,
+    ) -> int:
+        placeholder_password = secrets.token_urlsafe(32)
+        salt = secrets.token_hex(16)
+        password_hash = hash_password(placeholder_password, salt)
+        cursor = connection.execute(
+            """
+            INSERT INTO users (
+                email,
+                display_name,
+                password_salt,
+                password_hash,
+                is_guest,
+                created_at,
+                updated_at,
+                last_login_at
+            ) VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+            """,
+            (
+                email,
+                display_name,
+                salt,
+                password_hash,
+                now,
+                now,
+                now,
+            ),
+        )
+        return int(cursor.lastrowid)
+
+    def _touch_oidc_user(
+        self,
+        *,
+        connection: sqlite3.Connection,
+        user_id: int,
+        email: str,
+        display_name: str,
+        now: str,
+    ) -> None:
+        connection.execute(
+            """
+            UPDATE users
+            SET email = ?, display_name = CASE WHEN ? != '' THEN ? ELSE display_name END,
+                updated_at = ?, last_login_at = ?
+            WHERE id = ? AND is_guest = 0
+            """,
+            (
+                email,
+                display_name,
+                display_name,
+                now,
+                now,
+                user_id,
+            ),
         )

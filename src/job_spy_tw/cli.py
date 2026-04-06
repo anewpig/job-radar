@@ -1,3 +1,5 @@
+"""Command-line entrypoints for local project utilities."""
+
 from __future__ import annotations
 
 import argparse
@@ -20,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    pipeline = JobMarketPipeline()
+    pipeline = JobMarketPipeline(perform_cache_maintenance=True)
     queries = args.queries or build_default_queries()
     snapshot = pipeline.run(queries=queries)
     print(

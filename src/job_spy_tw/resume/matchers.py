@@ -1,3 +1,5 @@
+"""Resume-analysis helpers for matchers."""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +12,7 @@ from ..utils import chunked, ensure_directory, normalize_text, unique_preserving
 from .scoring import (
     EXACT_SKILL_WEIGHT,
     EXACT_TASK_WEIGHT,
+    EXACT_TITLE_WEIGHT,
     KEYWORD_WEIGHT,
     MARKET_FIT_TOTAL,
     ROLE_WEIGHT,
@@ -23,6 +26,8 @@ from .scoring import (
     _prepare_embedding_text,
     _saturating_hit_ratio,
     _stable_hash,
+    _stabilize_title_similarity,
+    _title_exact_match_bonus,
 )
 from .schemas import OpenAI, TitleSimilarityBatch
 
@@ -99,14 +104,27 @@ class OpenAIResumeMatcher:
                 if keyword not in resume_keywords
             ]
 
-            title_similarity = title_scores.get(index, {}).get(
-                "similarity", self.fallback_matcher._role_similarity(profile, job)
+            fallback_role_similarity = self.fallback_matcher._role_similarity(profile, job)
+            raw_title_similarity = title_scores.get(index, {}).get(
+                "similarity", fallback_role_similarity
+            )
+            title_similarity = _stabilize_title_similarity(
+                raw_title_similarity, fallback_role_similarity
             )
             title_reason = title_scores.get(index, {}).get("reason", "")
 
-            skill_similarity = semantic_scores["skill"][index]
-            task_similarity = semantic_scores["task"][index]
-            keyword_similarity = semantic_scores["keyword"][index]
+            skill_similarity = max(
+                semantic_scores["skill"][index],
+                _dice_coefficient(resume_skills, job_skill_set),
+            )
+            task_similarity = max(
+                semantic_scores["task"][index],
+                _dice_coefficient(resume_tasks, job_task_set),
+            )
+            keyword_similarity = max(
+                semantic_scores["keyword"][index],
+                _saturating_hit_ratio(len(matched_keywords), saturation=4),
+            )
             semantic_similarity = (
                 (skill_similarity * SKILL_SEMANTIC_WEIGHT)
                 + (task_similarity * TASK_SEMANTIC_WEIGHT)
@@ -117,6 +135,10 @@ class OpenAIResumeMatcher:
             skill_score = round(SKILL_SEMANTIC_WEIGHT * skill_similarity, 2)
             task_score = round(TASK_SEMANTIC_WEIGHT * task_similarity, 2)
             keyword_score = round(KEYWORD_WEIGHT * keyword_similarity, 2)
+            exact_title_score = round(
+                _title_exact_match_bonus(profile.target_roles, job.title),
+                2,
+            )
             exact_skill_score = round(
                 EXACT_SKILL_WEIGHT * _saturating_hit_ratio(len(matched_skills), saturation=3),
                 2,
@@ -125,12 +147,17 @@ class OpenAIResumeMatcher:
                 EXACT_TASK_WEIGHT * _saturating_hit_ratio(len(matched_tasks), saturation=2),
                 2,
             )
-            exact_match_score = round(exact_skill_score + exact_task_score, 2)
+            exact_match_score = round(
+                exact_title_score + exact_skill_score + exact_task_score,
+                2,
+            )
             market_base_score = role_score + skill_score + task_score + keyword_score
             market_fit_score = round(_normalize_score(market_base_score, MARKET_FIT_TOTAL), 2)
             overall_score = round(market_base_score + exact_match_score, 2)
 
             reasons: list[str] = []
+            if exact_title_score >= EXACT_TITLE_WEIGHT:
+                reasons.append("精確職稱命中")
             if title_reason:
                 reasons.append(f"職稱相近：{title_reason}")
             elif title_similarity >= 0.55:
@@ -466,14 +493,16 @@ class ResumeMatcher:
         best = 0.0
         for role in profile.target_roles:
             role_lower = normalize_text(role).lower()
-            if role_lower == matched_role_lower:
+            if role_lower == title_lower:
                 best = max(best, 1.0)
+            elif role_lower == matched_role_lower:
+                best = max(best, 0.9)
             elif role_lower and (role_lower in title_lower or title_lower in role_lower):
-                best = max(best, 0.78)
+                best = max(best, 0.82)
             elif matched_role_lower and (
                 role_lower in matched_role_lower or matched_role_lower in role_lower
             ):
-                best = max(best, 0.72)
+                best = max(best, 0.74)
         return best
 
     def _role_score(self, profile: ResumeProfile, job: JobListing) -> float:

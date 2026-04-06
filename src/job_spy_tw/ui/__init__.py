@@ -1,9 +1,20 @@
+"""匯出 Streamlit 入口會使用到的 UI 公開函式。"""
+
+from .assistant_launcher import render_assistant_launcher
 from .auth import render_auth_popover
+from .bootstrap import (
+    ActiveUserContext,
+    AppRuntime,
+    bootstrap_runtime,
+    ensure_guest_session,
+    ensure_visit_tracking,
+    hydrate_initial_snapshot,
+    resolve_current_user,
+    validate_active_saved_search,
+)
 from .charts import (
-    render_count_bubble_chart,
     render_skill_bubble_chart,
     render_source_role_distribution_chart,
-    render_source_role_heatmap,
     render_source_summary_chart,
     render_task_insight_bubble_chart,
     render_task_insight_chart,
@@ -16,7 +27,10 @@ from .common import (
     build_html_list,
     mask_identifier,
     render_hero,
+    render_metrics_cta,
+    render_newsletter_footer,
     render_section_header,
+    render_top_header,
 )
 from .frames import (
     build_export_bundle,
@@ -30,6 +44,7 @@ from .frames import (
     task_insights_to_frame,
 )
 from .page_context import PageContext
+from .context_builder import build_page_context
 from .pages_market import (
     render_export_page,
     render_overview_page,
@@ -43,6 +58,8 @@ from .pages_product import (
     render_tracking_page,
 )
 from .pages_resume_assistant import render_assistant_page, render_resume_page
+from .navigation import render_main_navigation
+from .router import dispatch_main_tab, resolve_selected_main_tab
 from .renderers import (
     render_assistant_response,
     render_assistant_suggestion_buttons,
@@ -70,6 +87,14 @@ from .search import (
     format_openai_error,
     needs_personal_context,
 )
+from .crawl_runtime import (
+    build_crawl_queries,
+    clear_pending_crawl_state,
+    maybe_start_crawl,
+    render_finalize_worker_fragment,
+    sync_saved_search_results,
+)
+from .search_setup import SearchSetupState, render_search_setup
 from .session import (
     activate_user_session,
     apply_notification_session_state,
@@ -92,11 +117,16 @@ __all__ = [
     "_read_search_row_widgets",
     "_search_widget_key",
     "_suggest_saved_search_name",
+    "ActiveUserContext",
     "activate_user_session",
     "apply_notification_session_state",
     "assistant_question_batches",
+    "AppRuntime",
+    "bootstrap_runtime",
+    "build_crawl_queries",
     "build_chip_row",
     "build_context_request_response",
+    "build_page_context",
     "build_export_bundle",
     "build_html_list",
     "build_manual_assistant_profile",
@@ -110,6 +140,7 @@ __all__ = [
     "get_product_store",
     "get_rag_assistant",
     "get_user_data_store",
+    "hydrate_initial_snapshot",
     "inject_global_styles",
     "initialize_session_state",
     "jobs_to_frame",
@@ -117,11 +148,16 @@ __all__ = [
     "needs_personal_context",
     "PageContext",
     "render_assistant_page",
+    "render_assistant_launcher",
     "render_assistant_response",
+    "render_finalize_worker_fragment",
+    "render_main_navigation",
+    "render_metrics_cta",
+    "render_newsletter_footer",
+    "render_top_header",
     "render_assistant_suggestion_buttons",
     "render_auth_popover",
     "render_board_page",
-    "render_count_bubble_chart",
     "render_export_page",
     "render_hero",
     "render_job_cards",
@@ -132,17 +168,25 @@ __all__ = [
     "render_section_header",
     "render_skill_bubble_chart",
     "render_source_role_distribution_chart",
-    "render_source_role_heatmap",
     "render_source_summary_chart",
     "render_skills_page",
     "render_task_insight_bubble_chart",
     "render_task_insight_chart",
     "render_tasks_page",
+    "render_search_setup",
     "render_top_limit_control",
     "render_tracking_page",
     "render_sources_page",
     "resume_matches_to_frame",
+    "resolve_current_user",
+    "resolve_selected_main_tab",
     "sanitize_export_name",
+    "SearchSetupState",
+    "sync_saved_search_results",
+    "ensure_guest_session",
+    "ensure_visit_tracking",
+    "validate_active_saved_search",
+    "dispatch_main_tab",
     "set_main_tab",
     "skills_to_frame",
     "task_insights_to_frame",

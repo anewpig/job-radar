@@ -1,4 +1,6 @@
 .env
+.streamlit/secrets.toml
+.codex_checkpoints/
 .venv/
 __pycache__/
 *.pyc
@@ -6,3 +8,6 @@ __pycache__/
 data/
 releases/
 *.egg-info/
+0.04rem
+0.35rem
+0.88rem

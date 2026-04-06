@@ -1,5 +1,8 @@
+"""Connector implementation for 104 job sources."""
+
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import re
 from urllib.parse import quote_plus
@@ -22,6 +25,22 @@ class Site104Connector(BaseConnector):
     def base_url(self) -> str:
         return "https://www.104.com.tw"
 
+    def search_delay_seconds(self) -> float:
+        """104 搜尋 API 可承受較積極的節流設定。"""
+        return max(0.08, float(self.settings.request_delay) * 0.30)
+
+    def detail_delay_seconds(self) -> float:
+        """104 detail API 通常比搜尋 API 更穩，可再更積極一點。"""
+        return max(0.05, float(self.settings.request_delay) * 0.12)
+
+    def search_max_workers(self) -> int:
+        """104 搜尋頁預設允許較高併發，以縮短首批結果等待時間。"""
+        return min(4, self.settings.max_concurrent_requests)
+
+    def detail_max_workers(self) -> int:
+        """104 detail enrich 預設使用更高併發。"""
+        return min(6, self.settings.max_concurrent_requests)
+
     def fetch_search_page(self, query: str, page: int) -> str:
         url = self.search_url_template.format(
             query=quote_plus(query), page=page, location=""
@@ -33,6 +52,8 @@ class Site104Connector(BaseConnector):
                 "Accept": "application/json, text/plain, */*",
                 "Referer": "https://www.104.com.tw/jobs/search/",
             },
+            delay_seconds=self.search_delay_seconds(),
+            cache_ttl_seconds=self.search_cache_ttl_seconds(),
         )
 
     def parse_search_page(self, html: str, query: str) -> list[JobListing]:
@@ -48,13 +69,17 @@ class Site104Connector(BaseConnector):
                 for tag in item.get("tags", [])
                 if isinstance(tag, dict)
             ]
+            salary = normalize_text(item.get("salaryDesc", "")) or self._format_salary_range(
+                item.get("salaryLow"),
+                item.get("salaryHigh"),
+            )
             jobs.append(
                 JobListing(
                     source=self.source,
                     title=normalize_text(item.get("jobName", "")),
                     company=normalize_text(item.get("custName", "")) or "未提供公司名稱",
                     location=normalize_text(item.get("jobAddrNoDesc", "")),
-                    salary=normalize_text(item.get("salaryDesc", "")),
+                    salary=salary,
                     posted_at=normalize_text(item.get("appearDate", "")),
                     url=link,
                     summary=summary,
@@ -72,36 +97,68 @@ class Site104Connector(BaseConnector):
             )
         return jobs
 
+    @staticmethod
+    def _format_salary_range(low: object, high: object) -> str:
+        low_value = int(low or 0)
+        high_value = int(high or 0)
+        if low_value <= 0 and high_value <= 0:
+            return ""
+
+        unit = "年薪" if max(low_value, high_value) >= 300_000 else "月薪"
+        if high_value >= 9_999_999 and low_value > 0:
+            return f"{unit} {low_value:,} 元以上"
+        if low_value > 0 and high_value > 0:
+            if low_value == high_value:
+                return f"{unit} {low_value:,} 元"
+            return f"{unit} {low_value:,} - {high_value:,} 元"
+        if low_value > 0:
+            return f"{unit} {low_value:,} 元以上"
+        return f"{unit}最高 {high_value:,} 元"
+
     def enrich_details(self, jobs: list[JobListing]) -> list[JobListing]:
         detail_jobs = jobs
         if self.settings.max_detail_jobs_per_source > 0:
             detail_jobs = jobs[: self.settings.max_detail_jobs_per_source]
 
-        for job in detail_jobs:
-            job_code = (
-                str(job.metadata.get("job_code", "")).strip()
-                or self._extract_job_no(job.url)
-            )
-            if not job_code:
-                continue
-            detail_url = f"{self.base_url}/job/ajax/content/{job_code}"
-            try:
-                payload = json.loads(
-                    self.fetcher.fetch(
-                        detail_url,
-                        force_refresh=self.force_refresh,
-                        headers={
-                            "Accept": "application/json, text/plain, */*",
-                            "Referer": job.url or f"{self.base_url}/job/{job_code}",
-                        },
-                    )
-                )
-            except Exception as exc:  # noqa: BLE001
-                job.metadata["detail_error"] = str(exc)
-                continue
+        max_workers = max(1, min(self.detail_max_workers(), len(detail_jobs)))
+        if max_workers <= 1:
+            for job in detail_jobs:
+                self._populate_detail_job(job)
+            return jobs
 
-            self._populate_detail_payload(job, payload.get("data", {}))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(self._populate_detail_job, job) for job in detail_jobs]
+            for future in as_completed(futures):
+                future.result()
         return jobs
+
+    def _populate_detail_job(self, job: JobListing) -> None:
+        job_code = (
+            str(job.metadata.get("job_code", "")).strip()
+            or self._extract_job_no(job.url)
+        )
+        if not job_code:
+            return
+        detail_url = f"{self.base_url}/job/ajax/content/{job_code}"
+        try:
+            payload = json.loads(
+                self.fetcher.fetch(
+                    detail_url,
+                    force_refresh=self.force_refresh,
+                    headers={
+                        "Accept": "application/json, text/plain, */*",
+                        "Referer": job.url or f"{self.base_url}/job/{job_code}",
+                    },
+                    delay_seconds=self.detail_delay_seconds(),
+                    cache_ttl_seconds=self.detail_cache_ttl_seconds(),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            job.metadata["detail_error"] = str(exc)
+            return
+
+        self._populate_detail_payload(job, payload.get("data", {}))
+        job.metadata["detail_enriched"] = True
 
     def _populate_detail_payload(self, job: JobListing, payload: dict) -> None:
         job_detail = payload.get("jobDetail", {})

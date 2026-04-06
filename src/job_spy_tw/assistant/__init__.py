@@ -1,3 +1,5 @@
+"""Exports assistant service helpers."""
+
 from .models import KnowledgeChunk
 from .service import JobMarketRAGAssistant
 

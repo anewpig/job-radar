@@ -1,3 +1,5 @@
+"""Notification helpers for message builder."""
+
 from __future__ import annotations
 
 from ..settings import Settings

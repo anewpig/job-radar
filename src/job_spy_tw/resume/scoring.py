@@ -1,3 +1,5 @@
+"""Resume-analysis helpers for scoring."""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -17,6 +19,7 @@ TASK_SEMANTIC_WEIGHT = 25.0
 KEYWORD_WEIGHT = 10.0
 EXACT_SKILL_WEIGHT = 12.0
 EXACT_TASK_WEIGHT = 8.0
+EXACT_TITLE_WEIGHT = 6.0
 MARKET_FIT_TOTAL = ROLE_WEIGHT + SKILL_SEMANTIC_WEIGHT + TASK_SEMANTIC_WEIGHT + KEYWORD_WEIGHT
 SEMANTIC_TOTAL = SKILL_SEMANTIC_WEIGHT + TASK_SEMANTIC_WEIGHT + KEYWORD_WEIGHT
 
@@ -109,3 +112,27 @@ def _normalize_score(score: float, max_score: float) -> float:
     if max_score <= 0:
         return 0.0
     return max(0.0, min(100.0, (score / max_score) * 100.0))
+
+
+def _stabilize_title_similarity(raw_similarity: float, fallback_similarity: float) -> float:
+    raw = max(0.0, min(1.0, raw_similarity))
+    fallback = max(0.0, min(1.0, fallback_similarity))
+    if fallback >= 1.0:
+        return 1.0
+    if fallback > 0:
+        return max(fallback, min(raw, fallback + 0.18))
+    return min(raw, 0.2)
+
+
+def _title_exact_match_bonus(target_roles: Iterable[str], job_title: str) -> float:
+    normalized_title = normalize_text(job_title).lower()
+    if not normalized_title:
+        return 0.0
+    for index, role in enumerate(target_roles):
+        normalized_role = normalize_text(role).lower()
+        if not normalized_role:
+            continue
+        if normalized_role == normalized_title:
+            decay = max(0.4, 1.0 - (index * 0.2))
+            return round(EXACT_TITLE_WEIGHT * decay, 2)
+    return 0.0

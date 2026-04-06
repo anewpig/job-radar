@@ -1,8 +1,12 @@
+"""Store-layer helpers for database."""
+
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
+from ..sqlite_utils import connect_sqlite
 from ..utils import ensure_directory
 from .auth import GUEST_EMAIL, GUEST_USER_ID, hash_password
 from .common import now_iso
@@ -14,15 +18,19 @@ class ProductStoreDatabase:
 
     def initialize(self) -> None:
         ensure_directory(self.db_path.parent)
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             self._initialize_users(connection)
+            self._initialize_user_identities(connection)
             self._initialize_password_reset_tokens(connection)
             self._initialize_app_metrics(connection)
             self._initialize_user_resume_profiles(connection)
             self._migrate_saved_searches(connection)
+            self._initialize_saved_search_seen_jobs(connection)
             self._migrate_favorite_jobs(connection)
             self._migrate_job_notifications(connection)
             self._migrate_notification_preferences(connection)
+            self._ensure_indexes(connection)
+            connection.execute("PRAGMA optimize")
             connection.commit()
 
     def _initialize_users(self, connection: sqlite3.Connection) -> None:
@@ -79,6 +87,21 @@ class ProductStoreDatabase:
                 source_name TEXT NOT NULL DEFAULT '',
                 profile_json TEXT NOT NULL DEFAULT '{}',
                 updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+    def _initialize_user_identities(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_identities (
+                provider TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                email TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (provider, subject)
             )
             """
         )
@@ -350,6 +373,74 @@ class ProductStoreDatabase:
             """
         )
 
+    def _initialize_saved_search_seen_jobs(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS saved_search_seen_jobs (
+                search_id INTEGER NOT NULL,
+                job_url TEXT NOT NULL,
+                ordinal INTEGER NOT NULL DEFAULT 0,
+                first_seen_at TEXT NOT NULL DEFAULT '',
+                last_seen_at TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (search_id, job_url),
+                FOREIGN KEY (search_id) REFERENCES saved_searches(id) ON DELETE CASCADE
+            )
+            """
+        )
+        if not self._table_exists(connection, "saved_searches"):
+            return
+        if "known_job_urls" not in self._table_columns(connection, "saved_searches"):
+            return
+        rows = connection.execute(
+            """
+            SELECT id, known_job_urls, last_run_at, updated_at, created_at
+            FROM saved_searches
+            ORDER BY id ASC
+            """
+        ).fetchall()
+        for row in rows:
+            search_id = int(row[0])
+            known_job_urls_payload = str(row[1] or "").strip()
+            existing_count_row = connection.execute(
+                "SELECT COUNT(*) FROM saved_search_seen_jobs WHERE search_id = ?",
+                (search_id,),
+            ).fetchone()
+            existing_count = int(existing_count_row[0]) if existing_count_row else 0
+            if existing_count == 0 and known_job_urls_payload not in ("", "[]"):
+                normalized_job_urls = self._normalize_known_job_urls(known_job_urls_payload)
+                observed_at = (
+                    str(row[2] or "").strip()
+                    or str(row[3] or "").strip()
+                    or str(row[4] or "").strip()
+                    or now_iso()
+                )
+                connection.executemany(
+                    """
+                    INSERT INTO saved_search_seen_jobs (
+                        search_id,
+                        job_url,
+                        ordinal,
+                        first_seen_at,
+                        last_seen_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    [
+                        (
+                            search_id,
+                            job_url,
+                            ordinal,
+                            observed_at,
+                            observed_at,
+                        )
+                        for ordinal, job_url in enumerate(normalized_job_urls, start=1)
+                    ],
+                )
+            if known_job_urls_payload not in ("", "[]"):
+                connection.execute(
+                    "UPDATE saved_searches SET known_job_urls = '[]' WHERE id = ?",
+                    (search_id,),
+                )
+
     def _create_favorite_jobs_table(self, connection: sqlite3.Connection) -> None:
         connection.execute(
             """
@@ -438,6 +529,45 @@ class ProductStoreDatabase:
             (user_id, user_id),
         )
 
+    def _ensure_indexes(self, connection: sqlite3.Connection) -> None:
+        """補齊產品狀態資料表在查詢成長後需要的二級索引。"""
+        statements = (
+            """
+            CREATE INDEX IF NOT EXISTS idx_saved_searches_user_signature
+            ON saved_searches(user_id, signature)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_saved_searches_user_updated_at
+            ON saved_searches(user_id, updated_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_saved_search_seen_jobs_search_ordinal
+            ON saved_search_seen_jobs(search_id, ordinal)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_favorite_jobs_user_saved_search
+            ON favorite_jobs(user_id, saved_search_id)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_favorite_jobs_user_application_status
+            ON favorite_jobs(user_id, application_status)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_job_notifications_user_read_created
+            ON job_notifications(user_id, is_read, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_user_identities_user_provider
+            ON user_identities(user_id, provider)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_user_identities_email
+            ON user_identities(email)
+            """,
+        )
+        for statement in statements:
+            connection.execute(statement)
+
     def _table_exists(self, connection: sqlite3.Connection, table_name: str) -> bool:
         row = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
@@ -450,3 +580,18 @@ class ProductStoreDatabase:
             str(row[1])
             for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()
         }
+
+    def _normalize_known_job_urls(self, payload: str) -> list[str]:
+        try:
+            decoded = json.loads(payload or "[]")
+        except json.JSONDecodeError:
+            return []
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for raw_url in decoded:
+            job_url = str(raw_url or "").strip()
+            if not job_url or job_url in seen:
+                continue
+            seen.add(job_url)
+            normalized.append(job_url)
+        return normalized[-5_000:]

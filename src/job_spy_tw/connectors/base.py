@@ -1,9 +1,11 @@
+"""Connector implementation for base job sources."""
+
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 from abc import ABC, abstractmethod
-from typing import Iterable
+from typing import Iterable, Sequence
 from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup, Tag
@@ -33,15 +35,53 @@ class BaseConnector(ABC):
         self.settings = settings
         self.fetcher = fetcher
         self.force_refresh = False
+        self.last_errors: list[str] = []
 
-    def search(self, queries: Iterable[str]) -> list[JobListing]:
+    def search(
+        self,
+        queries: Iterable[str],
+        *,
+        pages: Sequence[int] | None = None,
+    ) -> list[JobListing]:
+        self.last_errors = []
         results: list[JobListing] = []
-        for query in queries:
-            for page in range(1, self.settings.max_pages_per_source + 1):
-                html = self.fetch_search_page(query=query, page=page)
-                parsed = self.parse_search_page(html=html, query=query)
-                results.extend(parsed)
+        target_pages = [
+            int(page)
+            for page in (pages or range(1, self.settings.max_pages_per_source + 1))
+            if int(page) >= 1
+        ]
+        tasks = [
+            (str(query), page)
+            for query in queries
+            for page in target_pages
+        ]
+        if not tasks:
+            return []
+        max_workers = max(1, min(self.search_max_workers(), len(tasks)))
+        if max_workers <= 1:
+            for query, page in tasks:
+                try:
+                    results.extend(self._search_task(query=query, page=page))
+                except Exception as exc:  # noqa: BLE001
+                    self.last_errors.append(f"{self.source} search {query} p{page}: {exc}")
+            return self._dedupe(results)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_map = {
+                executor.submit(self._search_task, query, page): (query, page)
+                for query, page in tasks
+            }
+            for future in as_completed(future_map):
+                query, page = future_map[future]
+                try:
+                    results.extend(future.result())
+                except Exception as exc:  # noqa: BLE001
+                    self.last_errors.append(f"{self.source} search {query} p{page}: {exc}")
         return self._dedupe(results)
+
+    def _search_task(self, query: str, page: int) -> list[JobListing]:
+        html = self.fetch_search_page(query=query, page=page)
+        return self.parse_search_page(html=html, query=query)
 
     def fetch_search_page(self, query: str, page: int) -> str:
         url = self.search_url_template.format(
@@ -51,7 +91,12 @@ class BaseConnector(ABC):
         )
         if self.search_url_suffix:
             url = f"{url}{self.search_url_suffix}"
-        return self.fetcher.fetch(url, force_refresh=self.force_refresh)
+        return self.fetcher.fetch(
+            url,
+            force_refresh=self.force_refresh,
+            delay_seconds=self.search_delay_seconds(),
+            cache_ttl_seconds=self.search_cache_ttl_seconds(),
+        )
 
     def parse_search_page(self, html: str, query: str) -> list[JobListing]:
         soup = BeautifulSoup(html, "lxml")
@@ -100,7 +145,7 @@ class BaseConnector(ABC):
         if self.settings.max_detail_jobs_per_source > 0:
             detail_jobs = jobs[: self.settings.max_detail_jobs_per_source]
 
-        max_workers = max(1, min(self.settings.max_concurrent_requests, len(detail_jobs)))
+        max_workers = max(1, min(self.detail_max_workers(), len(detail_jobs)))
         if max_workers <= 1:
             for job in detail_jobs:
                 self._populate_job_detail(job)
@@ -114,11 +159,39 @@ class BaseConnector(ABC):
 
     def _populate_job_detail(self, job: JobListing) -> None:
         try:
-            html = self.fetcher.fetch(job.url, force_refresh=self.force_refresh)
+            html = self.fetcher.fetch(
+                job.url,
+                force_refresh=self.force_refresh,
+                delay_seconds=self.detail_delay_seconds(),
+                cache_ttl_seconds=self.detail_cache_ttl_seconds(),
+            )
         except Exception as exc:  # noqa: BLE001
             job.metadata["detail_error"] = str(exc)
             return
         self.populate_job_details(job, html)
+        job.metadata["detail_enriched"] = True
+
+    def search_delay_seconds(self) -> float:
+        return max(0.0, float(self.settings.request_delay))
+
+    def detail_delay_seconds(self) -> float:
+        return max(0.0, float(self.settings.request_delay) * 0.35)
+
+    def search_max_workers(self) -> int:
+        """回傳搜尋階段的預設併發數。"""
+        return self.settings.max_concurrent_requests
+
+    def detail_max_workers(self) -> int:
+        """回傳 detail enrich 階段的預設併發數。"""
+        return self.settings.max_concurrent_requests
+
+    def search_cache_ttl_seconds(self) -> float:
+        """回傳搜尋頁快取 TTL。"""
+        return max(0.0, float(self.settings.search_cache_ttl_seconds))
+
+    def detail_cache_ttl_seconds(self) -> float:
+        """回傳 detail 頁快取 TTL。"""
+        return max(0.0, float(self.settings.detail_cache_ttl_seconds))
 
     def populate_job_details(self, job: JobListing, html: str) -> None:
         detail_text = self.extract_detail_text(html)

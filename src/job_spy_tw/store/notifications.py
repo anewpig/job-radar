@@ -1,3 +1,5 @@
+"""Store-layer helpers for notifications."""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +8,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from ..models import JobNotification, NotificationPreference
+from ..sqlite_utils import connect_sqlite
 from .auth import GUEST_USER_ID
 from .common import generate_line_bind_code, now_iso
 
@@ -17,7 +20,7 @@ class NotificationRepository:
     def get_notification_preferences(
         self, *, user_id: int = GUEST_USER_ID
     ) -> NotificationPreference:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
                 SELECT
@@ -61,7 +64,7 @@ class NotificationRepository:
         *,
         user_id: int = GUEST_USER_ID,
     ) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO notification_preferences (
@@ -110,7 +113,7 @@ class NotificationRepository:
         expires_at = (datetime.now() + timedelta(minutes=ttl_minutes)).isoformat(
             timespec="seconds"
         )
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO notification_preferences (
@@ -148,7 +151,7 @@ class NotificationRepository:
         if not cleaned_user_id:
             return {"ok": False, "message": "找不到可綁定的 LINE userId。"}
 
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             if user_id is None:
                 row = connection.execute(
                     """
@@ -206,7 +209,7 @@ class NotificationRepository:
         return {"ok": True, "message": "LINE 綁定成功。"}
 
     def clear_line_target(self, *, user_id: int = GUEST_USER_ID) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 UPDATE notification_preferences
@@ -226,7 +229,7 @@ class NotificationRepository:
         line_sent: bool,
         delivery_notes: list[str],
     ) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 UPDATE job_notifications
@@ -246,7 +249,7 @@ class NotificationRepository:
     def list_notifications(
         self, limit: int = 20, *, user_id: int = GUEST_USER_ID
     ) -> list[JobNotification]:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             rows = connection.execute(
                 """
                 SELECT
@@ -284,7 +287,7 @@ class NotificationRepository:
         return notifications
 
     def unread_notification_count(self, *, user_id: int = GUEST_USER_ID) -> int:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 "SELECT COUNT(*) FROM job_notifications WHERE user_id = ? AND is_read = 0",
                 (int(user_id),),
@@ -292,7 +295,7 @@ class NotificationRepository:
         return int(row[0]) if row else 0
 
     def mark_all_notifications_read(self, *, user_id: int = GUEST_USER_ID) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 "UPDATE job_notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0",
                 (int(user_id),),

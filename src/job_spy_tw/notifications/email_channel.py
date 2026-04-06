@@ -1,3 +1,5 @@
+"""Notification helpers for email channel."""
+
 from __future__ import annotations
 
 from email.message import EmailMessage

@@ -1,3 +1,5 @@
+"""Notification helpers for service."""
+
 from __future__ import annotations
 
 import json

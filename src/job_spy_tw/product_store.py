@@ -1,3 +1,5 @@
+"""Compatibility wrapper exposing persisted product state operations."""
+
 from __future__ import annotations
 
 """Backward-compatible public facade for product state storage."""
@@ -39,6 +41,9 @@ class ProductStore:
     def get_user_by_email(self, email: str):
         return self.users.get_user_by_email(email)
 
+    def list_users(self, *, include_guest: bool = False):
+        return self.users.list_users(include_guest=include_guest)
+
     def register_user(self, *, email: str, password: str, display_name: str = ""):
         return self.users.register_user(
             email=email,
@@ -48,6 +53,21 @@ class ProductStore:
 
     def authenticate_user(self, email: str, password: str):
         return self.users.authenticate_user(email, password)
+
+    def authenticate_oidc_user(
+        self,
+        *,
+        provider: str,
+        subject: str,
+        email: str,
+        display_name: str = "",
+    ):
+        return self.users.authenticate_oidc_user(
+            provider=provider,
+            subject=subject,
+            email=email,
+            display_name=display_name,
+        )
 
     def issue_password_reset(self, email: str, *, ttl_minutes: int = 15):
         return self.users.issue_password_reset(email, ttl_minutes=ttl_minutes)
@@ -107,6 +127,9 @@ class ProductStore:
 
     def list_saved_searches(self, *, user_id: int = GUEST_USER_ID):
         return self.saved_searches.list_saved_searches(user_id=user_id)
+
+    def list_saved_search_subscribers(self, *, signature: str):
+        return self.saved_searches.list_saved_search_subscribers(signature=signature)
 
     def get_saved_search(self, search_id: int, *, user_id: int = GUEST_USER_ID):
         return self.saved_searches.get_saved_search(search_id, user_id=user_id)

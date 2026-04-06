@@ -1,3 +1,5 @@
+"""Keyword recommendation helpers for search setup inputs."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

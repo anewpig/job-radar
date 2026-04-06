@@ -1,3 +1,5 @@
+"""Notification helpers for line channel."""
+
 from __future__ import annotations
 
 import ssl

@@ -1,3 +1,5 @@
+"""Compatibility wrapper exposing resume analysis APIs."""
+
 from __future__ import annotations
 
 """Backward-compatible public entrypoint for resume analysis."""

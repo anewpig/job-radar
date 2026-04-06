@@ -1,3 +1,5 @@
+"""Tests for user data store behavior."""
+
 from __future__ import annotations
 
 import sqlite3

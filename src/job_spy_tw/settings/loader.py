@@ -1,3 +1,5 @@
+"""Settings helpers for loader."""
+
 from __future__ import annotations
 
 import os
@@ -31,6 +33,7 @@ def load_settings(base_dir: str | Path | None = None) -> Settings:
         ),
         min_relevance_score=float(os.getenv("JOB_SPY_MIN_RELEVANCE_SCORE", "18")),
         location=os.getenv("JOB_SPY_LOCATION", "台灣"),
+        enable_cake=env_bool("JOB_SPY_ENABLE_CAKE", True),
         enable_linkedin=env_bool("JOB_SPY_ENABLE_LINKEDIN", True),
         allow_insecure_ssl_fallback=env_bool(
             "JOB_SPY_ALLOW_INSECURE_SSL_FALLBACK", True
@@ -48,6 +51,53 @@ def load_settings(base_dir: str | Path | None = None) -> Settings:
         assistant_model=os.getenv(
             "JOB_SPY_ASSISTANT_MODEL", default_llm_model
         ).strip(),
+        snapshot_ttl_seconds=int(os.getenv("JOB_SPY_SNAPSHOT_TTL_SECONDS", "1800")),
+        search_cache_ttl_seconds=int(
+            os.getenv("JOB_SPY_SEARCH_CACHE_TTL_SECONDS", "1800")
+        ),
+        detail_cache_ttl_seconds=int(
+            os.getenv("JOB_SPY_DETAIL_CACHE_TTL_SECONDS", "43200")
+        ),
+        cache_max_bytes=int(os.getenv("JOB_SPY_CACHE_MAX_BYTES", "256000000")),
+        cache_max_files=int(os.getenv("JOB_SPY_CACHE_MAX_FILES", "4000")),
+        cache_backend=os.getenv("JOB_SPY_CACHE_BACKEND", "filesystem").strip(),
+        queue_backend=os.getenv("JOB_SPY_QUEUE_BACKEND", "sqlite").strip(),
+        database_backend=os.getenv("JOB_SPY_DATABASE_BACKEND", "sqlite").strip(),
+        crawl_execution_mode=os.getenv("JOB_SPY_CRAWL_EXECUTION_MODE", "inline").strip(),
+        crawl_job_lease_seconds=int(
+            os.getenv("JOB_SPY_CRAWL_JOB_LEASE_SECONDS", "180")
+        ),
+        show_backend_console=env_bool(
+            "JOB_SPY_ENABLE_BACKEND_CONSOLE",
+            True,
+        ),
+        runtime_job_max_retries=int(
+            os.getenv("JOB_SPY_RUNTIME_JOB_MAX_RETRIES", "1")
+        ),
+        runtime_job_retry_backoff_seconds=int(
+            os.getenv("JOB_SPY_RUNTIME_JOB_RETRY_BACKOFF_SECONDS", "90")
+        ),
+        runtime_cleanup_interval_seconds=int(
+            os.getenv("JOB_SPY_RUNTIME_CLEANUP_INTERVAL_SECONDS", "21600")
+        ),
+        runtime_job_retention_days=int(
+            os.getenv("JOB_SPY_RUNTIME_JOB_RETENTION_DAYS", "14")
+        ),
+        runtime_snapshot_retention_days=int(
+            os.getenv("JOB_SPY_RUNTIME_SNAPSHOT_RETENTION_DAYS", "30")
+        ),
+        runtime_partial_snapshot_retention_hours=int(
+            os.getenv("JOB_SPY_RUNTIME_PARTIAL_SNAPSHOT_RETENTION_HOURS", "12")
+        ),
+        runtime_signal_retention_days=int(
+            os.getenv("JOB_SPY_RUNTIME_SIGNAL_RETENTION_DAYS", "14")
+        ),
+        market_history_retention_days=int(
+            os.getenv("JOB_SPY_MARKET_HISTORY_RETENTION_DAYS", "90")
+        ),
+        market_history_max_runs_per_query=int(
+            os.getenv("JOB_SPY_MARKET_HISTORY_MAX_RUNS_PER_QUERY", "100")
+        ),
         smtp_host=os.getenv("JOB_RADAR_SMTP_HOST", "").strip(),
         smtp_port=int(os.getenv("JOB_RADAR_SMTP_PORT", "587")),
         smtp_username=os.getenv("JOB_RADAR_SMTP_USERNAME", "").strip(),

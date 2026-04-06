@@ -1,3 +1,5 @@
+"""Resume-analysis helpers for extractors."""
+
 from __future__ import annotations
 
 import re
@@ -22,12 +24,59 @@ from .text import (
 
 
 class RuleBasedResumeExtractor:
+    SPECIALIZED_ROLE_ALIASES: dict[str, tuple[str, ...]] = {
+        "RAG AI Engineer": (
+            "rag ai engineer",
+            "rag engineer",
+            "retrieval augmented generation",
+            "向量資料庫",
+            "知識庫系統",
+            "檢索優化",
+        ),
+        "LLM Engineer": (
+            "llm engineer",
+            "prompt engineer",
+            "prompt engineering",
+            "ai agent",
+            "agent workflow",
+        ),
+        "Embedded Linux Firmware Engineer": (
+            "embedded linux firmware engineer",
+            "embedded linux firmware",
+            "bootloader",
+            "driver development",
+        ),
+        "韌體工程師": (
+            "韌體工程師",
+            "firmware engineer",
+            "bluetooth firmware",
+            "embedded linux firmware",
+            "rtos",
+            "bring-up",
+            "soc 韌體",
+        ),
+        "Product Manager": (
+            "product manager",
+            "產品經理",
+            "prd",
+            "roadmap",
+        ),
+    }
+    SPECIALIZED_ROLE_PARENTS: dict[str, tuple[str, ...]] = {
+        "RAG AI Engineer": ("AI應用工程師", "AI工程師"),
+        "LLM Engineer": ("AI應用工程師", "AI工程師"),
+        "Embedded Linux Firmware Engineer": ("韌體工程師", "軟體工程師"),
+        "韌體工程師": ("軟體工程師",),
+        "Product Manager": ("PM",),
+    }
+
     def __init__(self, role_targets: list[TargetRole]) -> None:
         self.role_targets = role_targets
         self.job_analyzer = JobAnalyzer(role_targets)
         self.compiled_tasks = self.job_analyzer._compiled_tasks
         self.skill_categories = self._build_skill_category_map()
         self.domain_patterns = self._compile_alias_map(DOMAIN_TAXONOMY)
+        self.specialized_role_patterns = self._compile_alias_map(self.SPECIALIZED_ROLE_ALIASES)
 
     def extract(self, text: str, source_name: str = "") -> ResumeProfile:
         prepared_text = _sanitize_extracted_text(text)
@@ -72,6 +121,7 @@ class RuleBasedResumeExtractor:
 
     def _extract_roles(self, text: str) -> list[str]:
         lowered = text.lower()
+        specialized_roles = self._extract_specialized_roles(text)
         scored_roles: list[tuple[int, str]] = []
         for role in self.role_targets:
             score = 0
@@ -88,18 +138,40 @@ class RuleBasedResumeExtractor:
         if not scored_roles:
             inferred: list[str] = []
             extracted_skills = set(self.job_analyzer.extract_skills(text))
+            inferred.extend(specialized_roles)
             if {"LLM", "RAG", "Prompt Engineering", "AI Agent"} & extracted_skills:
                 inferred.extend(["AI應用工程師", "AI工程師"])
             if {"Product Management", "Project Management", "Roadmap"} & extracted_skills:
                 inferred.append("PM")
             if {"Technical Support", "Customer Communication", "Requirement Analysis"} & extracted_skills:
                 inferred.append("應用工程師")
+            if {"RTOS", "Bluetooth", "Embedded Linux", "C++"} & extracted_skills:
+                inferred.extend(["韌體工程師", "軟體工程師"])
             if not inferred and {"Python", "JavaScript", "TypeScript", "Java"} & extracted_skills:
                 inferred.append("軟體工程師")
             return unique_preserving_order(inferred or [self.role_targets[0].name])[:3]
 
         scored_roles.sort(key=lambda item: (-item[0], item[1]))
-        return [role for _, role in scored_roles[:4]]
+        ranked_roles = [role for _, role in scored_roles[:4]]
+        return unique_preserving_order(
+            specialized_roles
+            + self._expand_parent_roles(specialized_roles)
+            + ranked_roles
+        )[:4]
+
+    def _extract_specialized_roles(self, text: str) -> list[str]:
+        lowered = f" {normalize_text(text).lower()} "
+        matched: list[str] = []
+        for role, patterns in self.specialized_role_patterns.items():
+            if any(pattern.search(lowered) for pattern in patterns):
+                matched.append(role)
+        return unique_preserving_order(matched)
+
+    def _expand_parent_roles(self, roles: Iterable[str]) -> list[str]:
+        expanded: list[str] = []
+        for role in roles:
+            expanded.extend(self.SPECIALIZED_ROLE_PARENTS.get(role, ()))
+        return unique_preserving_order(expanded)
 
     def _split_skills(self, skills: list[str]) -> tuple[list[str], list[str]]:
         core_skills: list[str] = []

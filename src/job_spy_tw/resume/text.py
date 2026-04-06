@@ -1,3 +1,5 @@
+"""Resume-analysis helpers for text."""
+
 from __future__ import annotations
 
 from io import BytesIO

@@ -15,7 +15,7 @@ COPY docs /app/docs
 COPY .streamlit /app/.streamlit
 COPY scripts /app/scripts
 
-RUN chmod +x /app/scripts/start_streamlit.sh
+RUN chmod +x /app/scripts/*.sh
 RUN pip install --upgrade pip && pip install .
 
 EXPOSE 8501

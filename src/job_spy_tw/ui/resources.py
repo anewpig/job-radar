@@ -1,3 +1,5 @@
+"""提供 UI 層會使用到的 service 與 store 工廠函式。"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,14 +16,17 @@ from ..user_data_store import UserDataStore
 
 @st.cache_resource
 def get_keyword_recommender() -> RoleKeywordRecommender:
+    """回傳搜尋設定會使用到的關鍵字推薦器。"""
     return RoleKeywordRecommender()
 
 
 def get_user_data_store(db_path: str) -> UserDataStore:
+    """依指定 SQLite 路徑建立新的使用者資料儲存物件。"""
     return UserDataStore(Path(db_path))
 
 
 def get_product_store(db_path: str) -> ProductStore:
+    """依指定 SQLite 路徑建立新的產品資料儲存物件。"""
     return ProductStore(Path(db_path))
 
 
@@ -43,6 +48,7 @@ def get_notification_service(
     line_webhook_host: str,
     line_webhook_port: int,
 ) -> NotificationService:
+    """建立帶有執行期憑證覆寫的通知服務快取實例。"""
     settings = load_settings(Path(root))
     settings.smtp_host = smtp_host
     settings.smtp_port = smtp_port
@@ -69,6 +75,7 @@ def get_rag_assistant(
     base_url: str,
     cache_dir: str,
 ) -> JobMarketRAGAssistant:
+    """回傳 AI 助理頁面會使用的快取 RAG 服務。"""
     return JobMarketRAGAssistant(
         api_key=api_key,
         answer_model=answer_model,

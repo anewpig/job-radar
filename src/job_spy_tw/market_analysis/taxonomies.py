@@ -1,3 +1,5 @@
+"""Market-analysis helpers for taxonomies."""
+
 from __future__ import annotations
 
 TASK_TAXONOMY: dict[str, tuple[str, ...]] = {
@@ -153,12 +155,27 @@ SKILL_TAXONOMY: dict[str, dict[str, tuple[str, ...]]] = {
         "NumPy": ("numpy",),
         "Spark": ("spark", "pyspark"),
         "Airflow": ("airflow",),
+        "MATLAB": ("matlab", "matlab 。"),
+        "LabVIEW": ("labview",),
+        "Excel": ("excel", "microsoft excel"),
+        "Word": ("word", "microsoft word"),
+        "PowerPoint": ("powerpoint", "power point", "microsoft powerpoint"),
+        "Outlook": ("outlook", "microsoft outlook"),
+    },
+    "Embedded / Firmware": {
+        "RTOS": ("rtos", "free rtos", "freertos"),
+        "ARM": ("arm", "arm cortex", "cortex-m", "cortex m"),
+        "Bluetooth": ("bluetooth", "ble", "藍牙"),
+        "Embedded Linux": ("embedded linux",),
+        "Bootloader": ("bootloader",),
+        "Driver Development": ("device driver", "driver development", "驅動程式"),
     },
     "Programming": {
         "Python": ("python",),
         "JavaScript": ("javascript",),
         "TypeScript": ("typescript",),
         "Java": ("java",),
+        "C#": ("c#", "c-sharp", "c sharp"),
         "C++": ("c++", "cpp"),
         "Go": ("golang", "go language"),
         "SQL": ("sql", "mysql", "postgresql"),
@@ -166,11 +183,11 @@ SKILL_TAXONOMY: dict[str, dict[str, tuple[str, ...]]] = {
     },
     "Backend / Data": {
         "API Design": ("rest api", "api design", "api", "接口設計"),
-        "Database": ("database", "資料庫", "mysql", "postgresql"),
+        "Database": ("database", "mysql", "postgresql", "sql database", "relational database"),
         "ETL": ("etl", "data pipeline", "資料管線"),
         "Data Analysis": ("data analysis", "資料分析", "analytics"),
         "System Design": ("system design", "架構設計", "microservices"),
-        "Vector Database": ("vector database", "向量資料庫"),
+        "向量資料庫": ("vector database", "vector db", "向量資料庫"),
     },
     "Cloud / DevOps": {
         "AWS": ("aws",),
@@ -186,6 +203,8 @@ SKILL_TAXONOMY: dict[str, dict[str, tuple[str, ...]]] = {
         "Agile / Scrum": ("agile", "scrum"),
         "Project Management": ("project management", "專案管理"),
         "Product Management": ("product management", "產品管理"),
+        "PRD": ("prd", "product requirement document"),
+        "MVP": ("mvp", "minimum viable product"),
         "Roadmap": ("roadmap", "產品路線圖"),
         "Stakeholder Management": ("stakeholder", "跨部門溝通", "利害關係人"),
         "Jira": ("jira",),
@@ -196,6 +215,23 @@ SKILL_TAXONOMY: dict[str, dict[str, tuple[str, ...]]] = {
         "Technical Support": ("technical support", "技術支援"),
         "Customer Communication": ("customer", "client", "客戶溝通"),
         "Requirement Analysis": ("requirement", "需求分析"),
+    },
+    "Automation / Industrial": {
+        "PLC": ("plc",),
+        "IIoT": ("iiot", "industrial iot", "工業物聯網"),
+        "OPC-UA": ("opc-ua", "opc ua"),
+        "Profinet": ("profinet",),
+        "Profibus": ("profibus",),
+        "Modbus TCP/UDP": ("modbus tcp/udp", "modbus tcp", "modbus udp", "modbus"),
+        "自動化工程師證照": ("自動化工程師證照",),
+        "乙級機電整合技術士": ("乙級機電整合技術士",),
+        "丙級機電整合技術士": ("丙級機電整合技術士",),
+        "具備相關證照者佳": ("具備相關證照者佳",),
+        "系統整合分析": ("系統整合分析",),
+        "軟體工程系統開發": ("軟體工程系統開發",),
+        "軟體整合測試": ("軟體整合測試",),
+        "軟體程式設計": ("軟體程式設計",),
+        "設計機台設備自動化": ("設計機台設備自動化",),
     },
     "Soft Skills": {
         "Communication": ("communication", "溝通"),

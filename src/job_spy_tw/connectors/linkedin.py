@@ -1,6 +1,11 @@
+"""Connector implementation for linkedin job sources."""
+
 from __future__ import annotations
 
+import hashlib
 import re
+import time
+from urllib.error import HTTPError
 from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup, Tag
@@ -13,24 +18,89 @@ from .base import BaseConnector
 
 class LinkedInConnector(BaseConnector):
     source = "LinkedIn"
-    search_url_template = "https://tw.linkedin.com/jobs/search?keywords={query}&location={location}"
+    search_url_template = (
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+        "?keywords={query}&location={location}"
+    )
     job_href_pattern = re.compile(r"/jobs/view/\d+")
+    retryable_status_codes = {403, 429, 999}
     detail_keywords = ("About the job", "Description", "Responsibilities", "Qualifications")
 
     @property
     def base_url(self) -> str:
         return "https://www.linkedin.com"
 
+    def search_delay_seconds(self) -> float:
+        """LinkedIn 搜尋頁使用更保守的節流，降低 guest search 被限流的機率。"""
+        return max(0.55, float(self.settings.request_delay) * 1.25)
+
+    def detail_delay_seconds(self) -> float:
+        """LinkedIn detail enrich 比搜尋頁更積極，但仍保守。"""
+        return max(0.12, float(self.settings.request_delay) * 0.35)
+
+    def search_max_workers(self) -> int:
+        """LinkedIn 搜尋頁僅使用單工搜尋，降低多 query 連續觸發 request denied。"""
+        return min(1, self.settings.max_concurrent_requests)
+
+    def detail_max_workers(self) -> int:
+        """LinkedIn detail enrich 預設使用較低併發。"""
+        return min(2, self.settings.max_concurrent_requests)
+
     def fetch_search_page(self, query: str, page: int) -> str:
-        start = max(page - 1, 0) * 25
-        location = self.settings.location
-        if location in {"台灣", "臺灣"}:
-            location = "Taiwan"
-        url = (
-            f"https://tw.linkedin.com/jobs/search?keywords={quote_plus(query)}"
-            f"&location={quote_plus(location)}&start={start}"
-        )
-        return self.fetcher.fetch(url, force_refresh=self.force_refresh)
+        """以較接近瀏覽器的 request context 抓取 LinkedIn 搜尋頁，並在被擋時自動退避重試。"""
+        candidate_urls = self._build_search_urls(query=query, page=page)
+        cache_lookup_urls = self._build_cache_lookup_urls(query=query, page=page)
+        search_referer = self._build_canonical_search_url(query=query, page=page)
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Cache-Control": "no-cache",
+            "Origin": "https://www.linkedin.com",
+            "Pragma": "no-cache",
+            "Referer": search_referer,
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+        }
+        base_delay = self.search_delay_seconds()
+        retry_delays = [
+            base_delay,
+            max(base_delay * 2, 1.5),
+            max(base_delay * 4, 3.0),
+            max(base_delay * 6, 5.0),
+        ]
+        last_error: Exception | None = None
+
+        for url in candidate_urls:
+            for attempt_index, delay_seconds in enumerate(retry_delays, start=1):
+                try:
+                    return self.fetcher.fetch(
+                        url,
+                        force_refresh=self.force_refresh,
+                        headers=headers,
+                        delay_seconds=delay_seconds,
+                        cache_ttl_seconds=self.search_cache_ttl_seconds(),
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    if not self._is_retryable_search_error(exc):
+                        raise
+                    if attempt_index >= len(retry_delays):
+                        break
+                    time.sleep(delay_seconds)
+
+        cached_html = self._load_cached_search_page(cache_lookup_urls)
+        if cached_html:
+            return cached_html
+        if last_error is not None and self._is_retryable_search_error(last_error):
+            self.last_errors.append(
+                f"{self.source} search {query} p{page}: LinkedIn guest search 暫時拒絕此頁，已略過。"
+            )
+            return ""
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("LinkedIn search failed without raising a concrete exception")
 
     def parse_search_page(self, html: str, query: str) -> list[JobListing]:
         soup = BeautifulSoup(html, "lxml")
@@ -174,3 +244,74 @@ class LinkedInConnector(BaseConnector):
         if not buckets["work"]:
             buckets["work"] = buckets["summary"]
         return buckets
+
+    def _is_retryable_search_error(self, exc: Exception) -> bool:
+        """判斷 LinkedIn 搜尋錯誤是否值得以更慢的節奏重試。"""
+        status_code = getattr(exc, "code", None)
+        if status_code in self.retryable_status_codes:
+            return True
+        if isinstance(exc, HTTPError) and exc.code in self.retryable_status_codes:
+            return True
+        message = str(exc)
+        return any(
+            code in message
+            for code in (
+                " 403",
+                " 429",
+                " 999",
+                "Error 403",
+                "Error 429",
+                "Error 999",
+                "Request denied",
+            )
+        )
+
+    def _build_search_urls(self, query: str, page: int) -> list[str]:
+        start = max(page - 1, 0) * 25
+        encoded_query = quote_plus(query)
+        encoded_location = quote_plus(self._search_location())
+        return [
+            (
+                "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+                f"?keywords={encoded_query}&location={encoded_location}&start={start}"
+            ),
+            (
+                "https://www.linkedin.com/jobs/search"
+                f"?keywords={encoded_query}&location={encoded_location}&start={start}"
+            ),
+        ]
+
+    def _build_cache_lookup_urls(self, query: str, page: int) -> list[str]:
+        start = max(page - 1, 0) * 25
+        encoded_query = quote_plus(query)
+        encoded_location = quote_plus(self._search_location())
+        cache_urls = list(self._build_search_urls(query=query, page=page))
+        cache_urls.append(
+            "https://tw.linkedin.com/jobs/search"
+            f"?keywords={encoded_query}&location={encoded_location}&start={start}"
+        )
+        return cache_urls
+
+    def _build_canonical_search_url(self, query: str, page: int) -> str:
+        encoded_query = quote_plus(query)
+        encoded_location = quote_plus(self._search_location())
+        start = max(page - 1, 0) * 25
+        return (
+            "https://www.linkedin.com/jobs/search"
+            f"?keywords={encoded_query}&location={encoded_location}&start={start}"
+        )
+
+    def _search_location(self) -> str:
+        location = self.settings.location
+        if location in {"台灣", "臺灣"}:
+            return "Taiwan"
+        return location
+
+    def _load_cached_search_page(self, urls: str | list[str]) -> str:
+        """在 force refresh 被 LinkedIn 阻擋時，回退到既有快取避免整個來源空白。"""
+        candidate_urls = [urls] if isinstance(urls, str) else list(urls)
+        for url in candidate_urls:
+            cache_path = self.fetcher.cache_dir / f"{hashlib.sha256(url.encode()).hexdigest()}.html"
+            if cache_path.exists():
+                return cache_path.read_text(encoding="utf-8")
+        return ""

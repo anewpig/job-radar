@@ -1,3 +1,5 @@
+"""Persistence helpers for stored user submissions and resume data."""
+
 from __future__ import annotations
 
 import json
@@ -8,6 +10,7 @@ from pathlib import Path
 
 from .models import ResumeProfile
 from .resume_analysis import mask_personal_items, mask_personal_text
+from .sqlite_utils import connect_sqlite
 from .utils import ensure_directory
 
 
@@ -39,7 +42,7 @@ class UserDataStore:
             "llm_model": profile.llm_model,
             "notes": mask_personal_items(profile.notes),
         }
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO user_submissions (
@@ -82,13 +85,13 @@ class UserDataStore:
             return int(cursor.lastrowid)
 
     def count_submissions(self) -> int:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             cursor = connection.execute("SELECT COUNT(*) FROM user_submissions")
             row = cursor.fetchone()
         return int(row[0]) if row else 0
 
     def _initialize(self) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS user_submissions (

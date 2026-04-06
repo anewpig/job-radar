@@ -1,3 +1,5 @@
+"""Store-layer helpers for common."""
+
 from __future__ import annotations
 
 import json
@@ -62,7 +64,11 @@ def build_signature(
     return json.dumps(payload, ensure_ascii=False, sort_keys=True)
 
 
-def row_to_saved_search(row: Any) -> SavedSearch:
+def row_to_saved_search(
+    row: Any,
+    *,
+    known_job_urls: list[str] | None = None,
+) -> SavedSearch:
     return SavedSearch(
         id=int(row[0]),
         name=str(row[1]),
@@ -70,7 +76,11 @@ def row_to_saved_search(row: Any) -> SavedSearch:
         custom_queries_text=str(row[3]),
         crawl_preset_label=str(row[4]),
         signature=str(row[5]),
-        known_job_urls=json.loads(row[6] or "[]"),
+        known_job_urls=(
+            list(known_job_urls)
+            if known_job_urls is not None
+            else json.loads(row[6] or "[]")
+        ),
         last_run_at=str(row[7]),
         last_job_count=int(row[8]),
         last_new_job_count=int(row[9]),

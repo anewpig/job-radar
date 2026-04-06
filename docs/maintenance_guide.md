@@ -2,14 +2,36 @@
 
 這份文件是給後續維修與擴充功能時快速定位用的。
 
+延伸文件：
+
+- [系統架構](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/architecture.md)
+- [後端營運 Runbook](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/backend_runbook.md)
+- [全面評估報告](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/review_report.md)
+
 ## 模組分層
 
 ### 1. 入口層
 
-- `app.py`
+- `app.py` 
   - Streamlit 主入口
   - 只保留頁面流程、session state、頁籤切換與各服務串接
   - 不再承擔大量 UI helper 或資料轉換邏輯
+
+  #筆記 app.py
+  - 把畫面跑起來
+  - 控制頁面流程
+  - 管理目前使用者的狀態
+  - 決定現在要顯示哪個頁面或哪個功能區塊
+  - 串接後面的服務模組
+  - 負責把 UI 和後端功能接起來
+
+  #Streamlit 主入口
+  - 設定頁面標題、icon、layout
+  - 初始化 session state
+  - 建立 sidebar 或主畫面導航
+  - 決定使用者目前在哪個頁面
+  - 呼叫其他模組來顯示內容
+
 
 ### 2. UI 層
 
@@ -18,6 +40,13 @@
   - 通知偏好套用
   - 主頁籤切換
   - 快照 DataFrame 快取
+
+  #筆記
+  - 畫面目前切到哪裡
+  - 使用者剛剛按了什麼
+  - 哪些資料已經載入過
+  - 哪些快取資料先留著不要重算
+
 - `src/job_spy_tw/ui/resources.py`
   - Streamlit resource cache
   - `ProductStore` / `UserDataStore` / `NotificationService` / `RAG assistant` factory
@@ -95,8 +124,18 @@
   - 相容入口
 - `src/job_spy_tw/assistant/models.py`
   - RAG 知識片段資料模型
+  #筆記
+  - 這段資料的 id 是什麼
+  - 來源是哪裡
+  - 標籤是什麼
+  - 文字內容是什麼
+  - 原始網址是什麼
+  - 還有哪些額外資訊
+
 - `src/job_spy_tw/assistant/chunks.py`
   - 將職缺、技能統計、工作內容統計、履歷轉成知識片段
+
+  
 - `src/job_spy_tw/assistant/retrieval.py`
   - embedding 檢索與快取
 - `src/job_spy_tw/assistant/prompts.py`

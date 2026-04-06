@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>職缺雷達｜Database 完整教學</title>
+    <style>
+      :root {
+        --bg: #f6f1e8;
+        --bg-soft: #fbf8f2;
+        --surface: rgba(255, 252, 247, 0.9);
+        --surface-strong: rgba(255, 255, 255, 0.97);
+        --ink: #17343b;
+        --ink-soft: rgba(23, 52, 59, 0.74);
+        --line: rgba(23, 52, 59, 0.12);
+        --line-strong: rgba(23, 52, 59, 0.18);
+        --teal: #1f5f65;
+        --teal-soft: #d8eaeb;
+        --amber: #b77a3f;
+        --amber-soft: #f3dec7;
+        --green: #2f6c53;
+        --green-soft: #d8eadf;
+        --rose: #b34f48;
+        --rose-soft: #f3d5d1;
+        --slate: #6b7b82;
+        --shadow-lg: 0 26px 58px rgba(58, 45, 27, 0.13);
+        --shadow-md: 0 16px 30px rgba(58, 45, 27, 0.08);
+        --radius-2xl: 34px;
+        --radius-xl: 26px;
+        --radius-lg: 20px;
+        --radius-md: 16px;
+        --max-width: 1240px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 0%, rgba(216, 234, 235, 0.52), transparent 24%),
+          radial-gradient(circle at 88% 6%, rgba(243, 222, 199, 0.48), transparent 20%),
+          linear-gradient(180deg, #fcf9f2 0%, #f4ecdf 48%, #efe4d3 100%);
+        font-family: "Avenir Next", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+        line-height: 1.7;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      code {
+        font-family: "SFMono-Regular", "Menlo", "Monaco", monospace;
+        font-size: 0.95em;
+        background: rgba(23, 52, 59, 0.06);
+        border-radius: 8px;
+        padding: 2px 6px;
+      }
+
+      .shell {
+        width: min(calc(100% - 32px), var(--max-width));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        backdrop-filter: blur(18px);
+        background: rgba(250, 245, 237, 0.86);
+        border-bottom: 1px solid rgba(23, 52, 59, 0.08);
+      }
+
+      .topbar-inner {
+        width: min(calc(100% - 32px), var(--max-width));
+        margin: 0 auto;
+        padding: 14px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 800;
+        background: linear-gradient(135deg, #1b5960 0%, #2f7f86 100%);
+        box-shadow: 0 18px 34px rgba(31, 95, 101, 0.24);
+      }
+
+      .brand small,
+      .eyebrow,
+      .section-eyebrow,
+      .pill,
+      .stat-label,
+      .mini-label,
+      .tiny-label {
+        letter-spacing: 0.05em;
+      }
+
+      .brand small {
+        display: block;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 16px;
+      }
+
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .nav a {
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        color: var(--ink-soft);
+        border: 1px solid rgba(23, 52, 59, 0.08);
+        background: rgba(255, 255, 255, 0.62);
+      }
+
+      .hero {
+        padding: 46px 0 30px;
+      }
+
+      .hero-panel {
+        position: relative;
+        overflow: hidden;
+        border-radius: 40px;
+        border: 1px solid var(--line);
+        padding: 40px;
+        background:
+          radial-gradient(circle at top right, rgba(216, 234, 235, 0.42), transparent 30%),
+          radial-gradient(circle at 18% 80%, rgba(243, 222, 199, 0.3), transparent 24%),
+          linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(247, 241, 232, 0.95));
+        box-shadow: var(--shadow-lg);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(31, 95, 101, 0.1);
+        border: 1px solid rgba(31, 95, 101, 0.13);
+      }
+
+      h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(34px, 6vw, 62px);
+        line-height: 1.04;
+      }
+
+      .hero-lead {
+        max-width: 860px;
+        margin: 0;
+        font-size: 18px;
+        color: var(--ink-soft);
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        border: 1px solid transparent;
+      }
+
+      .pill.teal {
+        color: var(--teal);
+        background: rgba(31, 95, 101, 0.1);
+        border-color: rgba(31, 95, 101, 0.13);
+      }
+
+      .pill.green {
+        color: var(--green);
+        background: rgba(47, 108, 83, 0.1);
+        border-color: rgba(47, 108, 83, 0.13);
+      }
+
+      .pill.amber {
+        color: var(--amber);
+        background: rgba(183, 122, 63, 0.12);
+        border-color: rgba(183, 122, 63, 0.15);
+      }
+
+      .pill.rose {
+        color: var(--rose);
+        background: rgba(179, 79, 72, 0.1);
+        border-color: rgba(179, 79, 72, 0.13);
+      }
+
+      .hero-grid {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+      }
+
+      .hero-card {
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.7);
+        padding: 24px;
+      }
+
+      .hero-card h2 {
+        margin: 0 0 10px;
+        font-size: 24px;
+      }
+
+      .hero-card p {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      .mini-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .mini-item {
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(23, 52, 59, 0.08);
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .mini-label {
+        display: block;
+        font-size: 11px;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+      }
+
+      .mini-value {
+        display: block;
+        margin-top: 4px;
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      section {
+        padding: 30px 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+
+      .section-head h2 {
+        margin: 8px 0 0;
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.08;
+      }
+
+      .section-head p {
+        margin: 0;
+        max-width: 680px;
+        color: var(--ink-soft);
+      }
+
+      .section-eyebrow {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--teal);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .stat-card {
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--line);
+        background: var(--surface-strong);
+        box-shadow: var(--shadow-md);
+        padding: 22px;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+      }
+
+      .stat-value {
+        margin-top: 8px;
+        font-size: clamp(28px, 4vw, 42px);
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .stat-note {
+        margin-top: 10px;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+
+      .panel-grid-2,
+      .panel-grid-3,
+      .concept-grid,
+      .layer-grid,
+      .table-grid,
+      .qa-grid,
+      .guard-grid,
+      .mistake-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .panel-grid-3,
+      .concept-grid,
+      .layer-grid,
+      .guard-grid,
+      .mistake-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .table-grid,
+      .qa-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .panel,
+      .concept-card,
+      .layer-card,
+      .table-card,
+      .qa-card,
+      .guard-card,
+      .mistake-card {
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--line);
+        background: var(--surface);
+        box-shadow: var(--shadow-md);
+        padding: 24px;
+      }
+
+      .panel h3,
+      .concept-card h3,
+      .layer-card h3,
+      .table-card h3,
+      .qa-card h3,
+      .guard-card h3,
+      .mistake-card h3 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+
+      .panel p,
+      .concept-card p,
+      .layer-card p,
+      .table-card p,
+      .qa-card p,
+      .guard-card p,
+      .mistake-card p,
+      .panel li,
+      .concept-card li,
+      .layer-card li,
+      .table-card li,
+      .qa-card li,
+      .guard-card li,
+      .mistake-card li {
+        color: var(--ink-soft);
+      }
+
+      .panel ul,
+      .concept-card ul,
+      .layer-card ul,
+      .table-card ul,
+      .qa-card ul,
+      .guard-card ul,
+      .mistake-card ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .callout {
+        border-radius: 22px;
+        padding: 18px 20px;
+        border: 1px solid transparent;
+      }
+
+      .callout + .callout {
+        margin-top: 14px;
+      }
+
+      .callout h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .callout p,
+      .callout li {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      .callout ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .callout.teal {
+        background: rgba(31, 95, 101, 0.09);
+        border-color: rgba(31, 95, 101, 0.12);
+      }
+
+      .callout.amber {
+        background: rgba(183, 122, 63, 0.1);
+        border-color: rgba(183, 122, 63, 0.14);
+      }
+
+      .callout.green {
+        background: rgba(47, 108, 83, 0.1);
+        border-color: rgba(47, 108, 83, 0.14);
+      }
+
+      .callout.rose {
+        background: rgba(179, 79, 72, 0.1);
+        border-color: rgba(179, 79, 72, 0.14);
+      }
+
+      .flow {
+        display: grid;
+        gap: 16px;
+      }
+
+      .flow-step {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 16px;
+        padding: 20px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .step-no {
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #1f5f65 0%, #2f7e85 100%);
+        box-shadow: 0 14px 26px rgba(31, 95, 101, 0.2);
+      }
+
+      .flow-step h3 {
+        margin: 0 0 6px;
+        font-size: 22px;
+      }
+
+      .flow-step p {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      .flow-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .flow-tags span {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--teal);
+        background: rgba(31, 95, 101, 0.08);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table.status-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .status-table th,
+      .status-table td {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(23, 52, 59, 0.08);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .status-table th {
+        width: 34%;
+        font-size: 13px;
+        color: var(--ink-soft);
+        font-weight: 700;
+      }
+
+      .status-table td {
+        font-size: 15px;
+      }
+
+      pre.example {
+        margin: 14px 0 0;
+        padding: 16px;
+        border-radius: 18px;
+        overflow: auto;
+        background: #16373c;
+        color: #e9f5f5;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .footer {
+        padding: 28px 0 50px;
+      }
+
+      .footer-card {
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.78);
+        padding: 24px;
+        color: var(--ink-soft);
+      }
+
+      @media (max-width: 1100px) {
+        .hero-grid,
+        .panel-grid-2,
+        .table-grid,
+        .qa-grid,
+        .stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .panel-grid-3,
+        .concept-grid,
+        .layer-grid,
+        .guard-grid,
+        .mistake-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .topbar-inner,
+        .section-head {
+          display: block;
+        }
+
+        .nav {
+          margin-top: 12px;
+          justify-content: flex-start;
+        }
+
+        .hero-panel,
+        .hero-card,
+        .panel,
+        .concept-card,
+        .layer-card,
+        .table-card,
+        .qa-card,
+        .guard-card,
+        .mistake-card,
+        .stat-card {
+          padding: 20px;
+        }
+
+        .hero-grid,
+        .panel-grid-2,
+        .panel-grid-3,
+        .concept-grid,
+        .layer-grid,
+        .table-grid,
+        .qa-grid,
+        .guard-grid,
+        .mistake-grid,
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .flow-step {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">DB</div>
+          <div>
+            <small>Job Spy TW</small>
+            <strong>Database 完整教學</strong>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="#start">先看這裡</a>
+          <a href="#basics">DB 基礎</a>
+          <a href="#project">專案對照</a>
+          <a href="#flow">資料流程</a>
+          <a href="#tables">資料表解讀</a>
+          <a href="#status">目前狀況</a>
+          <a href="#maintain">維護原則</a>
+          <a href="#faq">常見問題</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero" id="start">
+        <div class="hero-panel">
+          <div class="eyebrow">Beginner Tutorial • 2026-04-06</div>
+          <h1>如果你接近完全不懂 Database，這一頁就是從 0 到理解你現在系統的教學。</h1>
+          <p class="hero-lead">
+            你不用先懂 SQL，也不用先懂後端。你只要先理解一件事：Database 的目的，是把「之後還要再用的資料」整理成可查詢、可更新、可維護的結構。這個專案目前已經有一套夠用的資料系統，但它不是只有一個 DB 檔，而是「SQLite + JSON snapshot + cache + runtime 狀態檔」一起合作。
+          </p>
+
+          <div class="pill-row">
+            <span class="pill teal">先學概念，再對照專案</span>
+            <span class="pill green">用這個專案當教材</span>
+            <span class="pill amber">解釋目前真的在跑的系統</span>
+            <span class="pill rose">不走抽象理論路線</span>
+          </div>
+
+          <div class="hero-grid">
+            <article class="hero-card">
+              <h2>你看完這頁後應該會懂什麼</h2>
+              <div class="mini-list">
+                <div class="mini-item">
+                  <span class="mini-label">1. DB 是什麼</span>
+                  <span class="mini-value">知道 table、row、column、primary key、index、transaction 是什麼。</span>
+                </div>
+                <div class="mini-item">
+                  <span class="mini-label">2. 為什麼不是所有資料都丟進 DB</span>
+                  <span class="mini-value">知道什麼適合放 database，什麼適合放 JSON 或 cache。</span>
+                </div>
+                <div class="mini-item">
+                  <span class="mini-label">3. 你這個專案怎麼存資料</span>
+                  <span class="mini-value">看懂 `product_state.sqlite3`、`query_runtime.sqlite3`、`jobs_latest.json` 各自的工作。</span>
+                </div>
+                <div class="mini-item">
+                  <span class="mini-label">4. 目前需不需要再擴</span>
+                  <span class="mini-value">知道現在為什麼夠用，和之後什麼情況才值得升級。</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="hero-card">
+              <h2>先記住這個總結</h2>
+              <p>
+                Database 不是越多越好，也不是越複雜越好。好的 database 設計，是讓資料放在最適合的地方，未來查得到、改得動、不容易亂掉。你現在的系統已經不是一個混亂原型了，而是有基本分層、基本護欄、也有成長空間的資料系統。
+              </p>
+              <div class="mini-list">
+                <div class="mini-item">
+                  <span class="mini-label">一句話定位</span>
+                  <span class="mini-value">單機 SQLite 為核心的分層資料系統</span>
+                </div>
+                <div class="mini-item">
+                  <span class="mini-label">現在最重要的事</span>
+                  <span class="mini-value">理解它，不要亂擴它</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="basics">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Basics</div>
+            <h2>先把 Database 最基本的觀念講清楚</h2>
+          </div>
+          <p>
+            這一段是最重要的基礎。如果這些概念不穩，後面看 schema 或 table 名稱都只是背單字。
+          </p>
+        </div>
+
+        <div class="concept-grid">
+          <article class="concept-card">
+            <h3>Database 是什麼</h3>
+            <p>
+              可以把 Database 想成一個有規則的資料倉庫。它不是單純把東西存起來，而是規定資料要怎麼分類、怎麼查、怎麼更新、怎麼避免重複和衝突。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Table 是什麼</h3>
+            <p>
+              Table 就像 Excel 的一張工作表，但更嚴格。每張 table 代表一種資料實體，例如使用者、收藏、通知、職缺。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Row 是什麼</h3>
+            <p>
+              Row 就是一筆資料。例如一個使用者、一筆收藏、一條通知。你可以把 row 想成「一張表格裡的一列」。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Column 是什麼</h3>
+            <p>
+              Column 是某種欄位，例如 <code>id</code>、<code>email</code>、<code>created_at</code>。同一個 table 的每筆 row 都會有同樣的欄位結構。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Primary Key 是什麼</h3>
+            <p>
+              Primary key 是每筆資料的唯一身份證。常見是 <code>id</code>。有了它，系統才知道你是在改哪一筆資料，而不是模糊地改到別筆。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Foreign Key 是什麼</h3>
+            <p>
+              Foreign key 是資料之間的關聯。例如收藏屬於哪個使用者，通常就會有 <code>user_id</code> 指向 <code>users.id</code>。它的目的，是避免出現「指到不存在的人」這種髒資料。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Index 是什麼</h3>
+            <p>
+              Index 像書的目錄。資料一多，如果沒有 index，查詢要慢慢一筆一筆掃。建立 index 後，常查的條件就能快很多。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Transaction 是什麼</h3>
+            <p>
+              Transaction 是「這一組操作要嘛全部成功，要嘛全部不算」。它用來避免只寫到一半就中斷，讓資料庫變成半完成、半失敗的狀態。
+            </p>
+          </article>
+
+          <article class="concept-card">
+            <h3>Schema 是什麼</h3>
+            <p>
+              Schema 就是整個資料結構設計圖。有哪些 table、每個 table 有哪些欄位、彼此怎麼關聯，這些加起來就是 schema。
+            </p>
+          </article>
+        </div>
+
+        <div class="panel-grid-2" style="margin-top: 18px;">
+          <article class="panel">
+            <h3>為什麼不是直接用 JSON 就好</h3>
+            <ul>
+              <li>少量資料、一次性輸出、前台直接讀取，JSON 很方便。</li>
+              <li>但只要你需要更新某一部分、查詢某個條件、避免重複、建立關聯，Database 就更適合。</li>
+              <li>所以 JSON 不是落後，Database 也不是萬能。要看資料的用途。</li>
+            </ul>
+          </article>
+
+          <article class="panel">
+            <h3>正規化是什麼</h3>
+            <p>
+              正規化就是把一大坨混在一起的資料拆成比較合理的表。簡單說，就是不要把本來應該一筆一筆存在 table 裡的資料，硬塞進一個超大的字串或 JSON 欄位裡。
+            </p>
+            <pre class="example">不理想：
+saved_searches.known_job_urls = ["url1", "url2", "url3", ...]
+
+較合理：
+saved_search_seen_jobs
+- search_id
+- job_url
+- ordinal</pre>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Core Ideas</div>
+            <h2>你先記住這 5 件事，後面就不容易迷路</h2>
+          </div>
+          <p>
+            對初學者來說，先抓住主幹，比一次吸收全部細節更重要。
+          </p>
+        </div>
+
+        <div class="panel-grid-2">
+          <article class="callout teal">
+            <h3>1. Database 主要處理「要長期留下來、還會再查的資料」</h3>
+            <p>像 users、favorites、saved searches、notifications 這類產品狀態，就非常適合放 DB。</p>
+          </article>
+          <article class="callout amber">
+            <h3>2. 不是所有資料都要放 DB</h3>
+            <p>像最新報告快照、原始 HTML cache、暫時執行狀態，有時放 JSON 或檔案反而更合理。</p>
+          </article>
+          <article class="callout green">
+            <h3>3. 一個系統可以有不只一個資料檔</h3>
+            <p>你這個專案就是這樣。不是只有一個 <code>.sqlite3</code>，而是不同用途拆開。</p>
+          </article>
+          <article class="callout rose">
+            <h3>4. 架構好不好，不是看它多大，而是看它能不能維護</h3>
+            <p>現在先做可維護的分層，比提早換大型 DB 更重要。</p>
+          </article>
+          <article class="callout teal">
+            <h3>5. 真正危險的不是「資料多」，而是「資料亂」</h3>
+            <p>如果沒有 key、index、relation、retention，就算資料還不大，也會開始難維護。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="project">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Project Map</div>
+            <h2>把你這個專案當成 Database 教材來看</h2>
+          </div>
+          <p>
+            現在開始把上面的概念，直接套到你這個專案。這樣你學到的就不是抽象理論，而是你自己的系統。
+          </p>
+        </div>
+
+        <div class="layer-grid">
+          <article class="layer-card">
+            <h3><code>data/cache</code></h3>
+            <p>
+              這不是正式業務資料庫，而是原始抓取結果的快取區。它的工作是幫系統省時間，不是當產品真相來源。
+            </p>
+            <ul>
+              <li>特性：大、容易膨脹、可清理</li>
+              <li>目的：減少重抓與重算</li>
+              <li>不是：收藏、通知、使用者狀態的來源</li>
+            </ul>
+          </article>
+
+          <article class="layer-card">
+            <h3><code>jobs_latest.json</code></h3>
+            <p>
+              這是最新市場快照。它像公告板，告訴前台「目前最新結果是什麼」，而不是保存完整歷史。
+            </p>
+            <ul>
+              <li>前台讀最新市場結果很方便</li>
+              <li>目前有 34 jobs、22 skills、96 task insights</li>
+              <li>適合展示，不適合承擔完整歷史分析</li>
+            </ul>
+          </article>
+
+          <article class="layer-card">
+            <h3><code>product_state.sqlite3</code></h3>
+            <p>
+              這是產品主庫。真正屬於產品本身的長期狀態，多半都在這裡。
+            </p>
+            <ul>
+              <li>users</li>
+              <li>saved_searches</li>
+              <li>saved_search_seen_jobs</li>
+              <li>favorite_jobs / notifications</li>
+            </ul>
+          </article>
+
+          <article class="layer-card">
+            <h3><code>user_submissions.sqlite3</code></h3>
+            <p>
+              這是履歷和提交資料的獨立庫。把它跟主庫拆開，是個很好的決定，因為這類資料未來常常有獨立清理、隱私或審計需求。
+            </p>
+          </article>
+
+          <article class="layer-card">
+            <h3><code>query_runtime.sqlite3</code> + <code>data/snapshots/</code></h3>
+            <p>
+              這一層不是產品資料，而是爬蟲執行期協調層。它負責排隊、去重、保存 partial 或 final snapshot 檔案。
+            </p>
+          </article>
+
+          <article class="layer-card">
+            <h3><code>market_history.sqlite3</code></h3>
+            <p>
+              這是歷史分析層。程式碼已經做好了，它會在 finalized snapshot 後接手保存歷史 run 和對應 job 資料。
+            </p>
+          </article>
+        </div>
+
+        <div class="panel-grid-2" style="margin-top: 18px;">
+          <article class="panel">
+            <h3>一句話理解這個分層</h3>
+            <ul>
+              <li><code>cache</code>：省時間</li>
+              <li><code>jobs_latest.json</code>：給前台看最新結果</li>
+              <li><code>product_state.sqlite3</code>：保存產品狀態</li>
+              <li><code>user_submissions.sqlite3</code>：保存提交資料</li>
+              <li><code>query_runtime.sqlite3</code>：協調爬蟲工作</li>
+              <li><code>market_history.sqlite3</code>：保存歷史分析資料</li>
+            </ul>
+          </article>
+
+          <article class="panel">
+            <h3>這樣拆的好處</h3>
+            <ul>
+              <li>前台最新結果不用每次都從大表慢慢算。</li>
+              <li>產品主庫不會被爬蟲中間資料污染。</li>
+              <li>敏感資料可以獨立管理。</li>
+              <li>之後若要擴充歷史分析，可以只擴 history layer，不必整個系統重做。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="flow">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Flow</div>
+            <h2>從使用者搜尋到資料落地，整個流程怎麼走</h2>
+          </div>
+          <p>
+            真正看懂 DB 系統，不是只看有哪些表，而是知道資料什麼時候被寫進哪裡。
+          </p>
+        </div>
+
+        <div class="flow">
+          <article class="flow-step">
+            <div class="step-no">1</div>
+            <div>
+              <h3>使用者輸入查詢，系統先產生 query signature</h3>
+              <p>
+                這個 signature 是查詢的身份。未來 runtime queue、snapshot 命名、去重判斷都會靠它，而不是只看搜尋名稱。
+              </p>
+              <div class="flow-tags">
+                <span>目的：識別同一種查詢</span>
+                <span>避免重複抓取</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">2</div>
+            <div>
+              <h3>query runtime 先判斷：這個查詢要不要真的再跑一次</h3>
+              <p>
+                系統會去看 <code>query_runtime.sqlite3</code> 裡是否已經有新鮮 snapshot，或是否已有 pending / running job。如果有，就不一定需要再抓。
+              </p>
+              <div class="flow-tags">
+                <span>表：<code>query_snapshots</code></span>
+                <span>表：<code>crawl_jobs</code></span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">3</div>
+            <div>
+              <h3>真正爬資料時，原始內容先進 cache</h3>
+              <p>
+                抓回來的原始頁面先進 <code>data/cache</code>。這樣下次相同或相似請求，不用每次都從頭打外部網站。
+              </p>
+              <div class="flow-tags">
+                <span>屬性：快取層</span>
+                <span>可清理，不是主真相</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">4</div>
+            <div>
+              <h3>pipeline 把抓回來的資料整理成 market snapshot</h3>
+              <p>
+                這時候資料會變成比較有結構的成果，例如 jobs、skills、task insights、errors。也就是開始從「原始抓取資料」變成「產品能理解的市場資料」。
+              </p>
+              <div class="flow-tags">
+                <span>輸出：市場快照</span>
+                <span>可能落成 partial snapshot</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">5</div>
+            <div>
+              <h3>完成後，最新結果會覆寫到 <code>jobs_latest.json</code></h3>
+              <p>
+                這份檔案就是「現在前台看到的最新市場結果」。它適合拿來展示目前畫面，不是拿來做全部歷史分析。
+              </p>
+              <div class="flow-tags">
+                <span>用途：最新頁面</span>
+                <span>不是：完整歷史庫</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">6</div>
+            <div>
+              <h3>同一份 finalized snapshot 也會寫進 history store</h3>
+              <p>
+                如果走到 final snapshot，系統會把它轉成 <code>crawl_runs</code>、<code>job_posts</code>、<code>crawl_run_jobs</code> 這些歷史資料。這是為了之後做分析，不是為了即時前台查詢。
+              </p>
+              <div class="flow-tags">
+                <span>DB：<code>market_history.sqlite3</code></span>
+                <span>有 retention：90 天 / 每 query 100 runs</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">7</div>
+            <div>
+              <h3>如果使用者有 saved search，就用主庫比對新舊職缺</h3>
+              <p>
+                系統會把本次看到的職缺 URL 與 <code>saved_search_seen_jobs</code> 做比對，判斷哪些是新職缺，再決定是否建立通知。
+              </p>
+              <div class="flow-tags">
+                <span>核心：去重</span>
+                <span>不再靠大 JSON 欄位</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="step-no">8</div>
+            <div>
+              <h3>不同功能讀不同層，不是所有畫面都打主庫</h3>
+              <p>
+                產品收藏與通知讀主庫，最新市場畫面讀最新 snapshot，提交資料讀提交庫，歷史分析未來則讀 history store。這就是分層系統的價值。
+              </p>
+              <div class="flow-tags">
+                <span>最新畫面：JSON</span>
+                <span>產品狀態：SQLite</span>
+                <span>歷史分析：history DB</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tables">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Tables</div>
+            <h2>用初學者聽得懂的方式解讀目前的核心資料表</h2>
+          </div>
+          <p>
+            先不要把資料表想成技術名詞，把它想成「這張表想回答什麼問題」。
+          </p>
+        </div>
+
+        <div class="table-grid">
+          <article class="table-card">
+            <h3><code>users</code></h3>
+            <p>回答的問題是：系統裡有哪些使用者？</p>
+            <ul>
+              <li>每個 user 通常會有自己的 <code>id</code></li>
+              <li>其他表常常會透過 <code>user_id</code> 連到它</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>saved_searches</code></h3>
+            <p>回答的問題是：某個使用者保存了哪些搜尋條件？</p>
+            <ul>
+              <li>這裡存的是搜尋設定本身</li>
+              <li>像名稱、條件、signature、最後執行狀態</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>saved_search_seen_jobs</code></h3>
+            <p>回答的問題是：這個 saved search 以前看過哪些 job URL？</p>
+            <ul>
+              <li>這張表是很重要的正規化改進</li>
+              <li>避免把一大串 URL 硬塞在同一欄</li>
+              <li>之後同步、裁切、查詢都比較乾淨</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>favorite_jobs</code></h3>
+            <p>回答的問題是：某個使用者收藏了哪些工作？</p>
+            <ul>
+              <li>它通常至少會有 <code>user_id</code> 和 job 識別資訊</li>
+              <li>這種表很典型，屬於產品狀態表</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>notification_preferences</code> / <code>job_notifications</code></h3>
+            <p>回答的問題是：使用者希望怎麼被通知？系統實際產生過哪些通知？</p>
+            <ul>
+              <li>一張表偏設定</li>
+              <li>一張表偏事件紀錄</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>user_submissions</code></h3>
+            <p>回答的問題是：使用者提交過哪些履歷或資料？</p>
+            <ul>
+              <li>獨立一個 DB 很合理</li>
+              <li>這類資料常常跟隱私和清理策略有關</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>query_snapshots</code> / <code>crawl_jobs</code></h3>
+            <p>回答的問題是：這個查詢現在有沒有現成結果？有沒有已經排進隊列的工作？</p>
+            <ul>
+              <li>這是執行期狀態，不是產品真相</li>
+              <li>空表不代表設計沒用</li>
+            </ul>
+          </article>
+
+          <article class="table-card">
+            <h3><code>crawl_runs</code> / <code>job_posts</code> / <code>crawl_run_jobs</code></h3>
+            <p>回答的問題是：過去 crawl 過幾次？每次抓到什麼？某個 job 在歷史上出現過嗎？</p>
+            <ul>
+              <li>這是分析層骨架</li>
+              <li>不是前台最新畫面的主要來源</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="panel-grid-2" style="margin-top: 18px;">
+          <article class="panel">
+            <h3>你可以怎麼分辨一張表該不該存在</h3>
+            <ul>
+              <li>如果這是一種穩定的資料實體，它通常值得是一張表。</li>
+              <li>如果這筆資料未來要被查詢、統計、更新，它更值得是一張表。</li>
+              <li>如果這只是一次性輸出、只是快照、只是暫存，不一定要是表。</li>
+            </ul>
+          </article>
+
+          <article class="panel">
+            <h3>為什麼 <code>saved_search_seen_jobs</code> 是好例子</h3>
+            <p>
+              它很適合拿來學 DB。因為你可以看到一個典型演化：一開始用 JSON 快速做出功能，之後資料開始累積，就把它拆成正規化表。這就是很多產品真實的成長方式。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Current Snapshot</div>
+            <h2>目前這個專案在本機實際的資料狀況</h2>
+          </div>
+          <p>
+            這一段不是理論，是現在 workspace 真的看到的資料。
+          </p>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card">
+            <div class="stat-label">Data Directory</div>
+            <div class="stat-value">556MB</div>
+            <div class="stat-note">整個 <code>data/</code> 目錄大小</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Cache</div>
+            <div class="stat-value">554MB</div>
+            <div class="stat-note">最大容量壓力目前在 cache</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Latest Jobs</div>
+            <div class="stat-value">34</div>
+            <div class="stat-note"><code>jobs_latest.json</code> 中的 job 數量</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Total Visits</div>
+            <div class="stat-value">652</div>
+            <div class="stat-note"><code>app_metrics.total_visits</code></div>
+          </article>
+        </div>
+
+        <div class="panel-grid-2" style="margin-top: 18px;">
+          <article class="panel">
+            <h3>本機狀態表</h3>
+            <div class="table-wrap">
+              <table class="status-table">
+                <tbody>
+                  <tr>
+                    <th><code>jobs_latest.json</code></th>
+                    <td>生成於 2026-04-06 02:51:30，內有 2 個 query、34 jobs、22 skills、96 task insights、2 errors。</td>
+                  </tr>
+                  <tr>
+                    <th><code>product_state.sqlite3</code></th>
+                    <td>有 2 users、2 saved searches、643 seen job rows、3 favorites、0 job notifications、2 notification preferences。</td>
+                  </tr>
+                  <tr>
+                    <th><code>user_submissions.sqlite3</code></th>
+                    <td>有 4 筆 <code>user_submissions</code>。</td>
+                  </tr>
+                  <tr>
+                    <th><code>query_runtime.sqlite3</code></th>
+                    <td><code>query_snapshots</code> 和 <code>crawl_jobs</code> 目前都是 0 筆。</td>
+                  </tr>
+                  <tr>
+                    <th><code>market_history.sqlite3</code></th>
+                    <td>程式碼已支援，但目前 workspace 尚未看到實際檔案，代表新版本功能還沒在本機產出真實 finalized crawl 資料。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel">
+            <h3>這些數字怎麼解讀</h3>
+            <ul>
+              <li>主庫還非常小，這代表你目前不需要大型 DB 基礎設施。</li>
+              <li>產品功能層已經有真實使用資料，但量還不大。</li>
+              <li>cache 反而比 DB 更需要被監控，因為它現在佔大部分容量。</li>
+              <li>runtime queue 和 history store 已在程式碼中成形，但本機當下沒有積壓或新增歷史檔案，這很正常。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="status">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Operational Notes</div>
+            <h2>幾個很容易搞混，但你一定要知道的運作細節</h2>
+          </div>
+          <p>
+            初學者最常被這些點卡住，因為表面上看起來是 DB 問題，實際上是「資料層角色」或「SQLite 行為」沒分清楚。
+          </p>
+        </div>
+
+        <div class="panel-grid-2">
+          <article class="callout teal">
+            <h3>WAL 已經開啟</h3>
+            <p>
+              App 連線是透過共用的 <code>connect_sqlite()</code> helper 進來，會設定 <code>journal_mode = WAL</code>。這可以讓 SQLite 在有讀寫混合時更穩定，不容易卡成最差狀態。
+            </p>
+          </article>
+
+          <article class="callout amber">
+            <h3><code>foreign_keys</code> 是 connection-scoped</h3>
+            <p>
+              這句很重要。你用 app 開的連線可以是 <code>ON</code>，但你如果自己用 terminal 另開一個 SQLite CLI session，看到的可能仍是 <code>0</code>。不是 app 沒設定，而是 SQLite 的 FK 開關是「每條連線自己決定」。
+            </p>
+          </article>
+
+          <article class="callout green">
+            <h3>主庫和執行期狀態不是同一件事</h3>
+            <p>
+              <code>product_state.sqlite3</code> 是產品真相，<code>query_runtime.sqlite3</code> 是工作狀態。前者要穩，後者要能清。兩者角色完全不同。
+            </p>
+          </article>
+
+          <article class="callout rose">
+            <h3>最新快照和歷史資料也不是同一件事</h3>
+            <p>
+              <code>jobs_latest.json</code> 是「目前結果」，<code>market_history.sqlite3</code> 是「過去每次結果」。前者偏展示，後者偏分析。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="maintain">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Maintenance</div>
+            <h2>現在這套 DB 系統為什麼已經夠用，以及你該怎麼維護它</h2>
+          </div>
+          <p>
+            你之前說你不要無限擴張，只想先做有意義的維護。這個方向是對的。下面就是目前最重要的維護原則。
+          </p>
+        </div>
+
+        <div class="guard-grid">
+          <article class="guard-card">
+            <h3>原則 1：先維持分層清楚</h3>
+            <p>
+              不要因為方便，就把執行期資料、最新快照、產品主狀態全部混進同一個 DB。你現在的分層其實是健康的。
+            </p>
+          </article>
+
+          <article class="guard-card">
+            <h3>原則 2：讓會膨脹的資料有 retention</h3>
+            <p>
+              cache 要有上限，history 要有保留期限。你已經有 cache 清理與 history retention，這很重要。
+            </p>
+          </article>
+
+          <article class="guard-card">
+            <h3>原則 3：當資料要被查詢時，再考慮正規化</h3>
+            <p>
+              不是所有 JSON 都要拆。只有當它開始變胖、要被查、要被比對、會拖累維護時，才值得拆表。
+            </p>
+          </article>
+
+          <article class="guard-card">
+            <h3>原則 4：共用連線設定，不要每個模組自己亂配</h3>
+            <p>
+              你現在用統一的 SQLite helper 是正確的。這種基礎設施統一，長期非常重要。
+            </p>
+          </article>
+
+          <article class="guard-card">
+            <h3>原則 5：優先觀察真實壓力，再升級</h3>
+            <p>
+              只有真的出現多實例併發寫入、跨機器協調、超大量查詢或大型分析需求時，才考慮 PostgreSQL 或更重的 queue 系統。
+            </p>
+          </article>
+
+          <article class="guard-card">
+            <h3>原則 6：產品資料穩定，比分析資料完整更優先</h3>
+            <p>
+              收藏、通知、saved search 的一致性，通常比技能趨勢報表更重要。先保產品主功能穩，再擴分析層。
+            </p>
+          </article>
+        </div>
+
+        <div class="mistake-grid" style="margin-top: 18px;">
+          <article class="mistake-card">
+            <h3>現在不需要做的事</h3>
+            <ul>
+              <li>不用急著換 PostgreSQL。</li>
+              <li>不用急著把所有 JSON 拆成十幾張表。</li>
+              <li>不用急著做分散式 job queue。</li>
+              <li>不用急著上很重的 ORM 架構重整。</li>
+            </ul>
+          </article>
+
+          <article class="mistake-card">
+            <h3>真的該升級的訊號</h3>
+            <ul>
+              <li>多個 app instance 同時寫主庫。</li>
+              <li>SQLite 鎖競爭明顯升高。</li>
+              <li>你開始做大量歷史趨勢分析。</li>
+              <li>cache 和 history 的容量成長遠超過可控範圍。</li>
+            </ul>
+          </article>
+
+          <article class="mistake-card">
+            <h3>你接下來最實用的學習方向</h3>
+            <ul>
+              <li>先學看 table 和 row。</li>
+              <li>再學看 primary key、unique、index。</li>
+              <li>再學基本 SQL：<code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>。</li>
+              <li>最後再回頭看 schema 設計和 transaction。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">Mini Examples</div>
+            <h2>用你這個專案做幾個簡單例子</h2>
+          </div>
+          <p>
+            如果你會看下面這些例子，你就已經開始進入「能讀懂 DB 系統」的階段了。
+          </p>
+        </div>
+
+        <div class="panel-grid-2">
+          <article class="panel">
+            <h3>例子 1：為什麼 favorite_jobs 應該在 DB</h3>
+            <p>
+              因為使用者會新增、取消、重新查詢收藏，而且這個資料跟使用者有明確關聯，也會被長期保留。這就是典型 DB 資料。
+            </p>
+            <pre class="example">favorite_jobs
+- id
+- user_id
+- job_url
+- created_at</pre>
+          </article>
+
+          <article class="panel">
+            <h3>例子 2：為什麼 jobs_latest.json 適合做最新快照</h3>
+            <p>
+              因為前台很多時候只想快速拿到「現在最新結果」，而不是每次都去拼完整歷史資料。這時候一份現成 snapshot 很有效率。
+            </p>
+            <pre class="example">jobs_latest.json
+{
+  "generated_at": "...",
+  "queries": [...],
+  "jobs": [...],
+  "skills": [...],
+  "task_insights": [...]
+}</pre>
+          </article>
+
+          <article class="panel">
+            <h3>例子 3：為什麼 known_job_urls 後來要拆表</h3>
+            <p>
+              一開始放 JSON 很快，但資料一多就不容易查詢和維護。拆成 <code>saved_search_seen_jobs</code> 後，每個 URL 都是一筆 row，資料操作就正常很多。
+            </p>
+          </article>
+
+          <article class="panel">
+            <h3>例子 4：為什麼 market history 是另一個 DB</h3>
+            <p>
+              歷史分析資料的成長方式，和產品主庫不同。把它獨立出來，可以讓前台和產品功能不被歷史分析拖慢。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="faq">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">FAQ</div>
+            <h2>你現在大概會問的問題</h2>
+          </div>
+          <p>
+            下面這些問題很像剛開始學 DB 時會卡住的點，我直接幫你回答。
+          </p>
+        </div>
+
+        <div class="qa-grid">
+          <article class="qa-card">
+            <h3>Q: 一個專案只能有一個 database 嗎？</h3>
+            <p>
+              不需要。重點是資料角色清不清楚。你現在這個專案就有多個資料檔，但分工合理，所以沒問題。
+            </p>
+          </article>
+
+          <article class="qa-card">
+            <h3>Q: JSON 跟 DB 誰比較好？</h3>
+            <p>
+              沒有絕對。JSON 適合快照和輸出；DB 適合查詢、更新、關聯、一致性。你這個專案兩者都有用，而且這是合理的。
+            </p>
+          </article>
+
+          <article class="qa-card">
+            <h3>Q: 我現在要學 SQL 嗎？</h3>
+            <p>
+              要，但先學最基本的就夠。你先會看懂一張表、知道一筆 row 是什麼，再學 <code>SELECT</code>、<code>WHERE</code>、<code>INSERT</code> 就很夠用了。
+            </p>
+          </article>
+
+          <article class="qa-card">
+            <h3>Q: 為什麼不用一開始就上 PostgreSQL？</h3>
+            <p>
+              因為你的資料量和部署型態目前還不需要。過早升級只會增加維運成本，沒有對等收益。
+            </p>
+          </article>
+
+          <article class="qa-card">
+            <h3>Q: 現在這套 DB 會不會很脆弱？</h3>
+            <p>
+              以你目前階段來說，不會。它已經有 WAL、retention、normalized seen jobs、managed close 等保護。短期內最大的風險反而是 cache 容量，不是主庫架構。
+            </p>
+          </article>
+
+          <article class="qa-card">
+            <h3>Q: 如果我之後要加功能，要先想什麼？</h3>
+            <p>
+              先問自己三件事：這是長期資料嗎？會被查詢嗎？會跟別的資料產生關聯嗎？如果三個答案都偏是，那大概率該進 DB。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="footer">
+        <div class="footer-card">
+          這份教學的核心結論只有一句話：你現在的 Database 系統已經不是「亂存資料」，而是「有分層、有角色、有保護機制」的系統。你短期內最重要的不是再擴充，而是真的看懂目前這套結構，之後每加一個功能，都先判斷它應該屬於快照、主庫、提交庫、runtime 還是歷史庫。
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

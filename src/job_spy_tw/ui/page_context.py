@@ -1,3 +1,5 @@
+"""定義傳入各 UI 頁面函式的型別化上下文物件。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,8 +22,12 @@ from ..user_data_store import UserDataStore
 
 @dataclass(slots=True)
 class PageContext:
+    """封裝每個頁面渲染時共用的型別化資料。"""
     settings: Settings
     snapshot: MarketSnapshot
+    crawl_phase: str
+    crawl_detail_cursor: int
+    crawl_detail_total: int
     job_frame: pd.DataFrame
     skill_frame: pd.DataFrame
     task_frame: pd.DataFrame

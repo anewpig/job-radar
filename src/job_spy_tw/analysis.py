@@ -1,3 +1,5 @@
+"""Compatibility wrapper exposing market analysis APIs."""
+
 from __future__ import annotations
 
 """Backward-compatible public entrypoint for market analysis."""

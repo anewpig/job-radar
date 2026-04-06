@@ -1,11 +1,13 @@
+"""提供追蹤中心、投遞看板與通知設定頁面的渲染函式。"""
+
 from __future__ import annotations
 
 import streamlit as st
 
 from ..models import JobListing, NotificationPreference
-from ..search_keyword_recommender import normalize_search_role_rows
 from .common import build_chip_row, mask_identifier, render_section_header, _escape
 from .page_context import PageContext
+from .search import get_committed_search_rows
 from .session import apply_notification_session_state, set_main_tab
 
 APPLICATION_STATUS_OPTIONS = [
@@ -23,6 +25,7 @@ KANBAN_STATUS_ROWS = [
 
 
 def render_tracking_page(ctx: PageContext) -> None:
+    """渲染追蹤中心，包括已儲存搜尋、通知與收藏捷徑。"""
     render_section_header(
         "追蹤中心",
         "集中看已儲存的搜尋條件、收藏職缺與最新通知，讓你之後可以用同一套設定反覆追蹤市場變化。",
@@ -49,6 +52,7 @@ def render_tracking_page(ctx: PageContext) -> None:
     )
 
     with st.container(border=True):
+        pass
         notification_header_cols = st.columns([2.4, 1], gap="medium")
         notification_header_cols[0].markdown("**新職缺通知**")
         notification_header_cols[0].caption(
@@ -67,6 +71,7 @@ def render_tracking_page(ctx: PageContext) -> None:
         if ctx.notifications:
             for notification in ctx.notifications:
                 with st.container(border=True):
+                    pass
                     count = len(notification.new_jobs)
                     status_labels: list[str] = []
                     status_labels.append("未讀" if not notification.is_read else "已讀")
@@ -114,6 +119,7 @@ def render_tracking_page(ctx: PageContext) -> None:
                     if row.get("enabled", True) and str(row.get("role", "")).strip()
                 ]
                 with st.container(border=True):
+                    pass
                     st.markdown(f"**{saved_search.name}**")
                     st.markdown(
                         f"<div class='chip-row'>{build_chip_row(role_names, tone='warm', limit=4, empty_text='尚未設定目標職缺')}</div>",
@@ -183,8 +189,9 @@ def render_tracking_page(ctx: PageContext) -> None:
                             ctx.product_store.save_search(
                                 user_id=ctx.current_user_id,
                                 name=edited_name,
-                                rows=normalize_search_role_rows(
-                                    st.session_state.search_role_rows
+                                rows=get_committed_search_rows(
+                                    st.session_state.search_role_rows,
+                                    draft_index=st.session_state.get("search_role_draft_index"),
                                 ),
                                 custom_queries_text=st.session_state.custom_queries_text,
                                 crawl_preset_label=st.session_state.crawl_preset_label,
@@ -240,6 +247,7 @@ def render_tracking_page(ctx: PageContext) -> None:
         else:
             for favorite in ctx.favorite_jobs[:8]:
                 with st.container(border=True):
+                    pass
                     st.markdown(f"**{favorite.title}**")
                     st.caption(f"{favorite.company}")
                     st.markdown(
@@ -281,6 +289,7 @@ def render_tracking_page(ctx: PageContext) -> None:
 
 
 def render_board_page(ctx: PageContext) -> None:
+    """渲染看板式投遞流程管理頁。"""
     render_section_header(
         "投遞流程管理看板",
         "把收藏職缺依投遞狀態分欄管理。你可以在卡片裡直接移動狀態、補備註，追蹤目前的求職進度。",
@@ -321,59 +330,39 @@ def render_board_page(ctx: PageContext) -> None:
         st.info("先收藏幾筆職缺，這裡才會形成投遞流程看板。")
         return
 
-    board_search_options = ["全部搜尋"] + sorted(
-        {item.saved_search_name or "未綁定搜尋" for item in ctx.favorite_jobs}
-    )
-    board_source_options = ["全部來源"] + sorted(
-        {item.source for item in ctx.favorite_jobs if item.source}
-    )
-    filter_cols = st.columns([1.2, 1.0, 0.9], gap="medium")
-    selected_board_search = filter_cols[0].selectbox(
-        "追蹤搜尋",
-        board_search_options,
-        key="board_saved_search_filter",
-    )
-    selected_board_source = filter_cols[1].selectbox(
-        "來源平台",
-        board_source_options,
-        key="board_source_filter",
-    )
-    notes_only = filter_cols[2].checkbox(
-        "只看有備註",
-        key="board_notes_only",
-    )
-
     filtered_favorites = ctx.favorite_jobs
-    if selected_board_search != "全部搜尋":
-        filtered_favorites = [
-            item
-            for item in filtered_favorites
-            if (item.saved_search_name or "未綁定搜尋") == selected_board_search
-        ]
-    if selected_board_source != "全部來源":
-        filtered_favorites = [
-            item for item in filtered_favorites if item.source == selected_board_source
-        ]
-    if notes_only:
-        filtered_favorites = [item for item in filtered_favorites if item.notes.strip()]
 
-    if not filtered_favorites:
-        st.info("目前篩選條件下沒有符合的投遞卡片。")
-
-    for status_row in KANBAN_STATUS_ROWS:
+    for row_index, status_row in enumerate(KANBAN_STATUS_ROWS):
         columns = st.columns(len(status_row), gap="large")
-        for column, status in zip(columns, status_row):
+        for column_index, (column, status) in enumerate(zip(columns, status_row)):
             status_items = [
                 item for item in filtered_favorites if item.application_status == status
             ]
             with column:
-                with st.container(border=True):
+                with st.container(
+                    border=True,
+                    key=f"board-status-shell-{row_index}-{column_index}",
+                ):
+                    pass
                     st.markdown(f"**{status}**")
                     st.caption(f"{len(status_items)} 筆職缺")
-                    if not status_items:
-                        st.caption("目前沒有職缺。")
+                if not status_items:
+                    with st.container(
+                        border=True,
+                        key=f"board-empty-shell-{row_index}-{column_index}",
+                    ):
+                        pass
+                        st.markdown(
+                            f"""
+<div class="board-empty-shell">
+  <div class="board-empty-copy">目前這個階段還沒有職缺，之後更新投遞進度後會顯示在這裡。</div>
+</div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
                 for favorite in status_items:
-                    with st.container(border=True):
+                    with st.container(border=True, key=f"board-card-container-{favorite.id}"):
+                        pass
                         meta_items = [
                             favorite.saved_search_name or "未綁定搜尋",
                             favorite.source,
@@ -405,14 +394,15 @@ def render_board_page(ctx: PageContext) -> None:
                         st.markdown(
                             f"""
 <div class="board-card-shell">
-  <div>
+  <div class="board-card-icon">✦</div>
+  <div class="board-card-head">
     <div class="board-card-title">{_escape(favorite.title)}</div>
     <div class="board-card-company">{_escape(favorite.company)}</div>
   </div>
   <div class="chip-row board-card-meta">{meta_markup}</div>
   <div class="chip-row board-card-timeline">{timeline_markup}</div>
   <div class="board-card-section">
-    <div class="board-card-section-title">目前備註</div>
+    <div class="board-card-section-title">備註</div>
     <div class="board-card-copy">{_escape(notes_preview)}</div>
   </div>
   <div class="board-card-section">
@@ -427,7 +417,8 @@ def render_board_page(ctx: PageContext) -> None:
                             """,
                             unsafe_allow_html=True,
                         )
-                        with st.expander("更新狀態與備註", expanded=False):
+                        with st.container(key=f"board-editor-shell-{favorite.id}"):
+                            st.markdown("**更新狀態與備註**")
                             with st.form(f"kanban-favorite-form-{favorite.id}"):
                                 next_status = st.selectbox(
                                     "狀態",
@@ -499,21 +490,13 @@ def render_board_page(ctx: PageContext) -> None:
 
 
 def render_notifications_page(ctx: PageContext) -> None:
-    render_section_header(
-        "通知條件設定",
-        "設定哪些新職缺值得提醒你，並決定站內、Email、LINE 哪些通道要啟用。",
-        "Notification Settings",
-    )
-    if ctx.current_user_is_guest:
-        st.info("登入後才能保存自己的通知條件，並綁定 Email 或 LINE 推播。")
+    """渲染使用者通知偏好與推播控制頁。"""
     apply_notification_session_state(
         user_id=ctx.current_user_id,
         preferences=ctx.notification_preferences,
     )
 
     site_enabled = st.session_state.notify_site_enabled
-    email_enabled = st.session_state.notify_email_enabled
-    line_enabled = st.session_state.notify_line_enabled
     line_target = st.session_state.notify_line_target
     line_is_bound = ctx.notification_service.is_valid_line_target(line_target)
     auto_bind_available = bool(
@@ -527,15 +510,30 @@ def render_notifications_page(ctx: PageContext) -> None:
         f"LINE {'已綁定' if line_is_bound else '尚未綁定'}",
         "重新抓取已儲存搜尋時會檢查新職缺",
     ]
-    st.markdown(
-        f"<div class='chip-row'>{build_chip_row(channel_status_items, tone='warm', limit=4)}</div>",
-        unsafe_allow_html=True,
-    )
 
-    with st.container(border=True):
+    with st.container(border=True, key="notifications-shell"):
+        pass
+        st.markdown(
+            f"""
+<div class="section-shell notifications-intro">
+  <div class="section-kicker">{_escape("Notification Settings")}</div>
+  <div class="section-title">{_escape("通知設定")}</div>
+  <div class="section-desc">{_escape("設定哪些新職缺值得提醒你，並決定站內、Email、LINE 哪些通道要啟用。")}</div>
+</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        with st.container(key="notifications-body"):
+            if ctx.current_user_is_guest:
+                st.info("登入後才能保存自己的通知條件，並綁定 Email 或 LINE 推播。")
+            st.markdown(
+                f"<div class='chip-row'>{build_chip_row(channel_status_items, tone='warm', limit=4)}</div>",
+                unsafe_allow_html=True,
+            )
         step_cols = st.columns(3, gap="large")
         with step_cols[0]:
             with st.container():
+                pass
                 st.markdown("**1. 選擇通知方式**")
                 st.caption("先決定哪些提醒方式要開啟。")
                 st.checkbox(
@@ -556,6 +554,7 @@ def render_notifications_page(ctx: PageContext) -> None:
 
         with step_cols[1]:
             with st.container():
+                pass
                 st.markdown("**2. 收件設定**")
                 st.caption("只會顯示你目前有開啟的通知方式。")
                 if st.session_state.notify_email_enabled:
@@ -639,6 +638,7 @@ def render_notifications_page(ctx: PageContext) -> None:
 
         with step_cols[2]:
             with st.container():
+                pass
                 st.markdown("**3. 通知條件**")
                 st.caption("控制要提醒多少筆，以及哪些分數以上才通知。")
                 st.slider(

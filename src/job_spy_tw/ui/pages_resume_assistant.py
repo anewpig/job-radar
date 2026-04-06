@@ -1,3 +1,5 @@
+"""提供履歷匹配與 AI 助理頁面的渲染函式。"""
+
 from __future__ import annotations
 
 import streamlit as st
@@ -47,16 +49,63 @@ SUGGESTED_ASSISTANT_QUESTIONS = [
 ]
 
 
+def _submit_assistant_question(
+    *,
+    ctx: PageContext,
+    assistant,
+    assistant_profile: ResumeProfile | None,
+    question: str,
+) -> None:
+    """執行一次 AI 助理提問，並把結果寫回問答紀錄。"""
+    st.session_state.assistant_question_draft = question
+    if assistant_profile is None and needs_personal_context(question):
+        history = st.session_state.assistant_history
+        history.insert(0, build_context_request_response(question))
+        st.session_state.assistant_history = history[:6]
+        return
+
+    answer_status = st.status("正在整理回答...", expanded=True)
+    try:
+        answer_status.write("1. 檢索相關職缺、技能與市場資料")
+        answer_status.write("2. 生成回答與整理引用來源")
+        answer = assistant.answer_question(
+            question=question,
+            snapshot=ctx.snapshot,
+            resume_profile=assistant_profile,
+        )
+        history = st.session_state.assistant_history
+        history.insert(0, answer)
+        st.session_state.assistant_history = history[:6]
+        answer_status.update(
+            label="回答完成",
+            state="complete",
+            expanded=False,
+        )
+    except Exception as exc:  # noqa: BLE001
+        try:
+            answer_status.update(
+                label="回答失敗",
+                state="error",
+                expanded=True,
+            )
+        except Exception:
+            pass
+        st.error(format_openai_error(exc))
+
+
 def render_resume_page(ctx: PageContext) -> None:
+    """渲染履歷上傳、摘要擷取與匹配結果頁。"""
     render_section_header(
         "履歷匹配",
         "上傳履歷後，系統會整理重點技能、偏好工作內容，並用雙分數幫你看哪些職缺更適合投遞。",
         "Resume Match",
     )
+    if ctx.crawl_phase == "finalizing":
+        st.info("已取得初步職缺列表，正在補完整分析。等原文解析完成後再做履歷匹配會更準確。")
+        return
     if ctx.current_user_is_guest:
         st.caption("目前是訪客模式。分析結果會留在這次使用期間；登入後可把履歷摘要保存到自己的帳號。")
-    else:
-        st.caption("目前登入中。重新分析後，新的履歷摘要會自動覆蓋並保存到你的帳號。")
+    pass
     with st.form("resume_match_form"):
         uploaded_resume = st.file_uploader(
             "上傳履歷檔",
@@ -176,6 +225,7 @@ def render_resume_page(ctx: PageContext) -> None:
         f"目前最適合先投遞的是 {top_match_row['title']}，"
         f"來自 {top_match_row['company']}；如果想優先補強，可以先看下方缺口分析。"
     )
+    pass
     st.markdown(
         f"""
 <div class="summary-card">
@@ -190,6 +240,7 @@ def render_resume_page(ctx: PageContext) -> None:
     match_metrics[1].metric("值得追蹤", watch_match_count)
     match_metrics[2].metric("平均職缺相似度", f"{average_market_fit:.1f}")
     match_metrics[3].metric("最高個人匹配度", f"{float(top_match_row['overall_score']):.1f}")
+    pass
     st.markdown(
         f"""
 <div class="summary-card">
@@ -252,13 +303,14 @@ def render_resume_page(ctx: PageContext) -> None:
     if filtered_matches.empty:
         st.info("目前篩選條件下沒有符合的履歷匹配職缺。")
     else:
-        for row in filtered_matches.head(10).to_dict(orient="records"):
+        for index, row in enumerate(filtered_matches.head(10).to_dict(orient="records"), start=1):
             meta_labels = [
                 row["source"],
                 row["matched_role"] or "未標記角色",
                 f"個人匹配度 {row['overall_score']:.1f}",
                 f"職缺相似度 {row['market_fit_score']:.1f}",
             ]
+            pass
             st.markdown(
                 f"""
 <div class="surface-card">
@@ -329,12 +381,14 @@ def render_resume_page(ctx: PageContext) -> None:
 
 
 def render_assistant_page(ctx: PageContext) -> None:
+    """渲染 AI 助理頁與個人化提問流程。"""
     render_section_header(
         "AI 助理",
-        "直接詢問市場技能缺口、工作內容與薪資資訊，也能依照履歷或基本資料產生個人化回答。",
+        "",
         "Assistant",
     )
     if not ctx.settings.openai_api_key:
+        pass
         st.markdown(
             """
 <div class="summary-card">
@@ -370,9 +424,10 @@ def render_assistant_page(ctx: PageContext) -> None:
         unsafe_allow_html=True,
     )
 
-    with st.container(border=True):
-        left_col, right_col = st.columns([1.02, 1.25], gap="large")
-        with left_col:
+    left_col, right_col = st.columns([1.02, 1.25], gap="large")
+    with left_col:
+        with st.container(border=True, key="assistant-profile-card-shell"):
+            pass
             st.markdown("**個人化背景**")
             if resume_context_profile is not None:
                 st.caption("目前已載入履歷，AI 助理會優先依照履歷內容回答。")
@@ -421,11 +476,7 @@ def render_assistant_page(ctx: PageContext) -> None:
                             placeholder="例如：Python、LLM、RAG、Docker",
                             height=100,
                         )
-                        collect_assistant_profile = st.checkbox(
-                            "同意保存求職基本資料到資料庫",
-                            value=False,
-                            help="只會保存你填寫的基本資料與系統整理後的摘要。",
-                        )
+                        st.caption("備註：送出後會保存你填寫的基本資料與系統整理後的摘要。")
                         save_profile = st.form_submit_button(
                             "儲存基本資料",
                             use_container_width=True,
@@ -439,18 +490,19 @@ def render_assistant_page(ctx: PageContext) -> None:
                             skills_text=skills_text,
                         )
                         st.session_state.assistant_profile = updated_profile
-                        if collect_assistant_profile:
-                            ctx.user_data_store.save_profile(
-                                profile=updated_profile,
-                                source_type="assistant_profile",
-                            )
+                        ctx.user_data_store.save_profile(
+                            profile=updated_profile,
+                            source_type="assistant_profile",
+                        )
                         set_main_tab("assistant")
                         st.session_state.favorite_feedback = (
                             "已儲存基本資料，AI 助理之後會用這份資料做個人化回答。"
                         )
                         st.rerun()
 
-        with right_col:
+    with right_col:
+        with st.container(border=True, key="assistant-quick-ask-card-shell"):
+            pass
             question_batches = assistant_question_batches(
                 SUGGESTED_ASSISTANT_QUESTIONS,
                 batch_size=4,
@@ -459,7 +511,6 @@ def render_assistant_page(ctx: PageContext) -> None:
             current_batch_index = int(st.session_state.assistant_suggestion_page) % batch_count
             suggestion_header_cols = st.columns([1.6, 1], gap="medium")
             suggestion_header_cols[0].markdown("**快速提問**")
-            suggestion_header_cols[0].caption("每次提供 4 題常見問題，也可以換一批看看。")
             if suggestion_header_cols[1].button(
                 "換一批問題",
                 key="assistant-next-question-batch",
@@ -492,44 +543,24 @@ def render_assistant_page(ctx: PageContext) -> None:
                     use_container_width=True,
                 )
 
-            if ask_assistant:
-                question = assistant_question.strip()
+            pending_launcher_submit = bool(
+                st.session_state.pop("assistant_launcher_submit_pending", False)
+            )
+            if ask_assistant or pending_launcher_submit:
+                question = (
+                    assistant_question.strip()
+                    if ask_assistant
+                    else str(st.session_state.get("assistant_question_input", "")).strip()
+                )
                 if not question:
                     st.warning("請先輸入問題。")
                 else:
-                    st.session_state.assistant_question_draft = question
-                    if assistant_profile is None and needs_personal_context(question):
-                        history = st.session_state.assistant_history
-                        history.insert(0, build_context_request_response(question))
-                        st.session_state.assistant_history = history[:6]
-                    else:
-                        try:
-                            answer_status = st.status("正在整理回答...", expanded=True)
-                            answer_status.write("1. 檢索相關職缺、技能與市場資料")
-                            answer_status.write("2. 生成回答與整理引用來源")
-                            answer = assistant.answer_question(
-                                question=question,
-                                snapshot=ctx.snapshot,
-                                resume_profile=assistant_profile,
-                            )
-                            history = st.session_state.assistant_history
-                            history.insert(0, answer)
-                            st.session_state.assistant_history = history[:6]
-                            answer_status.update(
-                                label="回答完成",
-                                state="complete",
-                                expanded=False,
-                            )
-                        except Exception as exc:  # noqa: BLE001
-                            try:
-                                answer_status.update(
-                                    label="回答失敗",
-                                    state="error",
-                                    expanded=True,
-                                )
-                            except Exception:
-                                pass
-                            st.error(format_openai_error(exc))
+                    _submit_assistant_question(
+                        ctx=ctx,
+                        assistant=assistant,
+                        assistant_profile=assistant_profile,
+                        question=question,
+                    )
 
             if generate_report_in_form:
                 if assistant_profile is None:
@@ -590,7 +621,6 @@ def render_assistant_page(ctx: PageContext) -> None:
         st.markdown("**問答紀錄**")
         for index, answer in enumerate(st.session_state.assistant_history, start=1):
             with st.container(border=True):
+                pass
                 st.markdown(f"**Q{index}. {answer.question}**")
                 render_assistant_response("回答", answer)
-    else:
-        st.info("這裡可以直接問技能、缺口、薪資區間、工作內容，或先產生一份簡短報告。")

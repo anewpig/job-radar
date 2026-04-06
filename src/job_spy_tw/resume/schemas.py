@@ -1,3 +1,5 @@
+"""Resume-analysis helpers for schemas."""
+
 from __future__ import annotations
 
 try:

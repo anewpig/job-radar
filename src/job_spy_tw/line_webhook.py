@@ -1,3 +1,5 @@
+"""LINE webhook handlers for notification binding and delivery flows."""
+
 from __future__ import annotations
 
 import argparse

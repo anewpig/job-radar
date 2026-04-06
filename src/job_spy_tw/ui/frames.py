@@ -1,3 +1,5 @@
+"""提供 UI 表格與匯出資料會用到的 DataFrame 整理函式。"""
+
 from __future__ import annotations
 
 import io
@@ -11,12 +13,14 @@ from ..models import FavoriteJob, ItemInsight, MarketSnapshot, ResumeJobMatch, S
 
 
 def sanitize_export_name(value: str, fallback: str = "job_radar") -> str:
+    """把匯出檔名正規化成適合檔案系統使用的格式。"""
     cleaned = re.sub(r"[^\w\u4e00-\u9fff-]+", "_", str(value or "").strip())
     cleaned = re.sub(r"_+", "_", cleaned).strip("._")
     return cleaned or fallback
 
 
 def flatten_job_download_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """把職缺表中的 list 欄位壓平成適合 CSV 匯出的字串。"""
     if frame.empty:
         return frame.copy()
     download_frame = frame.copy()
@@ -35,6 +39,7 @@ def filter_jobs_frame(
     role_filter: list[str] | None = None,
     skill_filter: list[str] | None = None,
 ) -> pd.DataFrame:
+    """套用職缺總覽篩選條件，並回傳依相關度排序後的資料。"""
     if frame.empty or "relevance_score" not in frame.columns:
         return frame.copy()
     filtered = frame.copy()
@@ -58,6 +63,7 @@ def build_export_bundle(
     resume_match_frame: pd.DataFrame | None,
     metadata: dict[str, object],
 ) -> bytes:
+    """把職缺、分析表與 metadata 打包成 ZIP 檔案。"""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(
@@ -89,6 +95,7 @@ def build_export_bundle(
 
 
 def jobs_to_frame(snapshot: MarketSnapshot) -> pd.DataFrame:
+    """把市場快照中的職缺資料轉成職缺總覽會使用的表格格式。"""
     rows = []
     for job in snapshot.jobs:
         rows.append(
@@ -115,6 +122,7 @@ def jobs_to_frame(snapshot: MarketSnapshot) -> pd.DataFrame:
 
 
 def skills_to_frame(skills: list[SkillInsight]) -> pd.DataFrame:
+    """把技能洞察資料轉成技能分析頁會使用的表格格式。"""
     rows = []
     for skill in skills:
         rows.append(
@@ -132,6 +140,7 @@ def skills_to_frame(skills: list[SkillInsight]) -> pd.DataFrame:
 
 
 def task_insights_to_frame(items: list[ItemInsight]) -> pd.DataFrame:
+    """把工作內容洞察資料轉成工作內容分析頁會使用的表格格式。"""
     rows = []
     for item in items:
         rows.append(
@@ -148,6 +157,7 @@ def task_insights_to_frame(items: list[ItemInsight]) -> pd.DataFrame:
 
 
 def resume_matches_to_frame(matches: list[ResumeJobMatch]) -> pd.DataFrame:
+    """把履歷匹配結果轉成可直接顯示的表格格式。"""
     rows = []
     for match in matches:
         rows.append(
@@ -181,6 +191,7 @@ def resume_matches_to_frame(matches: list[ResumeJobMatch]) -> pd.DataFrame:
 
 
 def favorites_to_frame(favorites: list[FavoriteJob]) -> pd.DataFrame:
+    """把收藏職缺轉成精簡的匯出表格格式。"""
     rows = []
     for favorite in favorites:
         rows.append(

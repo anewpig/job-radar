@@ -1,3 +1,5 @@
+"""Compatibility wrapper exposing application settings APIs."""
+
 from __future__ import annotations
 
 """Backward-compatible public entrypoint for runtime settings."""

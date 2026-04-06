@@ -1,3 +1,5 @@
+"""Market-analysis helpers for analyzer."""
+
 from __future__ import annotations
 
 import math

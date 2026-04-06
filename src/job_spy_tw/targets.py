@@ -1,3 +1,5 @@
+"""Target-role helpers for building search queries and presets."""
+
 from __future__ import annotations
 
 from .models import TargetRole

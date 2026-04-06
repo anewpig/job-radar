@@ -1,3 +1,5 @@
+"""Preset definitions and helpers for crawl-speed tradeoffs."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace

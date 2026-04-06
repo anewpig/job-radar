@@ -1,3 +1,5 @@
+"""提供分析頁面會使用到的圖表渲染函式。"""
+
 from __future__ import annotations
 
 import altair as alt
@@ -12,6 +14,7 @@ SOURCE_ROLE_RANGE = ["#1d4ed8", "#38bdf8", "#34d399", "#f59e0b", "#94a3b8", "#c0
 
 
 def _truncate_label(text: str, limit: int = 20) -> str:
+    """截短過長標籤，避免圖表上的文字難以閱讀。"""
     cleaned = str(text).strip()
     if len(cleaned) <= limit:
         return cleaned
@@ -19,6 +22,7 @@ def _truncate_label(text: str, limit: int = 20) -> str:
 
 
 def render_task_insight_chart(frame: pd.DataFrame) -> None:
+    """渲染工作內容洞察的橫向長條圖。"""
     if frame.empty:
         return
 
@@ -80,6 +84,7 @@ def render_task_insight_chart(frame: pd.DataFrame) -> None:
 
 
 def render_task_insight_bubble_chart(frame: pd.DataFrame) -> None:
+    """渲染工作內容洞察的泡泡圖。"""
     if frame.empty:
         return
 
@@ -165,6 +170,7 @@ def render_task_insight_bubble_chart(frame: pd.DataFrame) -> None:
 
 
 def render_skill_bubble_chart(frame: pd.DataFrame) -> None:
+    """渲染技能需求的泡泡圖。"""
     if frame.empty:
         return
 
@@ -251,6 +257,7 @@ def render_skill_bubble_chart(frame: pd.DataFrame) -> None:
 
 
 def render_source_summary_chart(frame: pd.DataFrame) -> None:
+    """渲染各來源職缺量與平均相關分數摘要圖。"""
     if frame.empty:
         return
 
@@ -338,60 +345,8 @@ def render_source_summary_chart(frame: pd.DataFrame) -> None:
     st.altair_chart(chart, use_container_width=True)
 
 
-def render_source_role_heatmap(frame: pd.DataFrame) -> None:
-    if frame.empty:
-        return
-
-    chart_frame = frame.copy()
-    heatmap = (
-        alt.Chart(chart_frame)
-        .mark_rect(cornerRadius=8)
-        .encode(
-            x=alt.X("source:N", title="來源"),
-            y=alt.Y("matched_role:N", title="角色"),
-            color=alt.Color(
-                "jobs:Q",
-                title="職缺數",
-                scale=alt.Scale(range=["#f8fafc", "#7dd3fc", "#0f766e"]),
-            ),
-            tooltip=[
-                alt.Tooltip("source:N", title="來源"),
-                alt.Tooltip("matched_role:N", title="角色"),
-                alt.Tooltip("jobs:Q", title="職缺數"),
-            ],
-        )
-    )
-    labels = (
-        alt.Chart(chart_frame)
-        .mark_text(color="#0f172a", fontWeight=700)
-        .encode(
-            x=alt.X("source:N"),
-            y=alt.Y("matched_role:N"),
-            text=alt.Text("jobs:Q", format=".0f"),
-        )
-    )
-
-    chart = (
-        (heatmap + labels)
-        .properties(height=max(220, min(460, 54 * len(chart_frame["matched_role"].unique()))))
-        .configure_view(strokeWidth=0)
-        .configure_axis(
-            labelColor="#0f172a",
-            titleColor="#334155",
-            domain=False,
-            tickColor="#cbd5e1",
-        )
-        .configure_legend(
-            labelColor="#0f172a",
-            titleColor="#334155",
-            orient="top",
-        )
-        .configure(background="#ffffff")
-    )
-    st.altair_chart(chart, use_container_width=True)
-
-
 def render_source_role_distribution_chart(frame: pd.DataFrame) -> None:
+    """渲染各來源在不同角色上的堆疊分布圖。"""
     if frame.empty:
         return
 
@@ -455,84 +410,6 @@ def render_source_role_distribution_chart(frame: pd.DataFrame) -> None:
             labelColor="#0f172a",
             titleColor="#334155",
             orient="top",
-        )
-        .configure(background="#ffffff")
-    )
-    st.altair_chart(chart, use_container_width=True)
-
-
-def render_count_bubble_chart(
-    frame: pd.DataFrame,
-    label_column: str,
-    value_column: str,
-    title: str,
-    color_range: list[str],
-) -> None:
-    if frame.empty:
-        return
-
-    chart_frame = frame.copy()
-    chart_frame["label_short"] = chart_frame[label_column].apply(_truncate_label)
-    chart_frame = chart_frame.sort_values(value_column, ascending=True)
-
-    bubbles = (
-        alt.Chart(chart_frame)
-        .mark_circle(opacity=0.86, stroke="#ffffff", strokeWidth=1.5)
-        .encode(
-            x=alt.X(
-                f"{value_column}:Q",
-                title=title,
-                axis=alt.Axis(grid=True, gridColor="#e2e8f0", tickMinStep=1),
-            ),
-            y=alt.Y(
-                "label_short:N",
-                sort=chart_frame["label_short"].tolist(),
-                title=None,
-                axis=alt.Axis(labelLimit=200),
-            ),
-            size=alt.Size(
-                f"{value_column}:Q",
-                scale=alt.Scale(range=[300, 1800]),
-                legend=None,
-            ),
-            color=alt.Color(
-                f"{label_column}:N",
-                legend=None,
-                scale=alt.Scale(range=color_range),
-            ),
-            tooltip=[
-                alt.Tooltip(f"{label_column}:N", title="項目"),
-                alt.Tooltip(f"{value_column}:Q", title=title),
-            ],
-        )
-    )
-
-    labels = (
-        alt.Chart(chart_frame)
-        .mark_text(
-            align="left",
-            baseline="middle",
-            dx=10,
-            color="#0f172a",
-            fontSize=11,
-            fontWeight=700,
-        )
-        .encode(
-            x=alt.X(f"{value_column}:Q"),
-            y=alt.Y("label_short:N", sort=chart_frame["label_short"].tolist()),
-            text=alt.Text(f"{value_column}:Q", format=".0f"),
-        )
-    )
-
-    chart = (
-        (bubbles + labels)
-        .properties(height=max(220, min(420, 56 * len(chart_frame))))
-        .configure_view(strokeWidth=0)
-        .configure_axis(
-            labelColor="#0f172a",
-            titleColor="#334155",
-            domain=False,
-            tickColor="#cbd5e1",
         )
         .configure(background="#ffffff")
     )

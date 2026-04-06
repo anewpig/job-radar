@@ -1,3 +1,5 @@
+"""Tests for search keyword recommender behavior."""
+
 from __future__ import annotations
 
 import sys

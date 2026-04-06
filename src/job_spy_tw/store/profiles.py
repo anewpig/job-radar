@@ -1,3 +1,5 @@
+"""Store-layer helpers for profiles."""
+
 from __future__ import annotations
 
 import json
@@ -5,6 +7,7 @@ import sqlite3
 from pathlib import Path
 
 from ..models import ResumeProfile, StoredResumeProfile
+from ..sqlite_utils import connect_sqlite
 from .common import now_iso
 from .auth import GUEST_USER_ID
 
@@ -14,7 +17,7 @@ class UserProfileRepository:
         self.db_path = db_path
 
     def get_resume_profile(self, *, user_id: int = GUEST_USER_ID) -> StoredResumeProfile | None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
                 SELECT user_id, source_name, profile_json, updated_at
@@ -40,7 +43,7 @@ class UserProfileRepository:
         user_id: int = GUEST_USER_ID,
         profile: ResumeProfile,
     ) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO user_resume_profiles (
@@ -64,7 +67,7 @@ class UserProfileRepository:
             connection.commit()
 
     def clear_resume_profile(self, *, user_id: int = GUEST_USER_ID) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 "DELETE FROM user_resume_profiles WHERE user_id = ?",
                 (user_id,),

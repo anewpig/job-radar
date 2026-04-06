@@ -1,5 +1,8 @@
+"""Tests for product store behavior."""
+
 from __future__ import annotations
 
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -18,6 +21,7 @@ from job_spy_tw.models import (  # noqa: E402
     TargetRole,
 )
 from job_spy_tw.product_store import ProductStore  # noqa: E402
+from job_spy_tw.store import ProductStoreDatabase  # noqa: E402
 
 
 class ProductStoreTests(unittest.TestCase):
@@ -88,6 +92,61 @@ class ProductStoreTests(unittest.TestCase):
         self.assertEqual(len(result["new_jobs"]), 1)
         self.assertEqual(result["new_jobs"][0]["url"], second_job.url)
         self.assertEqual(self.store.unread_notification_count(), 1)
+
+    def test_saved_search_seen_jobs_are_normalized_out_of_legacy_json_column(self) -> None:
+        first_job = JobListing(
+            source="104",
+            title="AI工程師",
+            company="Example",
+            location="台北市",
+            url="https://example.com/jobs/1",
+            matched_role="AI工程師",
+        )
+        second_job = JobListing(
+            source="1111",
+            title="AI工程師",
+            company="Another",
+            location="新北市",
+            url="https://example.com/jobs/2",
+            matched_role="AI工程師",
+        )
+
+        search_id = self.store.save_search(
+            name="正規化測試",
+            rows=self.rows,
+            custom_queries_text="",
+            crawl_preset_label="快速",
+            snapshot=self._build_snapshot(first_job, second_job),
+        )
+        saved_search = self.store.get_saved_search(search_id)
+
+        self.assertIsNotNone(saved_search)
+        assert saved_search is not None
+        self.assertEqual(
+            saved_search.known_job_urls,
+            [first_job.url, second_job.url],
+        )
+
+        with sqlite3.connect(self.db_path) as connection:
+            legacy_payload = connection.execute(
+                "SELECT known_job_urls FROM saved_searches WHERE id = ?",
+                (search_id,),
+            ).fetchone()
+            normalized_rows = connection.execute(
+                """
+                SELECT job_url
+                FROM saved_search_seen_jobs
+                WHERE search_id = ?
+                ORDER BY ordinal ASC
+                """,
+                (search_id,),
+            ).fetchall()
+
+        self.assertEqual(str(legacy_payload[0]), "[]")
+        self.assertEqual(
+            [str(row[0]) for row in normalized_rows],
+            [first_job.url, second_job.url],
+        )
 
     def test_toggle_favorite_adds_and_removes_job(self) -> None:
         job = JobListing(
@@ -338,6 +397,40 @@ class ProductStoreTests(unittest.TestCase):
         self.assertEqual(stored_profile.profile.summary, "熟悉 Python 與 LLM 應用。")
         self.assertIsNone(missing_profile)
 
+    def test_authenticate_oidc_user_creates_and_reuses_identity(self) -> None:
+        first = self.store.authenticate_oidc_user(
+            provider="https://accounts.google.com",
+            subject="google-sub-123",
+            email="oidc@example.com",
+            display_name="OIDC Member",
+        )
+        second = self.store.authenticate_oidc_user(
+            provider="https://accounts.google.com",
+            subject="google-sub-123",
+            email="oidc@example.com",
+            display_name="OIDC Member Updated",
+        )
+
+        self.assertEqual(first.id, second.id)
+        refreshed = self.store.get_user(first.id)
+        self.assertIsNotNone(refreshed)
+        self.assertEqual(refreshed.display_name, "OIDC Member Updated")
+
+    def test_authenticate_oidc_user_links_existing_email_account(self) -> None:
+        created = self._register_user("linked@example.com")
+
+        linked = self.store.authenticate_oidc_user(
+            provider="https://accounts.google.com",
+            subject="google-sub-999",
+            email="linked@example.com",
+            display_name="Linked OIDC",
+        )
+
+        self.assertEqual(created.id, linked.id)
+        refreshed = self.store.get_user(created.id)
+        self.assertIsNotNone(refreshed)
+        self.assertEqual(refreshed.display_name, "Linked OIDC")
+
     def test_update_favorite_persists_application_and_interview_fields(self) -> None:
         alice = self._register_user("timeline@example.com")
         job = JobListing(
@@ -421,6 +514,106 @@ class ProductStoreTests(unittest.TestCase):
                 reset_code=reset_code,
                 new_password="another-password-123",
             )
+
+    def test_product_state_database_initializes_secondary_indexes(self) -> None:
+        with sqlite3.connect(self.db_path) as connection:
+            index_names = {
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'index'"
+                ).fetchall()
+            }
+
+        self.assertIn("idx_saved_searches_user_signature", index_names)
+        self.assertIn("idx_saved_searches_user_updated_at", index_names)
+        self.assertIn("idx_saved_search_seen_jobs_search_ordinal", index_names)
+        self.assertIn("idx_favorite_jobs_user_saved_search", index_names)
+        self.assertIn("idx_favorite_jobs_user_application_status", index_names)
+        self.assertIn("idx_job_notifications_user_read_created", index_names)
+        self.assertIn("idx_user_identities_user_provider", index_names)
+        self.assertIn("idx_user_identities_email", index_names)
+
+    def test_product_state_database_backfills_seen_jobs_from_legacy_json(self) -> None:
+        db_path = Path(tempfile.mkdtemp()) / "legacy_product_state.sqlite3"
+        with sqlite3.connect(db_path) as connection:
+            connection.execute(
+                """
+                CREATE TABLE saved_searches (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL DEFAULT 1,
+                    name TEXT NOT NULL,
+                    rows_json TEXT NOT NULL DEFAULT '[]',
+                    custom_queries_text TEXT NOT NULL DEFAULT '',
+                    crawl_preset_label TEXT NOT NULL DEFAULT '快速',
+                    signature TEXT NOT NULL DEFAULT '',
+                    known_job_urls TEXT NOT NULL DEFAULT '[]',
+                    last_run_at TEXT NOT NULL DEFAULT '',
+                    last_job_count INTEGER NOT NULL DEFAULT 0,
+                    last_new_job_count INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(user_id, name)
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO saved_searches (
+                    user_id,
+                    name,
+                    rows_json,
+                    custom_queries_text,
+                    crawl_preset_label,
+                    signature,
+                    known_job_urls,
+                    last_run_at,
+                    last_job_count,
+                    last_new_job_count,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    1,
+                    "Legacy search",
+                    "[]",
+                    "",
+                    "快速",
+                    "sig-legacy",
+                    '["https://example.com/jobs/legacy-1","https://example.com/jobs/legacy-2"]',
+                    "2026-04-02T12:00:00",
+                    2,
+                    0,
+                    "2026-04-02T12:00:00",
+                    "2026-04-02T12:00:00",
+                ),
+            )
+            connection.commit()
+
+        ProductStoreDatabase(db_path).initialize()
+        store = ProductStore(db_path)
+        saved_search = store.get_saved_search(1)
+
+        self.assertIsNotNone(saved_search)
+        assert saved_search is not None
+        self.assertEqual(
+            saved_search.known_job_urls,
+            [
+                "https://example.com/jobs/legacy-1",
+                "https://example.com/jobs/legacy-2",
+            ],
+        )
+
+        with sqlite3.connect(db_path) as connection:
+            legacy_payload = connection.execute(
+                "SELECT known_job_urls FROM saved_searches WHERE id = 1"
+            ).fetchone()
+            seen_count = connection.execute(
+                "SELECT COUNT(*) FROM saved_search_seen_jobs WHERE search_id = 1"
+            ).fetchone()
+
+        self.assertEqual(str(legacy_payload[0]), "[]")
+        self.assertEqual(int(seen_count[0]), 2)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+"""Exports store-layer helpers for persisted product state."""
+
 from .auth import GUEST_USER_ID, UserRepository
 from .database import ProductStoreDatabase
 from .favorites import FavoriteRepository

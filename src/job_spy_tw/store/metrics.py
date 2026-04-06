@@ -1,8 +1,11 @@
+"""Store-layer helpers for metrics."""
+
 from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
 
+from ..sqlite_utils import connect_sqlite
 from .common import now_iso
 
 
@@ -11,7 +14,7 @@ class AppMetricsRepository:
         self.db_path = db_path
 
     def get_metric(self, metric_key: str) -> int:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
                 SELECT metric_value
@@ -25,7 +28,7 @@ class AppMetricsRepository:
     def increment_metric(self, metric_key: str, amount: int = 1) -> int:
         cleaned_key = metric_key.strip()
         step = int(amount)
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO app_metrics (metric_key, metric_value, updated_at)

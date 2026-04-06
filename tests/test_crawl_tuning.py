@@ -1,3 +1,5 @@
+"""Tests for crawl tuning behavior."""
+
 from __future__ import annotations
 
 import sys
@@ -37,6 +39,7 @@ class CrawlTuningTests(unittest.TestCase):
             max_detail_jobs_per_source=0,
             min_relevance_score=18.0,
             location="台灣",
+            enable_cake=True,
             enable_linkedin=True,
             allow_insecure_ssl_fallback=True,
             user_agent="test-agent",

@@ -1,9 +1,12 @@
+"""Store-layer helpers for favorites."""
+
 from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
 
 from ..models import FavoriteJob, JobListing
+from ..sqlite_utils import connect_sqlite
 from .auth import GUEST_USER_ID
 from .common import now_iso
 
@@ -20,7 +23,7 @@ class FavoriteRepository:
         saved_search_id: int | None = None,
         saved_search_name: str = "",
     ) -> bool:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             existing = connection.execute(
                 "SELECT id FROM favorite_jobs WHERE user_id = ? AND job_url = ?",
                 (int(user_id), job.url),
@@ -79,7 +82,7 @@ class FavoriteRepository:
             return True
 
     def is_favorite(self, job_url: str, *, user_id: int = GUEST_USER_ID) -> bool:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 "SELECT 1 FROM favorite_jobs WHERE user_id = ? AND job_url = ? LIMIT 1",
                 (int(user_id), job_url),
@@ -87,7 +90,7 @@ class FavoriteRepository:
         return bool(row)
 
     def list_favorites(self, *, user_id: int = GUEST_USER_ID) -> list[FavoriteJob]:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             rows = connection.execute(
                 """
                 SELECT
@@ -140,10 +143,54 @@ class FavoriteRepository:
     def list_favorites_for_search(
         self, search_id: int, *, user_id: int = GUEST_USER_ID
     ) -> list[FavoriteJob]:
+        with connect_sqlite(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    saved_at,
+                    job_url,
+                    title,
+                    company,
+                    source,
+                    saved_search_id,
+                    saved_search_name,
+                    matched_role,
+                    location,
+                    salary,
+                    application_status,
+                    application_date,
+                    interview_date,
+                    interview_notes,
+                    notes,
+                    updated_at
+                FROM favorite_jobs
+                WHERE user_id = ? AND saved_search_id = ?
+                ORDER BY updated_at DESC, saved_at DESC, id DESC
+                """,
+                (int(user_id), int(search_id)),
+            ).fetchall()
         return [
-            item
-            for item in self.list_favorites(user_id=user_id)
-            if int(item.saved_search_id or 0) == int(search_id)
+            FavoriteJob(
+                id=int(row[0]),
+                saved_at=str(row[1]),
+                job_url=str(row[2]),
+                title=str(row[3]),
+                company=str(row[4]),
+                source=str(row[5]),
+                saved_search_id=int(row[6] or 0),
+                saved_search_name=str(row[7]),
+                matched_role=str(row[8]),
+                location=str(row[9]),
+                salary=str(row[10]),
+                application_status=str(row[11]),
+                application_date=str(row[12] or ""),
+                interview_date=str(row[13] or ""),
+                interview_notes=str(row[14] or ""),
+                notes=str(row[15]),
+                updated_at=str(row[16]),
+            )
+            for row in rows
         ]
 
     def update_favorite(
@@ -157,7 +204,7 @@ class FavoriteRepository:
         interview_date: str = "",
         interview_notes: str = "",
     ) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 """
                 UPDATE favorite_jobs
@@ -179,7 +226,7 @@ class FavoriteRepository:
             connection.commit()
 
     def delete_favorite(self, job_url: str, *, user_id: int = GUEST_USER_ID) -> None:
-        with sqlite3.connect(self.db_path) as connection:
+        with connect_sqlite(self.db_path) as connection:
             connection.execute(
                 "DELETE FROM favorite_jobs WHERE user_id = ? AND job_url = ?",
                 (int(user_id), job_url),

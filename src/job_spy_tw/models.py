@@ -1,3 +1,5 @@
+"""Shared dataclasses and domain models used across the application."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -172,6 +174,10 @@ class AssistantCitation:
 class AssistantResponse:
     question: str
     answer: str
+    summary: str = ""
+    key_points: list[str] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
+    next_step: str = ""
     citations: list[AssistantCitation] = field(default_factory=list)
     retrieval_notes: list[str] = field(default_factory=list)
     used_chunks: int = 0

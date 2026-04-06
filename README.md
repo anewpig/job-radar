@@ -1,7 +1,7 @@
 # 職缺雷達
 
 職缺雷達是一個面向台灣求職市場的 Streamlit 產品原型。  
-它會從 `104`、`1111`、`LinkedIn` 抓公開職缺，拆出原文中的工作內容、技能需求與條件，並把結果整理成：
+它會從 `104`、`1111`、`Cake`、`LinkedIn` 抓公開職缺，拆出原文中的工作內容、技能需求與條件，並把結果整理成：
 
 - 職缺總覽
 - 工作內容統計
@@ -11,13 +11,20 @@
 - 追蹤中心 / 通知設定
 - 投遞流程管理看板
 
-目前專案已整理成「入口層 + UI 層 + 分析層 + 儲存層」的結構，後續要維修或加功能，不需要再一直往單一大檔裡堆。
+目前專案已整理成「入口層 + UI runtime 層 + 分析層 + 儲存層」的結構。`app.py` 只保留高層組裝，bootstrap、staged crawl、routing 都已拆到 `src/job_spy_tw/ui/` 內的專責模組。
+
+## 開發文件
+
+- [系統架構](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/architecture.md)
+- [後端營運 Runbook](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/backend_runbook.md)
+- [維護指南](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/maintenance_guide.md)
+- [全面評估報告](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/review_report.md)
 
 ## 功能概覽
 
 ### 1. 職缺抓取與市場整理
 
-- 多來源抓取：`104`、`1111`、`LinkedIn`
+- 多來源抓取：`104`、`1111`、`Cake`、`LinkedIn`
 - 追蹤多個目標職缺，支援優先序與關鍵字
 - `快速 / 平衡 / 完整` 三種抓取模式
 - 職缺原文條目解析：
@@ -77,6 +84,13 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+如果要啟用 Google / Facebook OAuth，還需要安裝 Streamlit 的 OIDC 依賴：
+
+```bash
+source .venv/bin/activate
+pip install "streamlit[auth]"
+```
+
 ## 啟動方式
 
 ### Streamlit Web App
@@ -85,6 +99,145 @@ pip install -e .
 source .venv/bin/activate
 streamlit run app.py
 ```
+
+### 本地完整後端堆疊
+
+如果你要用現在這套 `scheduler + worker + Streamlit app` 的夠用服務模式，直接跑：
+
+```bash
+source .venv/bin/activate
+./scripts/start_backend_stack.sh
+```
+
+這個腳本會：
+
+- 啟動 Streamlit app
+- 啟動 crawl scheduler
+- 啟動 crawl worker
+- 預設把 `JOB_SPY_CRAWL_EXECUTION_MODE` 設成 `worker`
+- 預設把 `JOB_SPY_ENABLE_BACKEND_CONSOLE` 設成 `false`
+
+如果你還想臨時打開開發用後端控制台：
+
+```bash
+source .venv/bin/activate
+JOB_SPY_ENABLE_BACKEND_CONSOLE=true ./scripts/start_backend_stack.sh
+```
+
+### SQLite 備份 / 還原
+
+這組工具是給後端營運用的，不是 schema migration 工具。預設只處理真正需要保留的資料：
+
+- `product_state.sqlite3`
+- `user_submissions.sqlite3`
+- `market_history.sqlite3`
+
+`query_runtime.sqlite3` 預設不備份，因為它偏 runtime 狀態，可重建；如果你真的要一起帶走，再加 `--include-runtime`。
+
+建立備份：
+
+```bash
+source .venv/bin/activate
+job-radar-sqlite-maintenance backup --base-dir .
+```
+
+如果你要固定保留最近 `14` 份備份：
+
+```bash
+source .venv/bin/activate
+job-radar-sqlite-maintenance backup --base-dir . --keep-last 14
+```
+
+還原前先停掉 app / worker / scheduler，然後用：
+
+```bash
+source .venv/bin/activate
+job-radar-sqlite-maintenance restore --base-dir . --backup data/backups/sqlite/<backup-id> --yes
+```
+
+還原時系統會先自動做一份 `pre-restore-*` 安全備份，再覆蓋目前資料。
+
+如果你要跑固定備份流程，也可以直接用：
+
+```bash
+source .venv/bin/activate
+./scripts/run_sqlite_backup.sh
+```
+
+它預設會保留最近 `14` 份備份；要調整可以改 `JOB_SPY_SQLITE_BACKUP_KEEP_LAST`。
+
+如果你要把「cleanup + backup」一起固定跑，直接用：
+
+```bash
+source .venv/bin/activate
+./scripts/run_backend_maintenance.sh
+```
+
+這個 daily ops 入口會：
+
+- 跑一次 runtime cleanup
+- 跑一次 SQLite backup
+- 保留最近 `14` 份備份
+
+如果你要在沒有 backend web 頁的情況下看目前營運狀態：
+
+```bash
+source .venv/bin/activate
+./scripts/run_backend_status.sh
+```
+
+如果你要做一次不碰正式資料的 restore 演練：
+
+```bash
+source .venv/bin/activate
+./scripts/run_restore_drill.sh
+```
+
+如果你要把 `worker`、`scheduler`、每日 maintenance 接到 macOS 本機常駐環境：
+
+```bash
+source .venv/bin/activate
+./scripts/install_launch_agents.sh
+```
+
+這套安裝會把 runtime 同步到 `~/.job-radar-runtime`，資料放到 `~/.job-radar-data`。原因是 macOS 的 `Desktop` 受保護，`launchd` 不能直接從目前這個專案路徑常駐執行。
+
+如果你要把它接進監控或 cron 檢查，改跑：
+
+```bash
+source .venv/bin/activate
+./scripts/run_backend_status.sh --strict
+```
+
+只要偵測到 issue，它就會回傳 non-zero exit code。
+
+### OAuth 設定
+
+OAuth 入口現在走 Streamlit 內建的 OIDC。
+
+1. 複製設定範例：
+
+```bash
+cp .streamlit/secrets.example.toml .streamlit/secrets.toml
+```
+
+2. 填入 Google OIDC 設定：
+
+- `redirect_uri`
+- `cookie_secret`
+- `auth.google.client_id`
+- `auth.google.client_secret`
+
+3. 如果要開 Facebook 按鈕，必須提供 **OIDC** provider 設定：
+
+- `auth.facebook.client_id`
+- `auth.facebook.client_secret`
+- `auth.facebook.server_metadata_url`
+
+注意：
+- Streamlit 內建登入支援的是 **OIDC**，不是 generic OAuth。
+- Google 可以直接用官方 OIDC metadata。
+- Facebook 若沒有可用的 OIDC metadata endpoint，通常需要透過 Auth0 / Keycloak / 其他 broker 轉成 OIDC。
 
 ## 部署
 
@@ -106,6 +259,14 @@ docker compose up --build
 ```text
 http://localhost:8501
 ```
+
+這份 `docker-compose.yml` 現在會一起啟動：
+
+- `job-radar` Web App
+- `job-radar-worker`
+- `job-radar-scheduler`
+
+而且預設會把 app 切到 `worker` 執行模式，避免 UI 自己做背景工作。
 
 ### 用 Docker 直接跑單容器
 
@@ -167,6 +328,8 @@ https://你的服務名稱.onrender.com
 至少建議設定：
 
 - `JOB_SPY_DATA_DIR`
+- `JOB_SPY_CRAWL_EXECUTION_MODE=worker`
+- `JOB_SPY_ENABLE_BACKEND_CONSOLE=false`
 - `OPENAI_API_KEY`
 - `JOB_RADAR_SMTP_HOST`
 - `JOB_RADAR_SMTP_USERNAME`
@@ -210,7 +373,43 @@ job-radar-line-webhook
 - `JOB_SPY_MAX_DETAIL_JOBS_PER_SOURCE`
 - `JOB_SPY_MIN_RELEVANCE_SCORE`
 - `JOB_SPY_LOCATION`
+- `JOB_SPY_ENABLE_CAKE`
 - `JOB_SPY_ENABLE_LINKEDIN`
+- `JOB_SPY_ALLOW_INSECURE_SSL_FALLBACK`
+
+### 快取 / 儲存
+
+- `JOB_SPY_SNAPSHOT_TTL_SECONDS`
+- `JOB_SPY_SEARCH_CACHE_TTL_SECONDS`
+- `JOB_SPY_DETAIL_CACHE_TTL_SECONDS`
+- `JOB_SPY_CACHE_MAX_BYTES`
+- `JOB_SPY_CACHE_MAX_FILES`
+- `JOB_SPY_CACHE_BACKEND`
+- `JOB_SPY_QUEUE_BACKEND`
+- `JOB_SPY_DATABASE_BACKEND`
+
+### 後端背景工作
+
+- `JOB_SPY_CRAWL_EXECUTION_MODE`
+- `JOB_SPY_CRAWL_JOB_LEASE_SECONDS`
+- `JOB_SPY_ENABLE_BACKEND_CONSOLE`
+- `JOB_SPY_RUNTIME_JOB_MAX_RETRIES`
+- `JOB_SPY_RUNTIME_JOB_RETRY_BACKOFF_SECONDS`
+- `JOB_SPY_RUNTIME_CLEANUP_INTERVAL_SECONDS`
+- `JOB_SPY_RUNTIME_JOB_RETENTION_DAYS`
+- `JOB_SPY_RUNTIME_SNAPSHOT_RETENTION_DAYS`
+- `JOB_SPY_RUNTIME_PARTIAL_SNAPSHOT_RETENTION_HOURS`
+- `JOB_SPY_RUNTIME_SIGNAL_RETENTION_DAYS`
+- `JOB_SPY_MARKET_HISTORY_RETENTION_DAYS`
+- `JOB_SPY_MARKET_HISTORY_MAX_RUNS_PER_QUERY`
+
+如果你現在走的是「夠用服務」模式，推薦直接用：
+
+```text
+JOB_SPY_CRAWL_EXECUTION_MODE=worker
+JOB_SPY_ENABLE_BACKEND_CONSOLE=false
+JOB_SPY_RUNTIME_JOB_MAX_RETRIES=1
+```
 
 ### OpenAI / AI 助理
 
@@ -252,7 +451,7 @@ job-radar-line-webhook
 ├── tests/
 └── src/job_spy_tw/
     ├── assistant/              # RAG chunks / retrieval / prompts / service
-    ├── connectors/             # 104 / 1111 / LinkedIn
+    ├── connectors/             # 104 / 1111 / Cake / LinkedIn
     ├── market_analysis/        # 技能與工作內容分析
     ├── notifications/          # Email / LINE channel
     ├── resume/                 # 履歷抽字 / 擷取 / 匹配 / 評分
