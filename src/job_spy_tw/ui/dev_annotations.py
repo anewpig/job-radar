@@ -6,7 +6,7 @@ import html
 
 import streamlit as st
 
-DEV_CARD_ANNOTATIONS_ENABLED = True
+DEV_CARD_ANNOTATIONS_ENABLED = False
 
 DevNamedItem = tuple[str, str]
 
@@ -83,6 +83,11 @@ def render_dev_card_annotation(
     normalized_layers = _normalize_items(layers)
     normalized_text_nodes = _normalize_named_items(text_nodes)
     normalized_notes = _normalize_items(notes)
+    annotation_key = popover_key or element_id.replace(" ", "-")
+    host_attrs = (
+        f' data-dev-annotation-key="{_escape(annotation_key)}"'
+        f' data-dev-element-id="{_escape(element_id)}"'
+    )
 
     shell_classes = ["dev-card-annotation-shell"]
     if compact:
@@ -91,19 +96,14 @@ def render_dev_card_annotation(
     if compact:
         row_classes.append("dev-card-annotation-row--compact")
 
-    pill_markup = (
-        "<div class=\"dev-card-annotation-left\">"
-        f"<span class=\"dev-card-annotation__pill\">開發標註 · {_escape(name)}</span>"
-        f"<span class=\"dev-card-annotation__id\">{_escape(element_id)}</span>"
-        "</div>"
-    )
+    trigger_markup = "<div class=\"dev-card-annotation-left\"></div>"
 
     if not show_popover:
         st.markdown(
             (
+                f"<div class=\"dev-card-annotation-host\"{host_attrs}>"
                 f"<div class=\"{' '.join(shell_classes)}\">"
-                f"<div class=\"{' '.join(row_classes)}\">"
-                f"{pill_markup}"
+                f"<div class=\"{' '.join(row_classes)}\">{trigger_markup}</div>"
                 "</div>"
                 "</div>"
             ),
@@ -111,9 +111,14 @@ def render_dev_card_annotation(
         )
         return
 
-    popover_key = popover_key or element_id.replace(" ", "-")
     detail_sections: list[str] = [
         f"<div class=\"dev-card-annotation-details__title\">{_escape(name)}</div>",
+        (
+            "<div class=\"dev-card-annotation-details__meta\">"
+            "開發標註："
+            f"<strong>{_escape(name)}</strong>"
+            "</div>"
+        ),
         (
             "<div class=\"dev-card-annotation-details__meta\">"
             "識別 key："
@@ -142,8 +147,8 @@ def render_dev_card_annotation(
         )
 
     details_markup = (
-        f"<details class=\"dev-card-annotation-details\" id=\"dev-annotation-{_escape(popover_key)}\">"
-        "<summary class=\"dev-card-annotation-details__summary\">層級與文字資訊</summary>"
+        f"<details class=\"dev-card-annotation-details\" id=\"dev-annotation-{_escape(annotation_key)}\">"
+        "<summary class=\"dev-card-annotation-details__summary\" aria-label=\"開發標註\">DEV</summary>"
         "<div class=\"dev-card-annotation-details__panel\">"
         f"{''.join(detail_sections)}"
         "</div>"
@@ -151,10 +156,9 @@ def render_dev_card_annotation(
     )
     st.markdown(
         (
+            f"<div class=\"dev-card-annotation-host\"{host_attrs}>"
             f"<div class=\"{' '.join(shell_classes)}\">"
-            f"<div class=\"{' '.join(row_classes)}\">"
-            f"{pill_markup}"
-            f"{details_markup}"
+            f"<div class=\"{' '.join(row_classes)}\">{trigger_markup}{details_markup}</div>"
             "</div>"
             "</div>"
         ),
