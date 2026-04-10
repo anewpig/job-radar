@@ -1,82 +1,81 @@
 # 職缺雷達
 
-職缺雷達是一個面向台灣求職市場的 Streamlit 產品原型。  
-它會從 `104`、`1111`、`Cake`、`LinkedIn` 抓公開職缺，拆出原文中的工作內容、技能需求與條件，並把結果整理成：
+職缺雷達（Job Radar）是一個面向台灣求職市場的 Streamlit 產品原型。
+它會從 `104`、`1111`、`Cake`、`LinkedIn` 抓取公開職缺，整理成可操作的求職工作台，並把原始職缺內容進一步轉成：
 
-- 職缺總覽
-- 工作內容統計
-- 技能地圖
-- 履歷匹配
-- AI 助理 / RAG 問答
-- 追蹤中心 / 通知設定
-- 投遞流程管理看板
+- 職缺總覽與市場快照
+- 工作內容與技能統計
+- 履歷匹配與缺口分析
+- AI 助手 / RAG 問答
+- 已儲存搜尋、收藏、通知與投遞看板
+- 後端 worker / scheduler / 備份維運工具
 
-目前專案已整理成「入口層 + UI runtime 層 + 分析層 + 儲存層」的結構。`app.py` 只保留高層組裝，bootstrap、staged crawl、routing 都已拆到 `src/job_spy_tw/ui/` 內的專責模組。
+這個專案目前定位是「可實際操作的產品原型 + 可本地部署的單機服務」。
+核心形態是 `Streamlit Web App + SQLite + JSON snapshot + background worker/scheduler`。
 
-## 開發文件
+## 核心能力
 
-- [系統架構](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/architecture.md)
-- [後端營運 Runbook](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/backend_runbook.md)
-- [維護指南](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/maintenance_guide.md)
-- [全面評估報告](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/review_report.md)
+### 1. 多來源職缺抓取
 
-## 功能概覽
+- 支援 `104`、`1111`、`Cake`、`LinkedIn`
+- 可同時追蹤多個目標職缺與關鍵字
+- 支援快速、平衡、完整等不同抓取節奏
+- 會做去重、初步相關度評分與低相關過濾
 
-### 1. 職缺抓取與市場整理
+### 2. 市場分析與整理
 
-- 多來源抓取：`104`、`1111`、`Cake`、`LinkedIn`
-- 追蹤多個目標職缺，支援優先序與關鍵字
-- `快速 / 平衡 / 完整` 三種抓取模式
-- 職缺原文條目解析：
-  - 工作內容
-  - 必備技能 / 條件
-  - 其他要求
-- 低相關職缺過濾，避免污染技能 / 工作內容統計
+- 統計常見技能、工具與工作內容
+- 比較不同來源的職缺量與分布
+- 將搜尋結果保存為 snapshot，供後續頁面與 AI 助手共用
 
-### 2. 分析與洞察
+### 3. 履歷匹配
 
-- 技能地圖：統計技能出現次數、重要度、分類
-- 工作內容統計：彙整職缺最常出現的任務與主題
-- 來源比較：比較各平台職缺量、角色分布、平均相關度
+- 支援貼上文字、PDF、DOCX 履歷輸入
+- 可做規則式或 LLM 輔助摘要
+- 產生履歷與職缺的匹配結果、命中項與缺口項
 
-### 3. 個人化功能
+### 4. AI 助手
 
-- 履歷上傳或貼文字
-- 規則式 / LLM 履歷摘要
-- 履歷與職缺匹配
-- 缺口分析：
-  - 已命中技能
-  - 已命中工作內容
-  - 建議補強技能
-  - 建議補強工作內容
-
-### 4. AI 助理
-
-- 用目前快照資料做 RAG 問答
-- 可回答：
-  - 優先學習技能
-  - 技能缺口
-  - 薪資區間
-  - 常見工作內容
-- 可依履歷或基本資料提供更個人化回答
-- 可產生簡短求職報告
+- 以目前市場 snapshot 為知識基底做 RAG 問答
+- 可回答技能缺口、優先投遞方向、常見工作內容與市場重點
+- 可結合履歷摘要做更個人化的回答
 
 ### 5. 產品化功能
 
-- 使用者系統：註冊 / 登入 / 忘記密碼
-- 每個使用者自己的：
-  - 已儲存搜尋
-  - 收藏職缺
-  - 履歷摘要
-  - 通知設定
-- 追蹤中心：重跑搜尋、看新職缺通知
-- 投遞看板：管理投遞狀態、日期、面試紀錄
-- 通知通道：
-  - 站內通知
-  - Email
-  - LINE
+- 訪客 / 註冊 / 登入 / 忘記密碼
+- 已儲存搜尋
+- 收藏職缺
+- 通知設定
+- 投遞流程管理看板
+- Email / LINE 通知通道
 
-## 安裝
+### 6. 營運與維護
+
+- SQLite 備份 / 還原
+- runtime cleanup
+- backend status 檢查
+- 本地 worker / scheduler / launchd 常駐模式
+- Docker Compose / Render 部署
+
+## 技術組成
+
+- 前端與 UI：`Streamlit`
+- 資料處理：`pandas`
+- HTML 解析：`beautifulsoup4`、`lxml`
+- 履歷抽字：`pypdf`、`python-docx`
+- AI：`openai`
+- 儲存：`SQLite` + `JSON snapshot` + 檔案快取
+- 部署：`Docker`、`docker-compose`、`Render`
+
+## 快速開始
+
+### 需求
+
+- Python `3.11+`
+- 建議使用虛擬環境
+- 若要啟用 AI 功能，需準備 `OPENAI_API_KEY`
+
+### 1. 安裝
 
 ```bash
 python3 -m venv .venv
@@ -84,16 +83,48 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-如果要啟用 Google / Facebook OAuth，還需要安裝 Streamlit 的 OIDC 依賴：
+如果你要啟用 Streamlit 內建 OIDC 登入，再額外安裝：
 
 ```bash
 source .venv/bin/activate
 pip install "streamlit[auth]"
 ```
 
-## 啟動方式
+### 2. 建立環境設定
 
-### Streamlit Web App
+```bash
+cp .env.example .env
+```
+
+`[.env.example](.env.example)` 預設把資料與 runtime 指到：
+
+- `~/.job-radar-runtime`
+- `~/.job-radar-data`
+
+如果你只是本地開發，也可以改成專案內路徑，例如：
+
+```env
+JOB_SPY_DATA_DIR=./data
+```
+
+### 3. 啟動 Web App
+
+```bash
+source .venv/bin/activate
+streamlit run app.py
+```
+
+啟動後預設網址：
+
+```text
+http://localhost:8501
+```
+
+## 啟動模式
+
+### 只開 Web App
+
+適合 UI 開發、手動操作與單人本地測試。
 
 ```bash
 source .venv/bin/activate
@@ -102,37 +133,99 @@ streamlit run app.py
 
 ### 本地完整後端堆疊
 
-如果你要用現在這套 `scheduler + worker + Streamlit app` 的夠用服務模式，直接跑：
+適合模擬實際運作模式，會同時啟動：
+
+- Streamlit app
+- crawl scheduler
+- crawl worker
 
 ```bash
 source .venv/bin/activate
 ./scripts/start_backend_stack.sh
 ```
 
-這個腳本會：
-
-- 啟動 Streamlit app
-- 啟動 crawl scheduler
-- 啟動 crawl worker
-- 預設把 `JOB_SPY_CRAWL_EXECUTION_MODE` 設成 `worker`
-- 預設把 `JOB_SPY_ENABLE_BACKEND_CONSOLE` 設成 `false`
-
-如果你還想臨時打開開發用後端控制台：
+如果你要單獨啟動 worker / scheduler：
 
 ```bash
 source .venv/bin/activate
-JOB_SPY_ENABLE_BACKEND_CONSOLE=true ./scripts/start_backend_stack.sh
+./scripts/start_crawl_worker.sh
+./scripts/start_crawl_scheduler.sh
 ```
 
-### SQLite 備份 / 還原
+### Docker Compose
 
-這組工具是給後端營運用的，不是 schema migration 工具。預設只處理真正需要保留的資料：
+```bash
+docker compose up --build
+```
 
-- `product_state.sqlite3`
-- `user_submissions.sqlite3`
-- `market_history.sqlite3`
+`[docker-compose.yml](docker-compose.yml)` 會啟動三個服務：
 
-`query_runtime.sqlite3` 預設不備份，因為它偏 runtime 狀態，可重建；如果你真的要一起帶走，再加 `--include-runtime`。
+- `job-radar`
+- `job-radar-worker`
+- `job-radar-scheduler`
+
+## OIDC 登入設定
+
+如果你要啟用 Google / Facebook 登入：
+
+1. 安裝 `streamlit[auth]`
+2. 複製 secrets 範例：
+
+```bash
+cp .streamlit/secrets.example.toml .streamlit/secrets.toml
+```
+
+3. 填入 `[.streamlit/secrets.example.toml](.streamlit/secrets.example.toml)` 中的 OIDC 設定
+
+目前結構如下：
+
+- `auth.redirect_uri`
+- `auth.cookie_secret`
+- `auth.google.client_id`
+- `auth.google.client_secret`
+- `auth.google.server_metadata_url`
+
+如果你要顯示 Facebook 登入按鈕，注意：
+
+- Streamlit 內建登入只支援 **OIDC**
+- Facebook 這裡不能直接填原生 OAuth authorize URL
+- 實務上通常需要透過 Auth0 / Keycloak / 其他 broker 轉成 OIDC provider
+
+## 常用 CLI / 維運指令
+
+### 一次跑完整抓取
+
+```bash
+source .venv/bin/activate
+job-spy
+job-spy --query "AI工程師" --query "Machine Learning Engineer"
+```
+
+### Worker / Scheduler
+
+```bash
+source .venv/bin/activate
+job-radar-crawl-worker
+job-radar-crawl-scheduler
+```
+
+### 後端狀態與維護
+
+```bash
+source .venv/bin/activate
+job-radar-backend-status
+job-radar-backend-maintenance
+```
+
+或直接使用腳本：
+
+```bash
+source .venv/bin/activate
+./scripts/run_backend_status.sh
+./scripts/run_backend_maintenance.sh
+```
+
+### SQLite 備份與還原
 
 建立備份：
 
@@ -141,231 +234,91 @@ source .venv/bin/activate
 job-radar-sqlite-maintenance backup --base-dir .
 ```
 
-如果你要固定保留最近 `14` 份備份：
+如果要把 runtime DB 一起備份：
 
 ```bash
 source .venv/bin/activate
-job-radar-sqlite-maintenance backup --base-dir . --keep-last 14
+job-radar-sqlite-maintenance backup --base-dir . --include-runtime
 ```
 
-還原前先停掉 app / worker / scheduler，然後用：
+還原：
 
 ```bash
 source .venv/bin/activate
 job-radar-sqlite-maintenance restore --base-dir . --backup data/backups/sqlite/<backup-id> --yes
 ```
 
-還原時系統會先自動做一份 `pre-restore-*` 安全備份，再覆蓋目前資料。
-
-如果你要跑固定備份流程，也可以直接用：
+做還原演練：
 
 ```bash
 source .venv/bin/activate
-./scripts/run_sqlite_backup.sh
-```
-
-它預設會保留最近 `14` 份備份；要調整可以改 `JOB_SPY_SQLITE_BACKUP_KEEP_LAST`。
-
-如果你要把「cleanup + backup」一起固定跑，直接用：
-
-```bash
-source .venv/bin/activate
-./scripts/run_backend_maintenance.sh
-```
-
-這個 daily ops 入口會：
-
-- 跑一次 runtime cleanup
-- 跑一次 SQLite backup
-- 保留最近 `14` 份備份
-
-如果你要在沒有 backend web 頁的情況下看目前營運狀態：
-
-```bash
-source .venv/bin/activate
-./scripts/run_backend_status.sh
-```
-
-如果你要做一次不碰正式資料的 restore 演練：
-
-```bash
-source .venv/bin/activate
-./scripts/run_restore_drill.sh
-```
-
-如果你要把 `worker`、`scheduler`、每日 maintenance 接到 macOS 本機常駐環境：
-
-```bash
-source .venv/bin/activate
-./scripts/install_launch_agents.sh
-```
-
-這套安裝會把 runtime 同步到 `~/.job-radar-runtime`，資料放到 `~/.job-radar-data`。原因是 macOS 的 `Desktop` 受保護，`launchd` 不能直接從目前這個專案路徑常駐執行。
-
-如果你要把它接進監控或 cron 檢查，改跑：
-
-```bash
-source .venv/bin/activate
-./scripts/run_backend_status.sh --strict
-```
-
-只要偵測到 issue，它就會回傳 non-zero exit code。
-
-### OAuth 設定
-
-OAuth 入口現在走 Streamlit 內建的 OIDC。
-
-1. 複製設定範例：
-
-```bash
-cp .streamlit/secrets.example.toml .streamlit/secrets.toml
-```
-
-2. 填入 Google OIDC 設定：
-
-- `redirect_uri`
-- `cookie_secret`
-- `auth.google.client_id`
-- `auth.google.client_secret`
-
-3. 如果要開 Facebook 按鈕，必須提供 **OIDC** provider 設定：
-
-- `auth.facebook.client_id`
-- `auth.facebook.client_secret`
-- `auth.facebook.server_metadata_url`
-
-注意：
-- Streamlit 內建登入支援的是 **OIDC**，不是 generic OAuth。
-- Google 可以直接用官方 OIDC metadata。
-- Facebook 若沒有可用的 OIDC metadata endpoint，通常需要透過 Auth0 / Keycloak / 其他 broker 轉成 OIDC。
-
-## 部署
-
-目前我已經把專案整理成可直接用 Docker 部署的版本，核心檔案是：
-
-- [Dockerfile](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/Dockerfile)
-- [docker-compose.yml](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docker-compose.yml)
-- [start_streamlit.sh](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/scripts/start_streamlit.sh)
-- [config.toml](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/.streamlit/config.toml)
-
-### 用 Docker 本機啟動
-
-```bash
-docker compose up --build
-```
-
-啟動後可從：
-
-```text
-http://localhost:8501
-```
-
-這份 `docker-compose.yml` 現在會一起啟動：
-
-- `job-radar` Web App
-- `job-radar-worker`
-- `job-radar-scheduler`
-
-而且預設會把 app 切到 `worker` 執行模式，避免 UI 自己做背景工作。
-
-### 用 Docker 直接跑單容器
-
-```bash
-docker build -t job-radar .
-docker run --rm -p 8501:8501 --env-file .env -v "$(pwd)/data:/app/data" job-radar
-```
-
-### 用 Render 部署
-
-如果你不要再本機常駐跑，這個專案已經準備好 Render Blueprint：
-
-- [render.yaml](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/render.yaml)
-- [Dockerfile](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/Dockerfile)
-- [start_streamlit.sh](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/scripts/start_streamlit.sh)
-
-上線步驟：
-
-1. 把專案推到 GitHub repository
-2. 到 Render 建立 `Blueprint`
-3. 選你的 repository
-4. Render 會自動讀取 [render.yaml](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/render.yaml)
-5. 在 Render 後台補上 secret 環境變數
-6. 等待 build 完成後，就會拿到 `onrender.com` 網址
-
-這份設定已經包含：
-
-- Docker Web Service
-- Render 指定的 `PORT`
-- 自動部署 `autoDeploy: true`
-
-如果你先用 Render 免費版：
-
-- [render.yaml](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/render.yaml) 已改成 `plan: free`
-- 不會掛 persistent disk
-- 本地 SQLite、收藏、搜尋條件、通知設定等資料可能在重新部署後消失
-- SMTP Email 通知在 Render free 方案上通常不適合直接使用，建議先把 Email 通知視為之後再補
-
-`JOB_RADAR_PUBLIC_BASE_URL` 在 Render 上通常填：
-
-```text
-https://你的服務名稱.onrender.com
-```
-
-### 上雲端平台前要注意
-
-- 這個專案會把快照、SQLite、cache 寫到 `JOB_SPY_DATA_DIR`
-- 部署到雲端時，建議把 `JOB_SPY_DATA_DIR` 指到有持久化的磁碟
-- 如果沒有持久化磁碟，重新部署後：
-  - 已儲存搜尋
-  - 收藏
-  - 通知設定
-  - 帳號資料
-  - 履歷摘要
-  可能會一起消失
-
-### 建議部署環境變數
-
-至少建議設定：
-
-- `JOB_SPY_DATA_DIR`
-- `JOB_SPY_CRAWL_EXECUTION_MODE=worker`
-- `JOB_SPY_ENABLE_BACKEND_CONSOLE=false`
-- `OPENAI_API_KEY`
-- `JOB_RADAR_SMTP_HOST`
-- `JOB_RADAR_SMTP_USERNAME`
-- `JOB_RADAR_SMTP_PASSWORD`
-- `JOB_RADAR_SMTP_FROM`
-
-如果要用 LINE：
-
-- `JOB_RADAR_LINE_CHANNEL_ACCESS_TOKEN`
-- `JOB_RADAR_LINE_CHANNEL_SECRET`
-- `JOB_RADAR_PUBLIC_BASE_URL`
-
-### CLI
-
-```bash
-source .venv/bin/activate
-job-spy
-job-spy --query "AI工程師" --query "Machine Learning Engineer"
+job-radar-sqlite-restore-drill --base-dir .
 ```
 
 ### LINE Webhook
 
-如果你要啟用 LINE 自動綁定：
+如果你要啟用 LINE 綁定 / 推播 webhook：
 
 ```bash
 source .venv/bin/activate
 job-radar-line-webhook
 ```
 
-## 環境變數
+## 部署
 
-可以先複製 [`.env.example`](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/.env.example)。
+### Docker 單容器
 
-### 抓取設定
+```bash
+docker build -t job-radar .
+docker run --rm -p 8501:8501 --env-file .env -v "$(pwd)/data:/app/data" job-radar
+```
+
+### Docker Compose
+
+```bash
+docker compose up --build
+```
+
+### Render
+
+專案內已提供 Render Blueprint：
+
+- `[render.yaml](render.yaml)`
+- `[Dockerfile](Dockerfile)`
+- `[scripts/start_streamlit.sh](scripts/start_streamlit.sh)`
+
+基本流程：
+
+1. 推到 GitHub repository
+2. 在 Render 建立 Blueprint
+3. 讓 Render 讀取 `[render.yaml](render.yaml)`
+4. 補上必要 secret
+5. 等待 build 與 deploy 完成
+
+目前 `[render.yaml](render.yaml)` 使用 `free` plan。
+如果沒有接 persistent disk，重新部署後下列資料可能消失：
+
+- 已儲存搜尋
+- 收藏
+- 通知設定
+- 帳號資料
+- 履歷摘要
+
+建議至少設定：
 
 - `JOB_SPY_DATA_DIR`
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL`（若需要）
+- `JOB_RADAR_SMTP_*`（若需要 Email）
+- `JOB_RADAR_LINE_*`（若需要 LINE）
+- `JOB_RADAR_PUBLIC_BASE_URL`（若需要對外 webhook / callback）
+
+## 重要環境變數
+
+完整範例請看 `[.env.example](.env.example)`。
+
+### 抓取與分析
+
 - `JOB_SPY_REQUEST_TIMEOUT`
 - `JOB_SPY_REQUEST_DELAY`
 - `JOB_SPY_MAX_CONCURRENT_REQUESTS`
@@ -375,43 +328,18 @@ job-radar-line-webhook
 - `JOB_SPY_LOCATION`
 - `JOB_SPY_ENABLE_CAKE`
 - `JOB_SPY_ENABLE_LINKEDIN`
-- `JOB_SPY_ALLOW_INSECURE_SSL_FALLBACK`
 
-### 快取 / 儲存
+### 儲存與 runtime
 
-- `JOB_SPY_SNAPSHOT_TTL_SECONDS`
-- `JOB_SPY_SEARCH_CACHE_TTL_SECONDS`
-- `JOB_SPY_DETAIL_CACHE_TTL_SECONDS`
-- `JOB_SPY_CACHE_MAX_BYTES`
-- `JOB_SPY_CACHE_MAX_FILES`
+- `JOB_RADAR_RUNTIME_ROOT`
+- `JOB_SPY_DATA_DIR`
 - `JOB_SPY_CACHE_BACKEND`
 - `JOB_SPY_QUEUE_BACKEND`
 - `JOB_SPY_DATABASE_BACKEND`
-
-### 後端背景工作
-
 - `JOB_SPY_CRAWL_EXECUTION_MODE`
-- `JOB_SPY_CRAWL_JOB_LEASE_SECONDS`
 - `JOB_SPY_ENABLE_BACKEND_CONSOLE`
-- `JOB_SPY_RUNTIME_JOB_MAX_RETRIES`
-- `JOB_SPY_RUNTIME_JOB_RETRY_BACKOFF_SECONDS`
-- `JOB_SPY_RUNTIME_CLEANUP_INTERVAL_SECONDS`
-- `JOB_SPY_RUNTIME_JOB_RETENTION_DAYS`
-- `JOB_SPY_RUNTIME_SNAPSHOT_RETENTION_DAYS`
-- `JOB_SPY_RUNTIME_PARTIAL_SNAPSHOT_RETENTION_HOURS`
-- `JOB_SPY_RUNTIME_SIGNAL_RETENTION_DAYS`
-- `JOB_SPY_MARKET_HISTORY_RETENTION_DAYS`
-- `JOB_SPY_MARKET_HISTORY_MAX_RUNS_PER_QUERY`
 
-如果你現在走的是「夠用服務」模式，推薦直接用：
-
-```text
-JOB_SPY_CRAWL_EXECUTION_MODE=worker
-JOB_SPY_ENABLE_BACKEND_CONSOLE=false
-JOB_SPY_RUNTIME_JOB_MAX_RETRIES=1
-```
-
-### OpenAI / AI 助理
+### AI
 
 - `OPENAI_API_KEY`
 - `OPENAI_BASE_URL`
@@ -420,130 +348,92 @@ JOB_SPY_RUNTIME_JOB_MAX_RETRIES=1
 - `JOB_SPY_EMBEDDING_MODEL`
 - `JOB_SPY_ASSISTANT_MODEL`
 
-### Email 通知
+### 通知
 
 - `JOB_RADAR_SMTP_HOST`
 - `JOB_RADAR_SMTP_PORT`
 - `JOB_RADAR_SMTP_USERNAME`
 - `JOB_RADAR_SMTP_PASSWORD`
 - `JOB_RADAR_SMTP_FROM`
-- `JOB_RADAR_SMTP_USE_TLS`
-- `JOB_RADAR_SMTP_USE_SSL`
-
-### LINE 通知 / 綁定
-
 - `JOB_RADAR_LINE_CHANNEL_ACCESS_TOKEN`
 - `JOB_RADAR_LINE_CHANNEL_SECRET`
 - `JOB_RADAR_LINE_TO`
 - `JOB_RADAR_PUBLIC_BASE_URL`
-- `JOB_RADAR_LINE_WEBHOOK_HOST`
-- `JOB_RADAR_LINE_WEBHOOK_PORT`
+
+## 資料儲存位置
+
+預設資料根目錄由 `JOB_SPY_DATA_DIR` 決定。
+
+重要檔案包括：
+
+- `jobs_latest.json`：最新市場快照
+- `snapshots/`：歷史快照
+- `cache/`：HTML / detail / search cache
+- `product_state.sqlite3`：帳號、收藏、通知、已儲存搜尋、看板
+- `user_submissions.sqlite3`：履歷與使用者提交資料
+- `query_runtime.sqlite3`：queue / runtime 狀態
+- `market_history.sqlite3`：歷史分析資料
+- `backups/sqlite/`：SQLite 備份
 
 ## 專案結構
 
 ```text
 .
 ├── app.py
-├── README.md
+├── Dockerfile
+├── docker-compose.yml
+├── render.yaml
+├── scripts/
 ├── docs/
-│   └── maintenance_guide.md
-├── data/
 ├── tests/
 └── src/job_spy_tw/
-    ├── assistant/              # RAG chunks / retrieval / prompts / service
-    ├── connectors/             # 104 / 1111 / Cake / LinkedIn
-    ├── market_analysis/        # 技能與工作內容分析
-    ├── notifications/          # Email / LINE channel
-    ├── resume/                 # 履歷抽字 / 擷取 / 匹配 / 評分
-    ├── settings/               # Settings / env / loader
-    ├── store/                  # SQLite repositories
-    ├── ui/
-    │   ├── auth.py
-    │   ├── charts.py
-    │   ├── common.py
-    │   ├── frames.py
-    │   ├── page_context.py
-    │   ├── pages_market.py
-    │   ├── pages_product.py
-    │   ├── pages_resume_assistant.py
-    │   ├── resources.py
-    │   ├── search.py
-    │   ├── session.py
-    │   └── styles.py
-    ├── analysis.py             # facade
-    ├── config.py               # facade
-    ├── notification_service.py # facade
-    ├── product_store.py        # facade
-    ├── rag_assistant.py        # facade
-    └── resume_analysis.py      # facade
+    ├── assistant/          # RAG chunks / retrieval / prompts / service
+    ├── connectors/         # 104 / 1111 / Cake / LinkedIn
+    ├── market_analysis/    # 技能與工作內容分析
+    ├── notifications/      # Email / LINE channel
+    ├── resume/             # 履歷抽字 / 匹配 / 評分
+    ├── settings/           # env 與 settings loader
+    ├── store/              # SQLite repositories
+    ├── ui/                 # Streamlit UI、routing、bootstrap、pages、styles
+    ├── pipeline.py         # 抓取與快照組裝
+    ├── product_store.py    # 產品層 facade
+    ├── rag_assistant.py    # AI 助手 facade
+    └── resume_analysis.py  # 履歷分析 facade
 ```
 
-## 目前資料儲存
+## 測試與驗證
 
-### 快照 / 快取
+最小 smoke test：
 
-- [data/jobs_latest.json](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/data/jobs_latest.json)
-- [data/cache](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/data/cache)
+```bash
+source .venv/bin/activate
+env PYTHONPATH=src .venv/bin/python -c "import app; print('app import ok')"
+```
 
-### 使用者與產品狀態
-
-- [data/product_state.sqlite3](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/data/product_state.sqlite3)
-  - 帳號
-  - 已儲存搜尋
-  - 收藏職缺
-  - 通知設定
-  - 投遞看板
-  - 來訪人次
-- [data/user_submissions.sqlite3](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/data/user_submissions.sqlite3)
-  - 匿名化履歷分析資料
-  - 求職基本資料
-
-## 測試
+語法檢查：
 
 ```bash
 source .venv/bin/activate
 python -m compileall app.py src/job_spy_tw
-python -m unittest discover -s tests
 ```
 
-## 維護建議
+測試：
 
-### 要改 UI
-
-優先看：
-
-- [app.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/app.py)
-- [pages_market.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/ui/pages_market.py)
-- [pages_resume_assistant.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/ui/pages_resume_assistant.py)
-- [pages_product.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/ui/pages_product.py)
-- [renderers.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/ui/renderers.py)
-- [charts.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/ui/charts.py)
-
-### 要改履歷匹配
-
-優先看：
-
-- [service.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/resume/service.py)
-- [matchers.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/resume/matchers.py)
-- [scoring.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/resume/scoring.py)
-
-### 要改追蹤 / 通知 / 看板
-
-優先看：
-
-- [pages_product.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/ui/pages_product.py)
-- [product_store.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/product_store.py)
-- [favorites.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/store/favorites.py)
-- [notifications.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/store/notifications.py)
-- [service.py](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/src/job_spy_tw/notifications/service.py)
-
-## 注意事項
-
-- 求職網站版型可能變動，connector selector 未來仍可能需要調整。
-- LinkedIn 對公開頁面限制較多，detail 內容可能不如 104 穩定。
-- PDF / DOCX 履歷抽字依賴對應套件與檔案本身品質；掃描版 PDF 可能需要 OCR。
-- 使用前請自行確認各平台服務條款、robots 與抓取頻率限制。
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -p "test_*.py"
+```
 
 ## 延伸文件
 
-- 維護導覽：[docs/maintenance_guide.md](/Users/zhuangcaizhen/Desktop/專案/職缺爬蟲/docs/maintenance_guide.md)
+- `[docs/architecture.md](docs/architecture.md)`：系統分層與資料流
+- `[docs/backend_runbook.md](docs/backend_runbook.md)`：本地營運與日常操作
+- `[docs/maintenance_guide.md](docs/maintenance_guide.md)`：維護導覽
+- `[docs/review_report.md](docs/review_report.md)`：整體評估與風險盤點
+
+## 注意事項
+
+- 各求職網站頁面結構可能變動，connector 需要持續維護
+- LinkedIn 公開頁面限制較多，資料穩定度可能不如其他來源
+- 掃描型 PDF 履歷若沒有 OCR，抽字品質會受限
+- 使用前請自行確認各平台服務條款、robots 與抓取頻率限制
