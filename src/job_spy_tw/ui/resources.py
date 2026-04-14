@@ -9,8 +9,9 @@ import streamlit as st
 from ..config import load_settings
 from ..notification_service import NotificationService
 from ..product_store import ProductStore
-from ..rag_assistant import JobMarketRAGAssistant
+from ..application.assistant import AssistantApplication, AssistantConfig
 from ..search_keyword_recommender import RoleKeywordRecommender
+from ..salary_prediction import load_salary_estimator
 from ..user_data_store import UserDataStore
 
 
@@ -71,15 +72,61 @@ def get_rag_assistant(
     *,
     api_key: str,
     answer_model: str,
+    general_chat_model: str,
+    prompt_variant: str,
+    latency_profile: str,
     embedding_model: str,
     base_url: str,
     cache_dir: str,
-) -> JobMarketRAGAssistant:
+    persistent_index_sync_interval_seconds: int,
+    persistent_index_enabled: bool,
+    persistent_index_sources: tuple[str, ...],
+    persistent_index_max_snapshots: int,
+    persistent_index_max_history_rows: int,
+    external_search_enabled: bool,
+    external_search_provider: str,
+    external_search_max_results: int,
+    external_search_timeout_seconds: float,
+    external_search_cache_ttl_seconds: int,
+    salary_prediction_enabled: bool,
+    salary_prediction_model_path: str,
+) -> AssistantApplication:
     """回傳 AI 助理頁面會使用的快取 RAG 服務。"""
-    return JobMarketRAGAssistant(
-        api_key=api_key,
-        answer_model=answer_model,
-        embedding_model=embedding_model,
-        base_url=base_url,
-        cache_dir=Path(cache_dir),
+    return AssistantApplication.from_config(
+        AssistantConfig(
+            api_key=api_key,
+            answer_model=answer_model,
+            general_chat_model=general_chat_model,
+            prompt_variant=prompt_variant,
+            latency_profile=latency_profile,
+            embedding_model=embedding_model,
+            base_url=base_url,
+            cache_dir=Path(cache_dir),
+            persistent_index_sync_interval_seconds=persistent_index_sync_interval_seconds,
+            persistent_index_enabled=persistent_index_enabled,
+            persistent_index_sources=persistent_index_sources,
+            persistent_index_max_snapshots=persistent_index_max_snapshots,
+            persistent_index_max_history_rows=persistent_index_max_history_rows,
+            external_search_enabled=external_search_enabled,
+            external_search_provider=external_search_provider,
+            external_search_max_results=external_search_max_results,
+            external_search_timeout_seconds=external_search_timeout_seconds,
+            external_search_cache_ttl_seconds=external_search_cache_ttl_seconds,
+            salary_prediction_enabled=salary_prediction_enabled,
+            salary_prediction_model_path=(
+                Path(salary_prediction_model_path)
+                if salary_prediction_model_path
+                else None
+            ),
+        )
     )
+
+
+@st.cache_resource
+def get_salary_estimator(
+    *,
+    enabled: bool,
+    model_path: str,
+):
+    """回傳 job card 與助理共用的薪資預估器。"""
+    return load_salary_estimator(model_path, enabled=enabled)

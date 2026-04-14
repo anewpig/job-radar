@@ -1,9 +1,6 @@
-"""提供吸頂 Header 與登入對話框的 CSS 片段。"""
+"""提供 Header 與 auth dialog 的 CSS 片段。"""
 
-# 這個模組不是函式集合，而是把 Header 與登入相關的 CSS 片段集中管理。
-# `styles.py` 會把這個字串和其他 style fragment 串起來，再一次注入到 Streamlit 頁面。
 HEADER_AUTH_STYLES = """
-/* Header 的 fixed 容器：負責讓整條導覽列吸頂。 */
 .top-header-fixed {
     position: fixed;
     top: 0;
@@ -13,35 +10,32 @@ HEADER_AUTH_STYLES = """
     pointer-events: none;
 }
 
-/* Host 本身不占版面高度，只作為 fixed header 的掛載點。 */
 .top-header-host {
     height: 0;
     line-height: 0;
     overflow: visible;
 }
 
-/* Header 主外框：控制背景、陰影、邊框與內距。 */
 .top-header-shell {
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--surface-content-gap);
+    gap: 1rem;
     margin: 0;
     width: 100%;
-    min-height: var(--top-header-height);
-    padding: var(--space-2) var(--space-3);
+    min-height: 3.5rem;
+    padding: 0.55rem 0.8rem;
     box-sizing: border-box;
     border-radius: 0;
-    border: 1px solid var(--surface-floating-border);
+    border: 1px solid rgba(123, 97, 255, 0.10);
     background: rgba(255,255,255,0.92);
-    box-shadow: var(--surface-floating-shadow);
+    box-shadow: 0 14px 30px rgba(116, 86, 204, 0.10);
     backdrop-filter: blur(16px);
     pointer-events: auto;
 }
 
-/* Header 右上角的柔光裝飾。 */
 .top-header-shell::after {
     content: "";
     position: absolute;
@@ -54,16 +48,13 @@ HEADER_AUTH_STYLES = """
     pointer-events: none;
 }
 
-/* 品牌區塊：包含 JR logo、站名與副標。 */
 .top-header-brand {
     display: flex;
     align-items: center;
-    gap: var(--surface-content-gap-tight);
+    gap: 0.85rem;
     min-width: 0;
-    padding-left: 3.45rem;
 }
 
-/* Header 左側的品牌 logo。 */
 .top-header-logo {
     width: 2.7rem;
     height: 2.7rem;
@@ -79,7 +70,6 @@ HEADER_AUTH_STYLES = """
     flex-shrink: 0;
 }
 
-/* Header 主標文字。 */
 .top-header-title {
     font-size: 1rem;
     font-weight: 800;
@@ -87,15 +77,13 @@ HEADER_AUTH_STYLES = """
     line-height: 1.1;
 }
 
-/* Header 副標文字。 */
 .top-header-subtitle {
-    margin-top: var(--space-1);
+    margin-top: 0.12rem;
     color: #756f97;
     font-size: 0.8rem;
     line-height: 1.35;
 }
 
-/* 右上角登入 trigger 的定位容器。 */
 .st-key-header-auth-trigger-button {
     position: fixed;
     top: 0;
@@ -111,19 +99,17 @@ HEADER_AUTH_STYLES = """
     overflow: visible;
 }
 
-/* Streamlit 產生的 auth button wrapper。 */
 .st-key-header-auth-trigger-button .stButton {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    min-height: var(--top-header-height);
-    padding: 0 var(--space-1) 0 0;
+    min-height: 3.5rem;
+    padding: 0 0.18rem 0 0;
 }
 
-/* 真正可點擊的登入文字按鈕。 */
 .st-key-header-auth-trigger-button .stButton > button {
     min-height: auto;
-    padding: var(--space-1);
+    padding: 0.2rem 0.1rem;
     border: none;
     background: transparent;
     box-shadow: none;
@@ -134,7 +120,6 @@ HEADER_AUTH_STYLES = """
     pointer-events: auto;
 }
 
-/* 登入按鈕 hover 保持極簡，不額外畫底色或邊框。 */
 .st-key-header-auth-trigger-button .stButton > button:hover {
     color: #756f97;
     border: none;
@@ -142,86 +127,405 @@ HEADER_AUTH_STYLES = """
     box-shadow: none;
 }
 
-/* Streamlit dialog 外框：控制登入 / 帳號面板的圓角與陰影。 */
+[data-testid="stDialog"] {
+    backdrop-filter: blur(14px);
+}
+
 [data-testid="stDialog"] [role="dialog"] {
-    border-radius: var(--surface-radius-xl) !important;
-    border: 1px solid var(--surface-floating-border) !important;
-    box-shadow: var(--surface-floating-shadow) !important;
+    border-radius: 32px !important;
+    border: 1px solid rgba(123, 97, 255, 0.10) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(249,246,255,0.98) 100%) !important;
+    box-shadow: 0 34px 80px rgba(31, 27, 77, 0.20) !important;
+    overflow: hidden !important;
 }
 
-/* Dialog 內容的最外層排版容器。 */
+[data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) {
+    width: min(68rem, calc(100vw - 2rem)) !important;
+    max-width: 68rem !important;
+}
+
+[data-testid="stDialog"] [role="dialog"]:has(.auth-dialog-shell--account) {
+    width: min(31rem, calc(100vw - 2rem)) !important;
+    max-width: 31rem !important;
+}
+
+[data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) [data-testid="stVerticalBlock"] {
+    gap: 0 !important;
+}
+
+.st-key-auth-page-shell {
+    position: relative;
+    padding: 0.35rem 0.2rem 0.25rem;
+}
+
+.st-key-auth-page-shell::before {
+    content: "";
+    position: absolute;
+    left: 1.2rem;
+    top: 1rem;
+    width: 15rem;
+    height: 15rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255, 215, 126, 0.18) 0%, rgba(255, 215, 126, 0.02) 72%, transparent 100%);
+    pointer-events: none;
+}
+
+.st-key-auth-page-shell::after {
+    content: "";
+    position: absolute;
+    right: 1.2rem;
+    bottom: 1rem;
+    width: 17rem;
+    height: 17rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(123, 97, 255, 0.14) 0%, rgba(123, 97, 255, 0.02) 74%, transparent 100%);
+    pointer-events: none;
+}
+
+.st-key-auth-page-shell [data-testid="stHorizontalBlock"] {
+    align-items: stretch;
+    gap: var(--space-4) !important;
+}
+
+.st-key-auth-page-brand-shell,
+.st-key-auth-page-form-shell {
+    position: relative;
+    z-index: 1;
+}
+
+.st-key-auth-page-brand-shell > div,
+.st-key-auth-page-form-shell > div {
+    height: 100%;
+    padding: 1.45rem;
+    border-radius: 28px;
+    border: 1px solid rgba(123, 97, 255, 0.10);
+    box-shadow: 0 20px 42px rgba(88, 72, 160, 0.10);
+}
+
+.st-key-auth-page-brand-shell > div {
+    background:
+        radial-gradient(circle at top left, rgba(255, 215, 126, 0.22), transparent 34%),
+        linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(247,242,255,0.92) 62%, rgba(242,236,255,0.96) 100%);
+}
+
+.st-key-auth-page-form-shell > div {
+    background: linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(251,249,255,0.99) 100%);
+}
+
+.auth-page-pane,
 .auth-dialog-shell {
-    padding: var(--space-1) 0 var(--space-1);
-    text-align: center;
+    position: relative;
 }
 
-/* Dialog 上方品牌列。 */
+.auth-page-kicker,
+.auth-pane-kicker {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.auth-page-brand-row,
 .auth-dialog-brand {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: var(--surface-content-gap-tight);
-    justify-content: center;
+    gap: var(--space-3);
 }
 
-/* Dialog 內的品牌 logo。 */
+.auth-page-brand-row {
+    margin-top: var(--space-3);
+}
+
 .auth-dialog-logo {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 18px;
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--control-primary-bg);
+    background: linear-gradient(135deg, #6f56f6 0%, #7b61ff 55%, #9672ff 100%);
     color: #ffffff;
     font-size: 1rem;
     font-weight: 900;
-    box-shadow: var(--control-primary-shadow);
+    box-shadow: 0 16px 28px rgba(123, 97, 255, 0.22);
+    flex-shrink: 0;
 }
 
-/* Dialog 主標。 */
+.auth-page-title,
 .auth-dialog-title {
-    font-size: 1.7rem;
-    line-height: 1.1;
+    font-size: 2.02rem;
+    line-height: 1.08;
+    font-weight: 900;
+    color: var(--text);
+}
+
+.auth-page-subtitle,
+.auth-dialog-subtitle {
+    margin-top: 0.18rem;
+    color: #6f6990;
+    font-size: 0.96rem;
+    line-height: 1.45;
+    font-weight: 700;
+}
+
+.auth-page-copy,
+.auth-pane-copy,
+.auth-account-copy {
+    margin-top: var(--space-3);
+    color: #645d85;
+    font-size: 0.95rem;
+    line-height: 1.75;
+}
+
+.auth-page-trust-row,
+.auth-account-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: var(--space-4);
+}
+
+.auth-page-trust-pill,
+.auth-account-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.78rem;
+    border-radius: 999px;
+    border: 1px solid rgba(123, 97, 255, 0.10);
+    background: rgba(255,255,255,0.72);
+    color: #534a82;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.st-key-dialog-google-login-shell,
+.st-key-dialog-facebook-login-shell {
+    margin-top: var(--space-3);
+}
+
+.auth-social-card {
+    padding: 1rem 1rem 0.88rem;
+    border-radius: 22px;
+    border: 1px solid rgba(123, 97, 255, 0.10);
+    background: rgba(255,255,255,0.82);
+    box-shadow: 0 14px 28px rgba(88, 72, 160, 0.08);
+}
+
+.auth-social-title {
+    font-size: 1rem;
+    line-height: 1.35;
     font-weight: 800;
     color: var(--text);
 }
 
-/* Dialog 副標與說明文字。 */
-.auth-dialog-subtitle {
-    margin-top: var(--space-1);
-    color: #6f6990;
-    font-size: 0.92rem;
-    line-height: 1.45;
+.auth-social-desc {
+    margin-top: 0.28rem;
+    color: #6d668d;
+    font-size: 0.88rem;
+    line-height: 1.6;
 }
 
-/* Dialog 裡的 tab 元件間距與樣式。 */
-[data-testid="stDialog"] [data-testid="stTabs"] {
+.st-key-dialog-google-login-shell .stButton,
+.st-key-dialog-facebook-login-shell .stButton {
+    margin-top: 0.78rem;
+}
+
+.st-key-dialog-google-login-shell .stButton > button,
+.st-key-dialog-facebook-login-shell .stButton > button {
+    min-height: 3.15rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,242,255,0.96) 100%);
+    border: 1px solid rgba(123, 97, 255, 0.14);
+    color: #463a86;
+    box-shadow: 0 12px 24px rgba(116, 86, 204, 0.08);
+}
+
+.st-key-dialog-google-login-shell .stButton > button:disabled,
+.st-key-dialog-facebook-login-shell .stButton > button:disabled {
+    opacity: 0.62;
+    box-shadow: none;
+}
+
+.auth-pane-title {
+    margin-top: var(--space-2);
+    font-size: 1.34rem;
+    line-height: 1.24;
+    font-weight: 850;
+    color: var(--text);
+}
+
+.auth-feedback {
+    margin: var(--space-3) 0 0;
+    padding: 0.92rem 1rem;
+    border-radius: 18px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-weight: 700;
+}
+
+.auth-feedback--error {
+    border: 1px solid rgba(226, 83, 103, 0.18);
+    background: rgba(255, 241, 244, 0.96);
+    color: #a53a4d;
+}
+
+.auth-feedback--success {
+    border: 1px solid rgba(62, 157, 104, 0.18);
+    background: rgba(239, 251, 244, 0.96);
+    color: #2b7c52;
+}
+
+.auth-form-label {
+    margin-top: var(--space-3);
+    font-size: 0.82rem;
+    line-height: 1.3;
+    font-weight: 800;
+    color: #585078;
+}
+
+.st-key-auth-page-form-shell form {
     margin-top: var(--space-2);
 }
 
-[data-testid="stDialog"] .stTabs [role="tablist"] {
-    gap: var(--space-1);
+.st-key-auth-page-form-shell [data-testid="stTextInput"] {
+    margin-top: 0.34rem;
 }
 
-[data-testid="stDialog"] .stTabs [role="tab"] {
-    border-radius: 999px;
-    padding-inline: 1rem;
+[data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) .stTextInput input,
+[data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) [data-baseweb="base-input"] input {
+    min-height: 3.15rem;
+    border-radius: 18px !important;
+    border: 1px solid rgba(123, 97, 255, 0.14) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
 }
 
-[data-testid="stDialog"] .stTabs [aria-selected="true"] {
-    background: rgba(123, 97, 255, 0.10);
-    color: #5e49cf;
+[data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) .stTextInput input:focus,
+[data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) [data-baseweb="base-input"] input:focus {
+    border-color: rgba(123, 97, 255, 0.28) !important;
+    box-shadow: 0 0 0 4px rgba(123, 97, 255, 0.10) !important;
 }
 
-/* 窄視窗下微調 header 高度、品牌區與登入按鈕位置。 */
+.auth-field-error {
+    margin-top: 0.38rem;
+    color: #b23f56;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    font-weight: 700;
+}
+
+.st-key-dialog-auth-tab-login .stButton > button,
+.st-key-dialog-auth-tab-register .stButton > button {
+    min-height: 3rem;
+    border-radius: 18px;
+}
+
+.st-key-dialog-open-forgot-password .stButton > button,
+.st-key-dialog-switch-register-link .stButton > button,
+.st-key-dialog-back-to-login-from-forgot-request .stButton > button,
+.st-key-dialog-back-to-login-from-forgot-confirm .stButton > button {
+    min-height: 2.8rem;
+    border-radius: 16px;
+    box-shadow: none;
+}
+
+.auth-step-shell {
+    margin-top: var(--space-3);
+    padding: 1rem 1rem 0.95rem;
+    border-radius: 20px;
+    border: 1px solid rgba(123, 97, 255, 0.10);
+    background: linear-gradient(180deg, rgba(248,245,255,0.96) 0%, rgba(255,255,255,0.92) 100%);
+}
+
+.auth-step-kicker {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.auth-step-title {
+    margin-top: 0.45rem;
+    font-size: 1.12rem;
+    line-height: 1.3;
+    font-weight: 850;
+    color: var(--text);
+}
+
+.auth-step-copy,
+.auth-inline-note {
+    margin-top: 0.45rem;
+    color: #6c658c;
+    font-size: 0.88rem;
+    line-height: 1.62;
+}
+
+.auth-inline-note--muted {
+    padding: 0.82rem 0.9rem;
+    border-radius: 16px;
+    border: 1px dashed rgba(123, 97, 255, 0.16);
+    background: rgba(248, 245, 255, 0.9);
+}
+
+.auth-dialog-shell {
+    padding: 0.25rem 0.05rem 0.12rem;
+}
+
+.auth-dialog-shell--account {
+    text-align: left;
+}
+
+.auth-dialog-shell--account .auth-dialog-title {
+    font-size: 1.55rem;
+}
+
+.st-key-dialog-logout-button .stButton {
+    margin-top: var(--space-4);
+}
+
+.st-key-dialog-logout-button .stButton > button {
+    min-height: 3.1rem;
+    border-radius: 18px;
+}
+
 @media (max-width: 960px) {
-    :root {
-        --top-header-height: var(--space-17);
+    [data-testid="stDialog"] [role="dialog"]:has(.st-key-auth-page-shell) {
+        width: min(calc(100vw - 1rem), 42rem) !important;
+        max-width: min(calc(100vw - 1rem), 42rem) !important;
+    }
+
+    .st-key-auth-page-shell {
+        padding: 0.1rem 0 0.1rem;
+    }
+
+    .st-key-auth-page-shell [data-testid="stHorizontalBlock"] {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3) !important;
+    }
+
+    .st-key-auth-page-brand-shell > div,
+    .st-key-auth-page-form-shell > div {
+        padding: 1.15rem;
+    }
+
+    .auth-page-title,
+    .auth-dialog-title {
+        font-size: 1.68rem;
+    }
+
+    .auth-page-trust-row,
+    .auth-account-pill-row {
+        gap: 0.5rem;
     }
 
     .top-header-shell {
         width: 100%;
-        padding-right: calc(var(--space-18) + var(--space-1));
+        min-height: 4.2rem;
+        padding-right: 4.8rem;
     }
 
     .top-header-subtitle {
@@ -229,17 +533,14 @@ HEADER_AUTH_STYLES = """
         line-height: 1.3;
     }
 
-    .top-header-brand {
-        padding-left: 3.3rem;
-    }
-
     .st-key-header-auth-trigger-button {
-        right: var(--space-1);
+        right: 0.2rem;
         width: auto;
     }
 
     .st-key-header-auth-trigger-button .stButton {
-        padding: 0 var(--space-1) 0 0;
+        min-height: 4.2rem;
+        padding: 0 0.18rem 0 0;
     }
 
     .st-key-header-auth-trigger-button .stButton > button {

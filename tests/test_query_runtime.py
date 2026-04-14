@@ -98,6 +98,58 @@ class QueryRuntimeTests(unittest.TestCase):
         self.assertFalse((self.runtime_dir / "snapshots" / partial.storage_key).exists())
         self.assertTrue((self.runtime_dir / "snapshots" / final_record.storage_key).exists())
 
+    def test_snapshot_registry_backfills_missing_columns_for_legacy_schema(self) -> None:
+        legacy_db_path = self.runtime_dir / "legacy_query_runtime.sqlite3"
+        with sqlite3.connect(legacy_db_path) as connection:
+            connection.execute(
+                """
+                CREATE TABLE query_snapshots (
+                    query_signature TEXT PRIMARY KEY,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    generated_at TEXT NOT NULL DEFAULT '',
+                    fresh_until TEXT NOT NULL DEFAULT '',
+                    storage_key TEXT NOT NULL DEFAULT '',
+                    last_accessed_at TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL DEFAULT ''
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO query_snapshots (
+                    query_signature,
+                    status,
+                    generated_at,
+                    fresh_until,
+                    storage_key,
+                    last_accessed_at,
+                    updated_at
+                ) VALUES (?, 'ready', ?, ?, ?, ?, ?)
+                """,
+                (
+                    "sig-legacy",
+                    "2026-04-06T01:00:00",
+                    "2026-04-06T01:30:00",
+                    "legacy.json",
+                    "2026-04-06T01:00:00",
+                    "2026-04-06T01:00:00",
+                ),
+            )
+            connection.commit()
+
+        registry = QuerySnapshotRegistry(
+            db_path=legacy_db_path,
+            snapshot_dir=self.runtime_dir / "legacy_snapshots",
+            snapshot_ttl_seconds=1800,
+        )
+
+        records = registry.list_snapshots(limit=5)
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0].query_signature, "sig-legacy")
+        self.assertEqual(records[0].error_message, "")
+        self.assertFalse(records[0].is_partial)
+
     def test_queue_dedupes_and_single_worker_leases_same_query(self) -> None:
         first_job = self.queue.enqueue_crawl("sig-3", priority=10, payload_json='{"q": 1}')
         second_job = self.queue.enqueue_crawl("sig-3", priority=10, payload_json='{"q": 1}')

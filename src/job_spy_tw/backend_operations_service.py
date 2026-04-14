@@ -100,7 +100,10 @@ def collect_backend_operations_snapshot(
     """Collect one developer-facing operations snapshot for the backend runtime."""
     users = product_store.list_users(include_guest=False)
     users_by_id = {int(user.id): user for user in users}
-    due_candidates = collect_due_saved_searches(product_store=product_store)
+    due_candidates = collect_due_saved_searches(
+        product_store=product_store,
+        settings=settings,
+    )
     registry, queue = build_query_runtime(settings)
     signal_store = RuntimeSignalStore(db_path=settings.query_state_db_path)
 

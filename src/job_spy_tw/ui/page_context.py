@@ -37,6 +37,8 @@ class PageContext:
     notification_service: NotificationService
     current_user_id: int
     current_user_is_guest: bool
+    current_user_role: str
+    backend_console_allowed: bool
     active_saved_search: SavedSearch | None
     favorite_jobs: list[FavoriteJob]
     favorite_urls: set[str]

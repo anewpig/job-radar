@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import sys
 import tempfile
@@ -68,6 +69,7 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
 
     def test_run_runtime_cleanup_prunes_old_artifacts_and_respects_interval(self) -> None:
         settings = self.build_settings()
+        settings.cache_max_files = 1
         registry = QuerySnapshotRegistry(
             db_path=settings.query_state_db_path,
             snapshot_dir=settings.snapshot_store_dir,
@@ -122,6 +124,24 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
             )
             connection.commit()
 
+        settings.cache_dir.mkdir(parents=True, exist_ok=True)
+        for key in ("cache-a", "cache-b"):
+            (settings.cache_dir / f"{key}.html").write_text(
+                f"<html>{key}</html>",
+                encoding="utf-8",
+            )
+            (settings.cache_dir / f"{key}.meta.json").write_text(
+                json.dumps(
+                    {
+                        "url": f"https://example.com/{key}",
+                        "created_at_ts": 1_700_000_000.0,
+                        "last_accessed_at_ts": 1_700_000_000.0,
+                        "ttl_seconds": 0.0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
         result = run_runtime_cleanup(
             settings=settings,
             trigger="test",
@@ -133,6 +153,8 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
         self.assertEqual(result.deleted_snapshot_rows, 1)
         self.assertGreaterEqual(result.deleted_snapshot_files, 1)
         self.assertEqual(result.deleted_signals, 1)
+        self.assertGreaterEqual(result.deleted_cache_files, 2)
+        self.assertLessEqual(result.retained_cache_files, 2)
         self.assertIsNone(queue.get_job(completed_job.id))
         self.assertIsNone(registry.get_snapshot("sig-old-partial"))
         self.assertFalse((settings.snapshot_store_dir / old_partial.storage_key).exists())
@@ -144,6 +166,61 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
         )
         self.assertEqual(skipped.status, "skipped")
         self.assertTrue(skipped.skipped_reason)
+
+    def test_run_runtime_cleanup_recovers_from_corrupted_cache_metadata(self) -> None:
+        settings = self.build_settings()
+        settings.cache_max_files = 2
+        settings.cache_dir.mkdir(parents=True, exist_ok=True)
+        (settings.cache_dir / "broken.html").write_text("<html>broken</html>", encoding="utf-8")
+        (settings.cache_dir / "broken.meta.json").write_text(
+            '{\n  "url": "https://example.com/broken"\n}\nnot-json',
+            encoding="utf-8",
+        )
+
+        result = run_runtime_cleanup(
+            settings=settings,
+            trigger="test",
+            force=True,
+        )
+
+        self.assertEqual(result.status, "completed")
+        self.assertEqual(result.deleted_cache_files, 0)
+        repaired_meta = settings.cache_dir / "broken.meta.json"
+        self.assertTrue(repaired_meta.exists())
+        self.assertEqual(json.loads(repaired_meta.read_text(encoding="utf-8"))["url"], "https://example.com/broken")
+
+    def test_run_runtime_cleanup_prunes_nested_cache_tree_to_remaining_budget(self) -> None:
+        settings = self.build_settings()
+        settings.cache_max_files = 2
+        settings.cache_max_bytes = 1_000
+        settings.cache_dir.mkdir(parents=True, exist_ok=True)
+        (settings.cache_dir / "root-a.html").write_text("<html>a</html>", encoding="utf-8")
+        (settings.cache_dir / "root-a.meta.json").write_text(
+            json.dumps(
+                {
+                    "url": "https://example.com/root-a",
+                    "created_at_ts": 1_700_000_000.0,
+                    "last_accessed_at_ts": 1_700_000_000.0,
+                    "ttl_seconds": 0.0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        nested_dir = settings.cache_dir / "rag_embeddings"
+        nested_dir.mkdir(parents=True, exist_ok=True)
+        (nested_dir / "old.json").write_text('{"embedding":[1,2,3]}', encoding="utf-8")
+        (nested_dir / "new.json").write_text('{"embedding":[4,5,6]}', encoding="utf-8")
+
+        result = run_runtime_cleanup(
+            settings=settings,
+            trigger="test",
+            force=True,
+        )
+
+        self.assertEqual(result.status, "completed")
+        self.assertGreaterEqual(result.deleted_cache_files, 1)
+        self.assertLessEqual(result.retained_cache_files, settings.cache_max_files)
+        self.assertFalse((nested_dir / "old.json").exists() and (nested_dir / "new.json").exists())
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import sys
 from types import SimpleNamespace
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = ROOT / "src"
@@ -13,6 +14,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from job_spy_tw.models import JobListing
+from job_spy_tw.resume.extractors import OpenAIResumeExtractor
 from job_spy_tw.resume_analysis import (
     ResumeAnalysisService,
     RuleBasedResumeExtractor,
@@ -25,6 +27,29 @@ from job_spy_tw.targets import DEFAULT_TARGET_ROLES
 
 
 class ResumeAnalysisTests(unittest.TestCase):
+    class CountingResumeResponsesAPI:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def parse(self, **kwargs):
+            self.calls += 1
+            return SimpleNamespace(
+                output_parsed=SimpleNamespace(
+                    summary="AI 工程摘要",
+                    target_roles=["AI應用工程師"],
+                    core_skills=["Python", "LLM"],
+                    tool_skills=["Docker"],
+                    domain_keywords=["企業 AI 導入"],
+                    preferred_tasks=["系統整合 / API 串接"],
+                    generated_prompts=["AI應用工程師，擅長 Python、LLM"],
+                    match_keywords=["Python", "LLM", "Docker"],
+                )
+            )
+
+    class CountingResumeClient:
+        def __init__(self) -> None:
+            self.responses = ResumeAnalysisTests.CountingResumeResponsesAPI()
+
     class FakeEmbeddingsAPI:
         def create(self, *, model, input):  # noqa: A002
             data = []
@@ -158,6 +183,63 @@ class ResumeAnalysisTests(unittest.TestCase):
         self.assertIn("自動化工程師證照", extracted)
         self.assertIn("乙級機電整合技術士", extracted)
         self.assertIn("系統整合分析", extracted)
+
+    def test_openai_resume_extractor_reuses_cached_profile(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            client = self.CountingResumeClient()
+            extractor = OpenAIResumeExtractor(
+                DEFAULT_TARGET_ROLES,
+                api_key="",
+                model="fake-resume-model",
+                client=client,
+                cache_dir=Path(tmpdir),
+            )
+            fallback = RuleBasedResumeExtractor(DEFAULT_TARGET_ROLES).extract(
+                """
+                AI應用工程師
+                技能：Python、LLM、Docker
+                工作內容：需求分析、API 串接
+                """
+            )
+
+            first = extractor.extract(
+                text="AI應用工程師，熟悉 Python、LLM、Docker，負責 API 串接。",
+                source_name="unit-test",
+                fallback_profile=fallback,
+            )
+            second = extractor.extract(
+                text="AI應用工程師，熟悉 Python、LLM、Docker，負責 API 串接。",
+                source_name="unit-test",
+                fallback_profile=fallback,
+            )
+
+            self.assertEqual(client.responses.calls, 1)
+            self.assertEqual(first.summary, second.summary)
+            self.assertEqual(first.core_skills, second.core_skills)
+
+    def test_openai_resume_extractor_builds_bounded_resume_context(self) -> None:
+        extractor = OpenAIResumeExtractor(
+            DEFAULT_TARGET_ROLES,
+            api_key="",
+            model="fake-resume-model",
+            client=self.CountingResumeClient(),
+        )
+        fallback = RuleBasedResumeExtractor(DEFAULT_TARGET_ROLES).extract(
+            """
+            AI應用工程師
+            技能：Python、LLM、RAG、Docker、API
+            工作內容：需求分析、系統整合、流程自動化
+            """
+        )
+        long_text = "\n".join(
+            [
+                "AI應用工程師，熟悉 Python、LLM、RAG、Docker，負責 API 串接與流程自動化。"
+                for _ in range(40)
+            ]
+        )
+        context = extractor._build_resume_context(long_text, fallback)
+        self.assertLessEqual(len(context), 1400)
+        self.assertIn("Python", context)
 
     def test_summary_skips_personal_info_and_garbled_lines(self) -> None:
         extractor = RuleBasedResumeExtractor(DEFAULT_TARGET_ROLES)
@@ -564,6 +646,199 @@ class ResumeAnalysisTests(unittest.TestCase):
         match = service.match_jobs(profile, [rag_job])[0]
 
         self.assertIn("向量資料庫", match.matched_skills)
+
+    def test_ai_matcher_limits_llm_scoring_to_top_candidates(self) -> None:
+        class CountingEmbeddingsAPI:
+            def create(self, *, model, input):  # noqa: A002
+                return SimpleNamespace(
+                    data=[SimpleNamespace(embedding=[1.0, 1.0, 1.0]) for _ in input]
+                )
+
+        class CountingResponsesAPI:
+            def __init__(self) -> None:
+                self.batch_sizes: list[int] = []
+
+            def parse(self, **kwargs):
+                scores = []
+                batch_count = 0
+                for line in kwargs["input"].splitlines():
+                    if "job_index=" not in line:
+                        continue
+                    batch_count += 1
+                    index = int(line.split("job_index=")[1].split(";")[0].strip())
+                    if "AI應用工程師" in line:
+                        similarity = 0.95
+                        reason = "幾乎同職稱"
+                    else:
+                        similarity = 0.18
+                        reason = "職稱差距大"
+                    scores.append(
+                        SimpleNamespace(
+                            job_index=index,
+                            similarity=similarity,
+                            reason=reason,
+                        )
+                    )
+                self.batch_sizes.append(batch_count)
+                return SimpleNamespace(output_parsed=SimpleNamespace(scores=scores))
+
+        class CountingClient:
+            def __init__(self) -> None:
+                self.embeddings = CountingEmbeddingsAPI()
+                self.responses = CountingResponsesAPI()
+
+        client = CountingClient()
+        service = ResumeAnalysisService(
+            DEFAULT_TARGET_ROLES,
+            title_model="candidate-limit-test-model",
+            embedding_model="candidate-limit-test-embedding",
+            openai_client=client,
+            cache_dir=None,
+        )
+        profile = service.build_profile(
+            """
+            AI應用工程師
+            技能：Python、LLM、RAG、Docker
+            工作內容：需求分析、API 串接、流程自動化
+            """,
+            use_llm=False,
+        )
+        exact_job = JobListing(
+            source="104",
+            title="AI應用工程師",
+            company="Example AI",
+            location="台北市",
+            url="https://example.com/jobs/exact-two-stage",
+            matched_role="AI應用工程師",
+            extracted_skills=["Python", "LLM", "RAG", "Docker"],
+            work_content_items=["需求分析與系統規格訪談", "負責 API 串接與流程自動化"],
+            required_skill_items=["Python", "LLM", "Docker"],
+            requirement_items=["熟悉 RAG"],
+            summary="AI application build-out",
+        )
+        jobs = [exact_job]
+        for index in range(17):
+            jobs.append(
+                JobListing(
+                    source="1111",
+                    title=f"一般職缺 {index}",
+                    company="Example Other",
+                    location="台北市",
+                    url=f"https://example.com/jobs/weak-{index}",
+                    matched_role="PM",
+                    extracted_skills=["Figma"],
+                    work_content_items=["產品規劃", "跨部門溝通"],
+                    required_skill_items=["Jira"],
+                    requirement_items=["PRD"],
+                    summary="非 AI 相關職缺",
+                )
+            )
+
+        matches = service.match_jobs(profile, jobs)
+
+        self.assertEqual(matches[0].job_url, exact_job.url)
+        self.assertTrue(client.responses.batch_sizes)
+        self.assertLess(sum(client.responses.batch_sizes), len(jobs))
+
+    def test_ai_matcher_skips_title_llm_for_exact_title_hit(self) -> None:
+        class UniformEmbeddingsAPI:
+            def create(self, *, model, input):  # noqa: A002
+                return SimpleNamespace(
+                    data=[SimpleNamespace(embedding=[1.0, 1.0, 1.0]) for _ in input]
+                )
+
+        class FailingResponsesAPI:
+            def parse(self, **kwargs):
+                raise AssertionError("exact title candidate should not call title LLM")
+
+        class SkipTitleClient:
+            def __init__(self) -> None:
+                self.embeddings = UniformEmbeddingsAPI()
+                self.responses = FailingResponsesAPI()
+
+        service = ResumeAnalysisService(
+            DEFAULT_TARGET_ROLES,
+            title_model="skip-title-test-model",
+            embedding_model="skip-title-test-embedding",
+            openai_client=SkipTitleClient(),
+            cache_dir=None,
+        )
+        profile = service.build_profile(
+            """
+            AI應用工程師
+            技能：Python、LLM、RAG、Docker
+            工作內容：需求分析、API 串接、流程自動化
+            """,
+            use_llm=False,
+        )
+        exact_job = JobListing(
+            source="104",
+            title="AI應用工程師",
+            company="Example AI",
+            location="台北市",
+            url="https://example.com/jobs/exact-skip-title",
+            matched_role="AI應用工程師",
+            extracted_skills=["Python", "LLM", "RAG", "Docker"],
+            work_content_items=["需求分析與系統規格訪談", "負責 API 串接與流程自動化"],
+            required_skill_items=["Python", "LLM", "Docker"],
+            requirement_items=["熟悉 RAG"],
+            summary="AI application build-out",
+        )
+
+        match = service.match_jobs(profile, [exact_job])[0]
+
+        self.assertEqual(match.job_url, exact_job.url)
+        self.assertGreaterEqual(match.title_similarity, 90.0)
+
+    def test_openai_resume_extractor_uses_condensed_resume_context(self) -> None:
+        class RecordingResponsesAPI:
+            def __init__(self) -> None:
+                self.last_input = ""
+
+            def parse(self, **kwargs):
+                self.last_input = kwargs["input"]
+                parsed = SimpleNamespace(
+                    summary="AI應用工程師，熟悉 Python 與 RAG。",
+                    target_roles=["AI應用工程師"],
+                    core_skills=["RAG"],
+                    tool_skills=["Python"],
+                    domain_keywords=["企業 AI 導入"],
+                    preferred_tasks=["系統整合 / API 串接"],
+                    generated_prompts=["AI應用工程師，擅長 RAG"],
+                    match_keywords=["RAG", "Python"],
+                )
+                return SimpleNamespace(output_parsed=parsed)
+
+        class RecordingClient:
+            def __init__(self) -> None:
+                self.responses = RecordingResponsesAPI()
+
+        rule_extractor = RuleBasedResumeExtractor(DEFAULT_TARGET_ROLES)
+        raw_resume = """
+        王小明
+        abc123@gmail.com
+        0907-509-233
+        AI應用工程師
+        技能：Python、LLM、RAG、Docker
+        工作內容：需求分析、API 串接、流程自動化、知識庫系統開發
+        專案：打造企業知識庫與檢索增強問答流程
+        """
+        fallback = rule_extractor.extract(raw_resume)
+        client = RecordingClient()
+        extractor = OpenAIResumeExtractor(
+            DEFAULT_TARGET_ROLES,
+            api_key="fake",
+            model="fake-model",
+            client=client,
+        )
+
+        profile = extractor.extract(raw_resume, source_name="resume.txt", fallback_profile=fallback)
+
+        self.assertEqual(profile.extraction_method, "llm")
+        self.assertIn("AI應用工程師", client.responses.last_input)
+        self.assertIn("知識庫與檢索增強問答流程", client.responses.last_input)
+        self.assertNotIn("abc123@gmail.com", client.responses.last_input)
+        self.assertNotIn("0907-509-233", client.responses.last_input)
 
 
 if __name__ == "__main__":

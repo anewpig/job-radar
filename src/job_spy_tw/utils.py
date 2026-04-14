@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import hashlib
 import json
 import re
@@ -78,6 +79,14 @@ def chunked(items: list[T], size: int) -> Iterator[list[T]]:
         yield items[start : start + size]
 
 
+@dataclass(slots=True)
+class CachePurgeResult:
+    deleted_files: int = 0
+    deleted_bytes: int = 0
+    retained_files: int = 0
+    retained_bytes: int = 0
+
+
 class FileSystemCacheBackend:
     """檔案系統快取後端，負責 HTML 與對應 metadata 的讀寫與清理。"""
 
@@ -92,7 +101,17 @@ class FileSystemCacheBackend:
     def read(self, cache_key: str) -> tuple[str | None, dict | None]:
         html_path, meta_path = self.entry_paths(cache_key)
         html = html_path.read_text(encoding="utf-8") if html_path.exists() else None
-        meta = load_json(meta_path) if meta_path.exists() else None
+        meta = None
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                # Corrupted legacy metadata should not block cache reads or cleanup.
+                meta = load_json(meta_path)
+                if isinstance(meta, dict):
+                    dump_json(meta_path, meta)
+                else:
+                    meta = None
         return html, meta
 
     def write(
@@ -191,19 +210,27 @@ class CachedFetcher:
             time.sleep(effective_delay)
         return html
 
-    def purge_cache(self, *, max_bytes: int, max_files: int) -> None:
+    def purge_cache(self, *, max_bytes: int, max_files: int) -> CachePurgeResult:
         """依 TTL、檔案數與總容量清理檔案系統快取。"""
-        entries: list[tuple[str, int, dict[str, object]]] = []
+        entries: list[tuple[str, int, int, dict[str, object]]] = []
         now_ts = time.time()
+        deleted_files = 0
+        deleted_bytes = 0
         for meta_path in self.cache_dir.glob("*.meta.json"):
             cache_key = meta_path.name[: -len(".meta.json")]
             html_path, _ = self.backend.entry_paths(cache_key)
             if not html_path.exists():
+                deleted_files += 1
+                deleted_bytes += meta_path.stat().st_size
                 meta_path.unlink()
         for cache_key in self.backend.iter_entry_keys():
             html_path, meta_path = self.backend.entry_paths(cache_key)
             cached_html, meta = self.backend.read(cache_key)
             if cached_html is None:
+                deleted_files += int(html_path.exists()) + int(meta_path.exists())
+                deleted_bytes += sum(
+                    path.stat().st_size for path in (html_path, meta_path) if path.exists()
+                )
                 self.backend.delete(cache_key)
                 continue
             cache_meta = self._normalize_cache_meta(
@@ -214,29 +241,54 @@ class CachedFetcher:
                 cache_ttl_seconds=None,
             )
             if self._is_cache_expired(cache_meta, now_ts):
+                deleted_files += int(html_path.exists()) + int(meta_path.exists())
+                deleted_bytes += sum(
+                    path.stat().st_size for path in (html_path, meta_path) if path.exists()
+                )
                 self.backend.delete(cache_key)
                 continue
             entry_size = html_path.stat().st_size
+            entry_files = 1
             if meta_path.exists():
                 entry_size += meta_path.stat().st_size
-            entries.append((cache_key, entry_size, cache_meta))
+            entries.append((cache_key, entry_size, entry_files, cache_meta))
 
-        total_bytes = sum(size for _, size, _ in entries)
+        total_bytes = sum(size for _, size, _, _ in entries)
+        total_files = sum(file_count for _, _, file_count, _ in entries)
+        total_entries = len(entries)
         max_files = max(0, int(max_files))
         max_bytes = max(0, int(max_bytes))
-        if (max_files and len(entries) <= max_files) and (max_bytes and total_bytes <= max_bytes):
-            return
+        within_file_limit = (not max_files) or total_entries <= max_files
+        within_byte_limit = (not max_bytes) or total_bytes <= max_bytes
+        if within_file_limit and within_byte_limit:
+            return CachePurgeResult(
+                deleted_files=deleted_files,
+                deleted_bytes=deleted_bytes,
+                retained_files=total_files,
+                retained_bytes=total_bytes,
+            )
         if not max_files:
-            max_files = len(entries)
+            max_files = total_entries
         if not max_bytes:
             max_bytes = total_bytes
         entries.sort(
-            key=lambda item: float(item[2].get("last_accessed_at_ts") or item[2].get("created_at_ts") or 0.0)
+            key=lambda item: float(item[3].get("last_accessed_at_ts") or item[3].get("created_at_ts") or 0.0)
         )
-        while entries and (len(entries) > max_files or total_bytes > max_bytes):
-            cache_key, size, _ = entries.pop(0)
+        while entries and (total_entries > max_files or total_bytes > max_bytes):
+            cache_key, size, file_count, _ = entries.pop(0)
+            html_path, meta_path = self.backend.entry_paths(cache_key)
+            deleted_files += int(html_path.exists()) + int(meta_path.exists())
+            deleted_bytes += sum(path.stat().st_size for path in (html_path, meta_path) if path.exists())
             self.backend.delete(cache_key)
             total_bytes -= size
+            total_files -= file_count
+            total_entries -= 1
+        return CachePurgeResult(
+            deleted_files=deleted_files,
+            deleted_bytes=deleted_bytes,
+            retained_files=max(0, total_files),
+            retained_bytes=max(0, total_bytes),
+        )
 
     def _build_ssl_context(self) -> ssl.SSLContext:
         try:
@@ -319,4 +371,72 @@ def dump_json(path: Path, payload: dict) -> None:
 def load_json(path: Path) -> dict | None:
     if not path.exists():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    raw = path.read_text(encoding="utf-8")
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        decoder = json.JSONDecoder()
+        parsed, _ = decoder.raw_decode(raw.lstrip())
+        return parsed if isinstance(parsed, dict) else None
+
+
+def purge_nested_cache_files(cache_dir: Path, *, max_bytes: int, max_files: int) -> CachePurgeResult:
+    """Prune nested cache artifacts under a cache root by oldest access time."""
+    if not cache_dir.exists():
+        return CachePurgeResult()
+
+    entries: list[tuple[Path, int, float]] = []
+    total_bytes = 0
+    total_files = 0
+    for path in cache_dir.rglob("*"):
+        if not path.is_file() or path.parent == cache_dir:
+            continue
+        stat = path.stat()
+        size = int(stat.st_size)
+        entries.append((path, size, float(stat.st_mtime)))
+        total_bytes += size
+        total_files += 1
+
+    max_files = max(0, int(max_files))
+    max_bytes = max(0, int(max_bytes))
+    within_file_limit = (not max_files) or total_files <= max_files
+    within_byte_limit = (not max_bytes) or total_bytes <= max_bytes
+    if within_file_limit and within_byte_limit:
+        return CachePurgeResult(
+            retained_files=total_files,
+            retained_bytes=total_bytes,
+        )
+    if not max_files:
+        max_files = total_files
+    if not max_bytes:
+        max_bytes = total_bytes
+
+    deleted_files = 0
+    deleted_bytes = 0
+    entries.sort(key=lambda item: item[2])
+    while entries and (total_files > max_files or total_bytes > max_bytes):
+        path, size, _ = entries.pop(0)
+        if path.exists():
+            path.unlink()
+            deleted_files += 1
+            deleted_bytes += size
+            total_files -= 1
+            total_bytes -= size
+
+    # Remove now-empty legacy cache folders.
+    for path in sorted(
+        [candidate for candidate in cache_dir.rglob("*") if candidate.is_dir()],
+        key=lambda item: len(item.parts),
+        reverse=True,
+    ):
+        try:
+            next(path.iterdir())
+        except StopIteration:
+            path.rmdir()
+
+    return CachePurgeResult(
+        deleted_files=deleted_files,
+        deleted_bytes=deleted_bytes,
+        retained_files=max(0, total_files),
+        retained_bytes=max(0, total_bytes),
+    )

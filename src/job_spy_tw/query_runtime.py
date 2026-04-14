@@ -420,6 +420,18 @@ class QuerySnapshotRegistry:
                 )
                 """
             )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="error_message",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="is_partial",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
 
     def _connect(self) -> sqlite3.Connection:
         return connect_sqlite(self.db_path, row_factory=sqlite3.Row)

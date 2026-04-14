@@ -7,6 +7,7 @@ import json
 from collections import Counter
 
 from ..models import ItemInsight, JobListing, MarketSnapshot, ResumeProfile, SkillInsight
+from ..resume.text import build_resume_line_windows
 from .models import KnowledgeChunk
 
 
@@ -49,14 +50,19 @@ def build_chunks(
                     ),
                 )
             )
-        if job.required_skill_items:
+        skill_items = _job_skill_items(job)
+        if skill_items or job.requirement_items:
             chunks.append(
                 KnowledgeChunk(
                     chunk_id=f"job-skills-{index}",
                     source_type="job-skills",
                     label=f"{job.title} 技能需求",
                     url=job.url,
-                    text="；".join(job.required_skill_items[:12]),
+                    text=job_skills_chunk(
+                        job=job,
+                        role_label=role_label,
+                        skill_items=skill_items,
+                    ),
                     metadata={
                         **job_chunk_metadata(
                             job=job,
@@ -64,8 +70,20 @@ def build_chunks(
                             source_type="job-skills",
                             role_label=role_label,
                         ),
-                        "skills": job.required_skill_items[:12],
+                        "skills": skill_items[:12],
+                        "requirements": job.requirement_items[:6],
                     },
+                )
+            )
+            chunks.extend(
+                job_item_chunks(
+                    job=job,
+                    query_signature=query_signature,
+                    role_label=role_label,
+                    source_type="job-skills",
+                    items=skill_items[:8] or job.requirement_items[:4],
+                    chunk_prefix=f"job-skill-item-{index}",
+                    label_prefix="技能",
                 )
             )
         if job.work_content_items:
@@ -75,7 +93,10 @@ def build_chunks(
                     source_type="job-work-content",
                     label=f"{job.title} 工作內容",
                     url=job.url,
-                    text="；".join(job.work_content_items[:12]),
+                    text=job_work_chunk(
+                        job=job,
+                        role_label=role_label,
+                    ),
                     metadata={
                         **job_chunk_metadata(
                             job=job,
@@ -85,6 +106,17 @@ def build_chunks(
                         ),
                         "tasks": job.work_content_items[:12],
                     },
+                )
+            )
+            chunks.extend(
+                job_item_chunks(
+                    job=job,
+                    query_signature=query_signature,
+                    role_label=role_label,
+                    source_type="job-work-content",
+                    items=job.work_content_items[:8],
+                    chunk_prefix=f"job-task-item-{index}",
+                    label_prefix="工作內容",
                 )
             )
 
@@ -107,21 +139,10 @@ def build_chunks(
     chunks.extend(summary_chunks(snapshot=snapshot, query_signature=query_signature))
 
     if resume_profile is not None:
-        chunks.append(
-            KnowledgeChunk(
-                chunk_id="resume-summary",
-                source_type="resume-summary",
-                label="履歷摘要",
-                text=resume_profile.searchable_text(),
-                metadata={
-                    "roles": resume_profile.target_roles,
-                    "core_skills": resume_profile.core_skills,
-                    "tool_skills": resume_profile.tool_skills,
-                    "domain_keywords": resume_profile.domain_keywords,
-                    "source_name": resume_profile.source_name,
-                    "query_signature": query_signature,
-                    "source_type": "resume-summary",
-                },
+        chunks.extend(
+            resume_chunks(
+                resume_profile=resume_profile,
+                query_signature=query_signature,
             )
         )
     return chunks
@@ -163,6 +184,77 @@ def unique_ordered(items: list[str]) -> list[str]:
         seen.add(normalized)
         ordered.append(normalized)
     return ordered
+
+
+def resume_chunks(
+    *,
+    resume_profile: ResumeProfile,
+    query_signature: str,
+) -> list[KnowledgeChunk]:
+    """Build structured resume chunks for more grounded personalized retrieval."""
+    base_metadata = {
+        "roles": resume_profile.target_roles,
+        "core_skills": resume_profile.core_skills,
+        "tool_skills": resume_profile.tool_skills,
+        "domain_keywords": resume_profile.domain_keywords,
+        "preferred_tasks": resume_profile.preferred_tasks,
+        "source_name": resume_profile.source_name,
+        "query_signature": query_signature,
+        "source_type": "resume-summary",
+    }
+    chunks = [
+        KnowledgeChunk(
+            chunk_id="resume-summary",
+            source_type="resume-summary",
+            label="履歷摘要",
+            text=resume_summary_chunk(resume_profile),
+            metadata={**base_metadata, "chunk_kind": "summary"},
+        )
+    ]
+    field_specs = (
+        ("resume-target-roles", "履歷目標角色", "目標角色", resume_profile.target_roles),
+        ("resume-core-skills", "履歷核心技能", "核心技能", resume_profile.core_skills),
+        ("resume-tool-skills", "履歷工具技能", "工具技能", resume_profile.tool_skills),
+        ("resume-domain-keywords", "履歷領域關鍵字", "領域關鍵字", resume_profile.domain_keywords),
+        ("resume-preferred-tasks", "履歷偏好工作內容", "偏好工作內容", resume_profile.preferred_tasks),
+        ("resume-match-keywords", "履歷匹配關鍵字", "匹配關鍵字", resume_profile.match_keywords),
+    )
+    for chunk_id, label, prefix, values in field_specs:
+        normalized_values = unique_ordered([str(value).strip() for value in values if str(value).strip()])
+        if not normalized_values:
+            continue
+        chunks.append(
+            KnowledgeChunk(
+                chunk_id=chunk_id,
+                source_type="resume-summary",
+                label=label,
+                text=f"{prefix}：{'；'.join(normalized_values[:12])}",
+                metadata={**base_metadata, "chunk_kind": prefix},
+            )
+        )
+    for index, window in enumerate(build_resume_line_windows(resume_profile.raw_text), start=1):
+        chunks.append(
+            KnowledgeChunk(
+                chunk_id=f"resume-window-{index}",
+                source_type="resume-summary",
+                label=f"履歷經歷片段 {index}",
+                text=f"履歷片段：{window}",
+                metadata={**base_metadata, "chunk_kind": "raw_window"},
+            )
+        )
+    return chunks
+
+
+def resume_summary_chunk(resume_profile: ResumeProfile) -> str:
+    lines = [
+        f"履歷摘要：{resume_profile.summary}" if resume_profile.summary else "",
+        f"目標角色：{'；'.join(unique_ordered(resume_profile.target_roles)[:6])}" if resume_profile.target_roles else "",
+        f"核心技能：{'；'.join(unique_ordered(resume_profile.core_skills)[:10])}" if resume_profile.core_skills else "",
+        f"工具技能：{'；'.join(unique_ordered(resume_profile.tool_skills)[:10])}" if resume_profile.tool_skills else "",
+        f"領域關鍵字：{'；'.join(unique_ordered(resume_profile.domain_keywords)[:10])}" if resume_profile.domain_keywords else "",
+        f"偏好工作內容：{'；'.join(unique_ordered(resume_profile.preferred_tasks)[:8])}" if resume_profile.preferred_tasks else "",
+    ]
+    return "\n".join(line for line in lines if line)
 
 
 def job_chunk_metadata(
@@ -220,6 +312,98 @@ def job_salary_chunk(job: JobListing) -> str:
     )
 
 
+def job_skills_chunk(
+    *,
+    job: JobListing,
+    role_label: str,
+    skill_items: list[str],
+) -> str:
+    return "\n".join(
+        filter(
+            None,
+            [
+                f"職缺：{job.title}",
+                f"公司：{job.company}",
+                f"角色：{role_label}",
+                f"技能：{'；'.join(skill_items[:12])}" if skill_items else "",
+                f"條件：{'；'.join(job.requirement_items[:6])}" if job.requirement_items else "",
+            ],
+        )
+    )
+
+
+def job_work_chunk(
+    *,
+    job: JobListing,
+    role_label: str,
+) -> str:
+    return "\n".join(
+        filter(
+            None,
+            [
+                f"職缺：{job.title}",
+                f"公司：{job.company}",
+                f"角色：{role_label}",
+                f"內容：{'；'.join(job.work_content_items[:12])}",
+            ],
+        )
+    )
+
+
+def job_item_chunks(
+    *,
+    job: JobListing,
+    query_signature: str,
+    role_label: str,
+    source_type: str,
+    items: list[str],
+    chunk_prefix: str,
+    label_prefix: str,
+) -> list[KnowledgeChunk]:
+    chunks: list[KnowledgeChunk] = []
+    for index, item in enumerate(items):
+        normalized = str(item).strip()
+        if not normalized:
+            continue
+        chunks.append(
+            KnowledgeChunk(
+                chunk_id=f"{chunk_prefix}-{index}",
+                source_type=source_type,
+                label=f"{job.title} {label_prefix}：{normalized}",
+                url=job.url,
+                text="\n".join(
+                    filter(
+                        None,
+                        [
+                            f"職缺：{job.title}",
+                            f"公司：{job.company}",
+                            f"角色：{role_label}",
+                            f"{label_prefix}：{normalized}",
+                        ],
+                    )
+                ),
+                metadata={
+                    **job_chunk_metadata(
+                        job=job,
+                        query_signature=query_signature,
+                        source_type=source_type,
+                        role_label=role_label,
+                    ),
+                    "item": normalized,
+                },
+            )
+        )
+    return chunks
+
+
+def _job_skill_items(job: JobListing) -> list[str]:
+    if job.required_skill_items:
+        return unique_ordered(job.required_skill_items)
+    if job.extracted_skills:
+        return unique_ordered(job.extracted_skills)
+    return []
+
+
 def insight_chunks(
     items: list[SkillInsight] | list[ItemInsight],
     source_type: str,
@@ -250,6 +434,7 @@ def insight_chunks(
                 metadata={
                     "query_signature": query_signature,
                     "source_type": source_type,
+                    "score": str(getattr(item, "score", 0)),
                     "occurrences": str(item.occurrences),
                     "importance": item.importance,
                     "sample_jobs": item.sample_jobs[:3],

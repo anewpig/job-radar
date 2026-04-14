@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from .config import load_settings
 from .crawl_application_service import schedule_due_saved_searches
+from .logging_utils import configure_logging
 from .product_store import ProductStore
 from .query_runtime import RuntimeSignalStore
 from .runtime_maintenance_service import run_runtime_cleanup
@@ -53,6 +54,10 @@ def run_scheduler_loop(
     once: bool,
 ) -> int:
     settings = load_settings(base_dir)
+    logger = configure_logging(
+        service_name="crawl_scheduler",
+        data_dir=settings.data_dir,
+    )
     product_store = ProductStore(settings.product_state_db_path)
     effective_worker_id = worker_id.strip() or default_scheduler_worker_id()
     signal_store = RuntimeSignalStore(db_path=settings.query_state_db_path)
@@ -87,15 +92,15 @@ def run_scheduler_loop(
                 "invalid_count": int(result.invalid_count),
             },
         )
-        print(
-            "Scheduler pass: "
-            f"checked={result.checked_count} "
-            f"enqueued={result.enqueued_count} "
-            f"skipped={result.skipped_count} "
-            f"invalid={result.invalid_count}"
+        logger.info(
+            "Scheduler pass: checked=%s enqueued=%s skipped=%s invalid=%s",
+            result.checked_count,
+            result.enqueued_count,
+            result.skipped_count,
+            result.invalid_count,
         )
         for detail in result.details:
-            print(detail)
+            logger.info(detail)
         if once:
             return 0
         time.sleep(max(1.0, float(poll_interval)))

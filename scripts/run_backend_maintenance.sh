@@ -2,7 +2,7 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-PYTHON_BIN="${PYTHON_BIN:-python}"
+PYTHON_BIN="${PYTHON_BIN:-$ROOT_DIR/.venv/bin/python}"
 PYTHONPATH_VALUE="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 KEEP_LAST="${JOB_SPY_SQLITE_BACKUP_KEEP_LAST:-14}"
 INCLUDE_RUNTIME="${JOB_SPY_SQLITE_BACKUP_INCLUDE_RUNTIME:-false}"
@@ -20,7 +20,7 @@ else
   force_cleanup_flag=""
 fi
 
-PYTHONPATH="$PYTHONPATH_VALUE" "$PYTHON_BIN" -m job_spy_tw.backend_maintenance \
+exec env PYTHONPATH="$PYTHONPATH_VALUE" "$PYTHON_BIN" -m job_spy_tw.backend_maintenance \
   --base-dir "$ROOT_DIR" \
   --trigger scheduled \
   --keep-last-backups "$KEEP_LAST" \

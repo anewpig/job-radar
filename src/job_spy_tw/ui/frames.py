@@ -38,6 +38,7 @@ def filter_jobs_frame(
     source_filter: list[str] | None = None,
     role_filter: list[str] | None = None,
     skill_filter: list[str] | None = None,
+    sort_mode: str = "relevance",
 ) -> pd.DataFrame:
     """套用職缺總覽篩選條件，並回傳依相關度排序後的資料。"""
     if frame.empty or "relevance_score" not in frame.columns:
@@ -51,6 +52,15 @@ def filter_jobs_frame(
         regex = "|".join(re.escape(item) for item in skill_filter if item)
         if regex:
             filtered = filtered[filtered["skills"].str.contains(regex, na=False)]
+    if sort_mode == "posted_desc" and "posted_at" in filtered.columns:
+        filtered = filtered.copy()
+        filtered["posted_at_ts"] = pd.to_datetime(filtered["posted_at"], errors="coerce")
+        if filtered["posted_at_ts"].notna().any():
+            return filtered.sort_values(
+                ["posted_at_ts", "relevance_score"],
+                ascending=[False, False],
+                na_position="last",
+            )
     return filtered.sort_values("relevance_score", ascending=False)
 
 

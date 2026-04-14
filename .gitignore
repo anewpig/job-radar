@@ -8,6 +8,4 @@ __pycache__/
 data/
 releases/
 *.egg-info/
-0.04rem
-0.35rem
-0.88rem
+.tmp_formal_review_*/

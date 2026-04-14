@@ -8,6 +8,7 @@ from pathlib import Path
 
 from ..sqlite_utils import connect_sqlite
 from ..utils import ensure_directory
+from ..security import USER_ROLE_ADMIN, USER_ROLE_GUEST, USER_ROLE_OPERATOR, USER_ROLE_USER
 from .auth import GUEST_EMAIL, GUEST_USER_ID, hash_password
 from .common import now_iso
 
@@ -20,9 +21,14 @@ class ProductStoreDatabase:
         ensure_directory(self.db_path.parent)
         with connect_sqlite(self.db_path) as connection:
             self._initialize_users(connection)
+            self._migrate_users(connection)
             self._initialize_user_identities(connection)
             self._initialize_password_reset_tokens(connection)
             self._initialize_app_metrics(connection)
+            self._initialize_ai_monitoring_events(connection)
+            self._initialize_audit_events(connection)
+            self._initialize_agent_memories(connection)
+            self._initialize_feedback_events(connection)
             self._initialize_user_resume_profiles(connection)
             self._migrate_saved_searches(connection)
             self._initialize_saved_search_seen_jobs(connection)
@@ -40,6 +46,7 @@ class ProductStoreDatabase:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL UNIQUE,
                 display_name TEXT NOT NULL DEFAULT '',
+                role TEXT NOT NULL DEFAULT 'user',
                 password_salt TEXT NOT NULL DEFAULT '',
                 password_hash TEXT NOT NULL DEFAULT '',
                 is_guest INTEGER NOT NULL DEFAULT 0,
@@ -49,6 +56,11 @@ class ProductStoreDatabase:
             )
             """
         )
+        columns = self._table_columns(connection, "users")
+        if "role" not in columns:
+            connection.execute(
+                "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
+            )
         now = now_iso()
         guest_salt = "guest-user"
         guest_hash = hash_password("guest-user", guest_salt)
@@ -58,6 +70,7 @@ class ProductStoreDatabase:
                 id,
                 email,
                 display_name,
+                role,
                 password_salt,
                 password_hash,
                 is_guest,
@@ -65,17 +78,47 @@ class ProductStoreDatabase:
                 updated_at,
                 last_login_at
             )
-            SELECT ?, ?, '訪客模式', ?, ?, 1, ?, ?, ''
+            SELECT ?, ?, '訪客模式', ?, ?, ?, 1, ?, ?, ''
             WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
             """,
             (
                 GUEST_USER_ID,
                 GUEST_EMAIL,
+                USER_ROLE_GUEST,
                 guest_salt,
                 guest_hash,
                 now,
                 now,
                 GUEST_USER_ID,
+            ),
+        )
+        connection.execute(
+            "UPDATE users SET role = ? WHERE id = ?",
+            (USER_ROLE_GUEST, GUEST_USER_ID),
+        )
+
+    def _migrate_users(self, connection: sqlite3.Connection) -> None:
+        columns = self._table_columns(connection, "users")
+        if "role" not in columns:
+            connection.execute(
+                "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
+            )
+        connection.execute(
+            """
+            UPDATE users
+            SET role = CASE
+                WHEN is_guest = 1 THEN ?
+                WHEN trim(role) = '' OR lower(role) NOT IN (?, ?, ?, ?) THEN ?
+                ELSE lower(role)
+            END
+            """,
+            (
+                USER_ROLE_GUEST,
+                USER_ROLE_GUEST,
+                USER_ROLE_USER,
+                USER_ROLE_OPERATOR,
+                USER_ROLE_ADMIN,
+                USER_ROLE_USER,
             ),
         )
 
@@ -139,6 +182,82 @@ class ProductStoreDatabase:
             )
             """,
             (now_iso(),),
+        )
+
+    def _initialize_ai_monitoring_events(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ai_monitoring_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL DEFAULT 1,
+                event_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'success',
+                latency_ms REAL NOT NULL DEFAULT 0,
+                model_name TEXT NOT NULL DEFAULT '',
+                query_signature TEXT NOT NULL DEFAULT '',
+                metadata_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+    def _initialize_audit_events(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS audit_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL DEFAULT 1,
+                actor_role TEXT NOT NULL DEFAULT 'guest',
+                event_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'success',
+                target_type TEXT NOT NULL DEFAULT '',
+                target_id TEXT NOT NULL DEFAULT '',
+                trace_id TEXT NOT NULL DEFAULT '',
+                details_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+    def _initialize_feedback_events(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS feedback_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL DEFAULT 1,
+                target_type TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                rating INTEGER NOT NULL DEFAULT 0,
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                comment TEXT NOT NULL DEFAULT '',
+                metadata_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT '',
+                UNIQUE(user_id, target_type, target_id)
+            )
+            """
+        )
+
+    def _initialize_agent_memories(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS agent_memories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL DEFAULT 1,
+                memory_type TEXT NOT NULL,
+                key TEXT NOT NULL,
+                summary TEXT NOT NULL DEFAULT '',
+                value_json TEXT NOT NULL DEFAULT '{}',
+                source TEXT NOT NULL DEFAULT '',
+                confidence REAL NOT NULL DEFAULT 1.0,
+                last_used_at TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL DEFAULT '',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                UNIQUE(user_id, memory_type, key)
+            )
+            """
         )
 
     def _migrate_saved_searches(self, connection: sqlite3.Connection) -> None:
@@ -563,6 +682,42 @@ class ProductStoreDatabase:
             """
             CREATE INDEX IF NOT EXISTS idx_user_identities_email
             ON user_identities(email)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_ai_monitoring_events_type_created
+            ON ai_monitoring_events(event_type, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_ai_monitoring_events_user_created
+            ON ai_monitoring_events(user_id, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_ai_monitoring_events_status_created
+            ON ai_monitoring_events(status, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_audit_events_type_created
+            ON audit_events(event_type, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_audit_events_user_created
+            ON audit_events(user_id, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_agent_memories_user_type_updated
+            ON agent_memories(user_id, memory_type, updated_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_agent_memories_user_key
+            ON agent_memories(user_id, key)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_feedback_events_user_created
+            ON feedback_events(user_id, created_at)
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_feedback_events_type_created
+            ON feedback_events(target_type, created_at)
             """,
         )
         for statement in statements:

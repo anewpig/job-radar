@@ -26,6 +26,10 @@ class LinkedInConnector(BaseConnector):
     retryable_status_codes = {403, 429, 999}
     detail_keywords = ("About the job", "Description", "Responsibilities", "Qualifications")
 
+    def __init__(self, settings, fetcher) -> None:
+        super().__init__(settings=settings, fetcher=fetcher)
+        self._blocked_until = 0.0
+
     @property
     def base_url(self) -> str:
         return "https://www.linkedin.com"
@@ -48,6 +52,13 @@ class LinkedInConnector(BaseConnector):
 
     def fetch_search_page(self, query: str, page: int) -> str:
         """以較接近瀏覽器的 request context 抓取 LinkedIn 搜尋頁，並在被擋時自動退避重試。"""
+        if self._blocked_until and time.monotonic() < self._blocked_until:
+            remaining = int(max(0.0, self._blocked_until - time.monotonic()))
+            self.last_errors.append(
+                f"{self.source} search {query} p{page}: LinkedIn 暫時退避中，"
+                f"{remaining} 秒後再嘗試。"
+            )
+            return ""
         candidate_urls = self._build_search_urls(query=query, page=page)
         cache_lookup_urls = self._build_cache_lookup_urls(query=query, page=page)
         search_referer = self._build_canonical_search_url(query=query, page=page)
@@ -94,6 +105,8 @@ class LinkedInConnector(BaseConnector):
         if cached_html:
             return cached_html
         if last_error is not None and self._is_retryable_search_error(last_error):
+            if self._should_enter_cooldown(last_error):
+                self._enter_cooldown()
             self.last_errors.append(
                 f"{self.source} search {query} p{page}: LinkedIn guest search 暫時拒絕此頁，已略過。"
             )
@@ -265,6 +278,30 @@ class LinkedInConnector(BaseConnector):
                 "Request denied",
             )
         )
+
+    def _should_enter_cooldown(self, exc: Exception) -> bool:
+        status_code = getattr(exc, "code", None)
+        if status_code in self.retryable_status_codes:
+            return True
+        message = str(exc)
+        return any(
+            token in message
+            for token in (
+                " 403",
+                " 429",
+                " 999",
+                "Error 403",
+                "Error 429",
+                "Error 999",
+                "Request denied",
+            )
+        )
+
+    def _enter_cooldown(self) -> None:
+        cooldown_seconds = max(0, int(self.settings.linkedin_cooldown_seconds))
+        if cooldown_seconds <= 0:
+            return
+        self._blocked_until = time.monotonic() + cooldown_seconds
 
     def _build_search_urls(self, query: str, page: int) -> list[str]:
         start = max(page - 1, 0) * 25

@@ -12,7 +12,9 @@ from .backend_operations_service import (
     RuntimeComponentStatus,
     collect_backend_operations_snapshot,
 )
+from .build_info import BuildInfo, collect_build_info
 from .product_store import ProductStore
+from .schema_versions import schema_version_registry
 from .settings import Settings
 
 
@@ -28,16 +30,24 @@ class SQLiteBackupStatus:
 
 @dataclass(slots=True)
 class BackendStatusReport:
+    build: BuildInfo
     execution_mode: str
     operations: BackendOperationsSnapshot
     backups: SQLiteBackupStatus
+    schema_versions: dict[str, Any] = field(default_factory=dict)
+    ai_health: dict[str, Any] = field(default_factory=dict)
+    security: dict[str, Any] = field(default_factory=dict)
     issues: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return {
+            "build": asdict(self.build),
             "execution_mode": self.execution_mode,
             "operations": asdict(self.operations),
             "backups": asdict(self.backups),
+            "schema_versions": dict(self.schema_versions),
+            "ai_health": dict(self.ai_health),
+            "security": dict(self.security),
             "issues": list(self.issues),
         }
 
@@ -51,12 +61,27 @@ def collect_backend_status_report(
         settings=settings,
         product_store=product_store,
     )
+    build = collect_build_info()
     backups = _collect_backup_status(settings.data_dir / "backups" / "sqlite")
-    issues = _collect_backend_issues(operations, backups)
+    ai_health = {
+        "latency_budgets": product_store.evaluate_ai_latency_budgets(limit=500),
+        "assistant_modes": product_store.summarize_assistant_modes(limit=500),
+        "cache_efficiency": product_store.summarize_ai_cache_efficiency(limit=500),
+    }
+    security = {
+        "backend_console_allowed_roles": list(settings.backend_console_allowed_roles),
+        "recent_audit_events": len(product_store.list_recent_audit_events(limit=50)),
+    }
+    schema_versions = schema_version_registry()
+    issues = _collect_backend_issues(operations, backups, ai_health)
     return BackendStatusReport(
+        build=build,
         execution_mode=operations.execution_mode,
         operations=operations,
         backups=backups,
+        schema_versions=schema_versions,
+        ai_health=ai_health,
+        security=security,
         issues=issues,
     )
 
@@ -100,6 +125,7 @@ def _collect_backup_status(backup_root: Path) -> SQLiteBackupStatus:
 def _collect_backend_issues(
     operations: BackendOperationsSnapshot,
     backups: SQLiteBackupStatus,
+    ai_health: dict[str, Any],
 ) -> list[str]:
     issues: list[str] = []
     if operations.execution_mode == "worker":
@@ -124,6 +150,12 @@ def _collect_backend_issues(
         issues.append(f"failed jobs present: {operations.failed_job_count}")
     if backups.backup_count <= 0:
         issues.append("sqlite backup missing")
+    latency_budgets = (ai_health.get("latency_budgets") or {})
+    ai_status = str(latency_budgets.get("status") or "")
+    if ai_status == "FAIL":
+        issues.append("ai latency budgets failing")
+    elif ai_status == "WARN":
+        issues.append("ai latency budgets warning")
     return issues
 
 

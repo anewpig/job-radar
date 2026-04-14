@@ -154,14 +154,24 @@ def _decode_text_bytes(raw_bytes: bytes) -> str:
 def _sanitize_extracted_text(text: str) -> str:
     sanitized = unicodedata.normalize("NFKC", text or "")
     sanitized = re.sub(r"[\u200b-\u200f\ufeff]", "", sanitized)
+    sanitized = sanitized.replace("\x00", "")
     sanitized = GARBLED_CHAR_PATTERN.sub(" ", sanitized)
     sanitized = re.sub(r"[ \t]{2,}", " ", sanitized)
     sanitized = re.sub(r"\n[ \t]+", "\n", sanitized)
     return sanitized
 
 
+def _sanitize_mask_input(text: str) -> str:
+    sanitized = text or ""
+    sanitized = re.sub(r"[\u200b-\u200f\ufeff]", "", sanitized)
+    sanitized = sanitized.replace("\x00", "")
+    sanitized = GARBLED_CHAR_PATTERN.sub(" ", sanitized)
+    sanitized = re.sub(r"[ \t]{2,}", " ", sanitized)
+    return sanitized
+
+
 def mask_personal_text(text: str) -> str:
-    masked = text or ""
+    masked = _sanitize_mask_input(text or "")
     masked = EMAIL_PATTERN.sub(_mask_email, masked)
     masked = PHONE_PATTERN.sub(_mask_phone, masked)
     masked = NAME_LABEL_PATTERN.sub(r"\1***", masked)
@@ -200,6 +210,31 @@ def _clean_resume_lines(text: str) -> list[str]:
             continue
         cleaned_lines.append(line)
     return cleaned_lines
+
+
+def build_resume_line_windows(
+    text: str,
+    *,
+    window_size: int = 3,
+    max_windows: int = 6,
+    min_line_chars: int = 8,
+) -> list[str]:
+    """Build low-risk resume text windows for retrieval grounding."""
+    lines = [
+        line
+        for line in _clean_resume_lines(text)
+        if len(line) >= min_line_chars and not _contains_personal_info(line) and not _looks_garbled(line)
+    ]
+    lines = unique_preserving_order(lines)
+    windows: list[str] = []
+    for start in range(0, len(lines), max(1, window_size)):
+        window = lines[start : start + max(1, window_size)]
+        if not window:
+            continue
+        windows.append("\n".join(window))
+        if len(windows) >= max(1, max_windows):
+            break
+    return windows
 
 
 def _contains_personal_info(text: str) -> bool:

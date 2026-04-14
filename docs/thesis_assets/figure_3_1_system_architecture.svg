@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="920" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 3-1. Overall Architecture of the Job-Market AI Assistance System</title>
+  <desc id="desc">System architecture with UI, crawler and snapshot, assistant and resume intelligence, and monitoring and evaluation layers connected around a shared market snapshot.</desc>
+  <defs>
+    <style>
+      .title { font: 700 30px "Helvetica", "Arial", sans-serif; fill: #1f2a44; }
+      .subtitle { font: 400 16px "Helvetica", "Arial", sans-serif; fill: #52607a; }
+      .section { font: 700 20px "Helvetica", "Arial", sans-serif; fill: #1f2a44; }
+      .body { font: 400 15px "Helvetica", "Arial", sans-serif; fill: #33415c; }
+      .small { font: 400 13px "Helvetica", "Arial", sans-serif; fill: #5b677d; }
+      .panel { fill: #ffffff; stroke: #b9c4d6; stroke-width: 2; rx: 22; ry: 22; }
+      .ui { fill: #eef4ff; }
+      .crawl { fill: #effaf4; }
+      .intel { fill: #fff7ec; }
+      .store { fill: #f7f1ff; }
+      .snapshot { fill: #fff2f5; stroke: #d9839b; stroke-width: 2.5; rx: 26; ry: 26; }
+      .output { fill: #f9fbfd; stroke: #cdd6e2; stroke-width: 2; rx: 18; ry: 18; }
+      .arrow { stroke: #5f6f8f; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .dash { stroke-dasharray: 8 8; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#5f6f8f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="920" fill="#fcfdff"/>
+  <text x="70" y="70" class="title">Figure 3-1. Overall Architecture of the Job-Market AI Assistance System</text>
+  <text x="70" y="102" class="subtitle">A product-grade AI workflow centered on a shared MarketSnapshot.</text>
+
+  <rect x="70" y="150" width="310" height="220" class="panel ui"/>
+  <text x="100" y="190" class="section">UI / Orchestration Layer</text>
+  <text x="100" y="225" class="body">- Streamlit app</text>
+  <text x="100" y="252" class="body">- Session state</text>
+  <text x="100" y="279" class="body">- Search / resume flows</text>
+  <text x="100" y="306" class="body">- Page routing</text>
+  <text x="100" y="346" class="small">User enters search targets, resume content, and follow-up questions.</text>
+
+  <rect x="430" y="150" width="330" height="220" class="panel crawl"/>
+  <text x="460" y="190" class="section">Crawler / Snapshot Layer</text>
+  <text x="460" y="225" class="body">- Multi-source connectors</text>
+  <text x="460" y="252" class="body">- Deduplication / enrichment</text>
+  <text x="460" y="279" class="body">- Relevance scoring</text>
+  <text x="460" y="306" class="body">- Staged crawl finalization</text>
+  <text x="460" y="346" class="small">Builds and refreshes a market snapshot from real job sources.</text>
+
+  <rect x="815" y="150" width="340" height="220" class="panel intel"/>
+  <text x="845" y="190" class="section">Assistant / Resume Intelligence</text>
+  <text x="845" y="225" class="body">- Chunking / retrieval / rerank</text>
+  <text x="845" y="252" class="body">- Mode-aware prompt control</text>
+  <text x="845" y="279" class="body">- Resume extraction</text>
+  <text x="845" y="306" class="body">- Two-stage job ranking</text>
+  <text x="845" y="346" class="small">Drives market QA, personalized guidance, comparison, and matching.</text>
+
+  <rect x="1210" y="150" width="320" height="220" class="panel store"/>
+  <text x="1240" y="190" class="section">Store / Monitoring / Evaluation</text>
+  <text x="1240" y="225" class="body">- Product state storage</text>
+  <text x="1240" y="252" class="body">- Telemetry / token usage</text>
+  <text x="1240" y="279" class="body">- Budget evaluators</text>
+  <text x="1240" y="306" class="body">- External eval workspace</text>
+  <text x="1240" y="346" class="small">Supports observability, regression, and formal research evaluation.</text>
+
+  <rect x="470" y="450" width="660" height="120" class="snapshot"/>
+  <text x="735" y="495" class="section">MarketSnapshot</text>
+  <text x="560" y="530" class="body">Unified jobs, analytics, market signals, and query-specific evidence store</text>
+
+  <rect x="845" y="655" width="300" height="110" class="output"/>
+  <text x="875" y="695" class="section">Assistant Outputs</text>
+  <text x="875" y="725" class="body">Market summary</text>
+  <text x="875" y="750" class="body">Personalized guidance</text>
+
+  <rect x="1190" y="655" width="300" height="110" class="output"/>
+  <text x="1220" y="695" class="section">Resume Outputs</text>
+  <text x="1220" y="725" class="body">Resume profile</text>
+  <text x="1220" y="750" class="body">Ranked jobs and gap analysis</text>
+
+  <path d="M380 260 L430 260" class="arrow"/>
+  <path d="M760 260 L815 260" class="arrow"/>
+  <path d="M595 370 L595 450" class="arrow"/>
+  <path d="M985 370 L985 450" class="arrow"/>
+  <path d="M800 570 L800 635" class="arrow"/>
+  <path d="M1065 570 L1065 635" class="arrow"/>
+  <path d="M1130 510 L1210 510 L1210 260" class="arrow"/>
+  <path d="M1210 260 L1155 260" class="arrow dash"/>
+  <path d="M995 765 L995 815 L225 815 L225 370" class="arrow"/>
+  <path d="M1340 765 L1340 815 L225 815" class="arrow dash"/>
+
+  <text x="100" y="835" class="small">Solid arrows indicate product execution flow; dashed arrows indicate monitoring and evaluation feedback loops.</text>
+</svg>

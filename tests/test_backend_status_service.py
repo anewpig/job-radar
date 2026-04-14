@@ -127,10 +127,14 @@ class BackendStatusServiceTests(unittest.TestCase):
             product_store=product_store,
         )
 
+        self.assertEqual(report.build.package_name, "job-spy-tw")
+        self.assertIn("product_state", report.schema_versions)
         self.assertEqual(report.execution_mode, "worker")
         self.assertEqual(report.operations.pending_job_count, 1)
         self.assertEqual(report.backups.backup_count, 1)
         self.assertTrue(report.backups.latest_manifest_path.endswith("manifest.json"))
+        self.assertIn("latency_budgets", report.ai_health)
+        self.assertIn("cache_efficiency", report.ai_health)
         self.assertEqual(report.issues, [])
 
     def test_collect_backend_status_report_surfaces_missing_worker_and_backup_issues(self) -> None:

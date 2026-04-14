@@ -51,6 +51,14 @@ def main() -> int:
         return 1 if bool(args.strict) and bool(report.issues) else 0
 
     print(
+        "Build: "
+        f"version={report.build.package_version} "
+        f"api={report.build.api_version} "
+        f"env={report.build.deploy_env} "
+        f"channel={report.build.release_channel} "
+        f"sha={report.build.git_sha}"
+    )
+    print(
         "Backend status: "
         f"mode={report.execution_mode} "
         f"due_saved_searches={report.operations.due_saved_search_count} "
@@ -73,6 +81,12 @@ def main() -> int:
         f"latest={report.backups.latest_backup_id or '-'} "
         f"created_at={report.backups.latest_created_at or '-'} "
         f"databases={','.join(report.backups.latest_database_keys) or '-'}"
+    )
+    print(
+        "AI health: "
+        f"latency_status={report.ai_health.get('latency_budgets', {}).get('status', 'NO_DATA')} "
+        f"cache_hit_rate={report.ai_health.get('cache_efficiency', {}).get('chunk_cache_hit_rate', 0.0)} "
+        f"audit_events={report.security.get('recent_audit_events', 0)}"
     )
     if report.issues:
         print(f"Issues: {', '.join(report.issues)}")

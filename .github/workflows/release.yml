@@ -1,0 +1,46 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m pip install .
+
+      - name: Build release artifacts
+        run: python -m build
+
+      - name: Run release RAG regression gate
+        run: |
+          python scripts/benchmark_chunking_strategies.py \
+            --case-set realistic \
+            --top-k 5 \
+            --gate-strategy current_structured \
+            --gate-only \
+            --baseline-file benchmarks/rag_retrieval_baseline.json \
+            --min-hit-at-1 0.75 \
+            --min-mrr 0.78 \
+            --prompt-variant control
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-radar-dist
+          path: dist/*

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -60,6 +60,31 @@ class Settings:
     public_base_url: str = ""
     line_webhook_host: str = "0.0.0.0"
     line_webhook_port: int = 8787
+    global_search_enabled: bool = True
+    global_search_name: str = ""
+    global_search_keywords: list[str] = field(default_factory=list)
+    global_search_frequency_days: int = 2
+    global_search_preset_label: str = "平衡"
+    global_search_force_refresh: bool = True
+    global_search_user_email: str = ""
+    linkedin_cooldown_seconds: int = 1800
+    assistant_general_chat_model: str = ""
+    assistant_prompt_variant: str = "control"
+    assistant_latency_profile: str = "fast"
+    assistant_ann_sync_interval_seconds: int = 900
+    assistant_persistent_index_enabled: bool = False
+    assistant_persistent_index_sources: tuple[str, ...] = ("snapshot_file",)
+    assistant_persistent_index_max_snapshots: int = 1
+    assistant_persistent_index_max_history_rows: int = 500
+    assistant_external_search_enabled: bool = False
+    assistant_external_search_provider: str = "duckduckgo"
+    assistant_external_search_max_results: int = 3
+    assistant_external_search_timeout_seconds: float = 4.0
+    assistant_external_search_cache_ttl_seconds: int = 900
+    salary_prediction_enabled: bool = True
+    salary_prediction_model_path: Path | None = None
+    backend_console_allowed_roles: tuple[str, ...] = ("operator", "admin")
+    log_format: str = "text"
 
     @property
     def cache_dir(self) -> Path:

@@ -51,6 +51,7 @@ class BackendStatusCliTests(unittest.TestCase):
             exit_code = main()
 
         self.assertEqual(exit_code, 0)
+        self.assertIn("Build:", output.getvalue())
         self.assertIn("Backend status:", output.getvalue())
 
 

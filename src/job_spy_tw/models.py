@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+MARKET_SNAPSHOT_SCHEMA_VERSION = "market_snapshot.v2"
+ASSISTANT_RESPONSE_SCHEMA_VERSION = "assistant_response.v1"
+RESUME_PROFILE_SCHEMA_VERSION = "resume_profile.v1"
+
 
 @dataclass(slots=True)
 class TargetRole:
@@ -15,6 +19,22 @@ class TargetRole:
     @property
     def weight(self) -> float:
         return max(0.2, 1.1 - ((self.priority - 1) * 0.12))
+
+
+@dataclass(slots=True)
+class SalaryEstimate:
+    predicted_low: int = 0
+    predicted_mid: int = 0
+    predicted_high: int = 0
+    currency: str = "TWD"
+    period: str = "monthly"
+    confidence: float = 0.0
+    evidence_job_urls: list[str] = field(default_factory=list)
+    model_version: str = ""
+    fallback_reason: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass(slots=True)
@@ -36,7 +56,15 @@ class JobListing:
     requirement_items: list[str] = field(default_factory=list)
     detail_sections: dict[str, str] = field(default_factory=dict)
     tags: list[str] = field(default_factory=list)
+    source_record_id: str = ""
+    canonical_identity_key: str = ""
+    lineage_trail: list[dict[str, Any]] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    salary_estimate: SalaryEstimate | None = None
+
+    def __post_init__(self) -> None:
+        if isinstance(self.salary_estimate, dict):
+            self.salary_estimate = SalaryEstimate(**self.salary_estimate)
 
     def combined_text(self) -> str:
         return "\n".join(
@@ -104,6 +132,7 @@ class ResumeProfile:
     extraction_method: str = "rule_based"
     llm_model: str = ""
     notes: list[str] = field(default_factory=list)
+    schema_version: str = RESUME_PROFILE_SCHEMA_VERSION
 
     def searchable_text(self) -> str:
         return "\n".join(
@@ -178,11 +207,16 @@ class AssistantResponse:
     key_points: list[str] = field(default_factory=list)
     limitations: list[str] = field(default_factory=list)
     next_step: str = ""
+    answer_mode: str = "market_summary"
+    market_sections: list[dict[str, str]] = field(default_factory=list)
+    guidance_sections: list[dict[str, str]] = field(default_factory=list)
+    comparison_sections: list[dict[str, str]] = field(default_factory=list)
     citations: list[AssistantCitation] = field(default_factory=list)
     retrieval_notes: list[str] = field(default_factory=list)
     used_chunks: int = 0
     model: str = ""
     retrieval_model: str = ""
+    schema_version: str = ASSISTANT_RESPONSE_SCHEMA_VERSION
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -197,9 +231,13 @@ class MarketSnapshot:
     skills: list[SkillInsight]
     task_insights: list[ItemInsight] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    schema_version: str = MARKET_SNAPSHOT_SCHEMA_VERSION
+    snapshot_kind: str = "complete"
+    data_quality: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "schema_version": self.schema_version,
             "generated_at": self.generated_at,
             "queries": self.queries,
             "role_targets": [
@@ -214,6 +252,8 @@ class MarketSnapshot:
             "skills": [skill.to_dict() for skill in self.skills],
             "task_insights": [item.to_dict() for item in self.task_insights],
             "errors": self.errors,
+            "snapshot_kind": self.snapshot_kind,
+            "data_quality": self.data_quality,
         }
 
 
@@ -296,10 +336,31 @@ class NotificationPreference:
 
 
 @dataclass(slots=True)
+class AgentMemoryRecord:
+    id: int
+    user_id: int
+    memory_type: str
+    key: str
+    summary: str = ""
+    value: dict[str, Any] = field(default_factory=dict)
+    source: str = ""
+    confidence: float = 1.0
+    last_used_at: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+    expires_at: str = ""
+    is_active: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class UserAccount:
     id: int
     email: str
     display_name: str = ""
+    role: str = "user"
     is_guest: bool = False
     created_at: str = ""
     updated_at: str = ""

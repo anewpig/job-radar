@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from copy import deepcopy
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
+import hashlib
+import json
+import socket
 import time
 from typing import Sequence
+from urllib.parse import urlsplit
 
 from .analysis import JobAnalyzer
 from .config import Settings, load_settings
 from .connectors import CakeConnector, LinkedInConnector, Site104Connector, Site1111Connector
+from .data_quality import build_snapshot_data_quality_report
+from .job_cleaning import merge_duplicate_jobs
 from .market_history_store import MarketHistoryStore
-from .models import JobListing, MarketSnapshot, TargetRole
+from .models import JobListing, MARKET_SNAPSHOT_SCHEMA_VERSION, MarketSnapshot, TargetRole
 from .storage import now_iso, save_snapshot
 from .targets import DEFAULT_TARGET_ROLES, build_default_queries
 from .utils import CachedFetcher, ensure_directory
@@ -35,6 +41,8 @@ class JobMarketPipeline:
         self.settings = settings or load_settings()
         self.role_targets = role_targets or DEFAULT_TARGET_ROLES
         self.force_refresh = bool(force_refresh)
+        self._raw_collection_jobs: list[JobListing] = []
+        self._last_deduped_jobs: list[JobListing] = []
         ensure_directory(self.settings.data_dir)
         self.fetcher = CachedFetcher(
             cache_dir=self.settings.cache_dir,
@@ -68,6 +76,10 @@ class JobMarketPipeline:
     ) -> tuple[list[JobListing], list[str]]:
         """Collect, deduplicate, and initially score jobs without expensive detail analysis."""
         queries = queries or build_default_queries(self.role_targets)
+        self._reset_collection_quality()
+        dns_ok, dns_error = self._preflight_dns(self.connectors)
+        if not dns_ok:
+            return [], [dns_error]
         collected: list[JobListing] = []
         errors: list[str] = []
         max_workers = max(1, min(self.settings.max_concurrent_requests, len(self.connectors)))
@@ -91,7 +103,9 @@ class JobMarketPipeline:
                     except Exception as exc:  # noqa: BLE001
                         errors.append(f"{connector.source}: {exc}")
 
-        return self._score_and_sort_jobs(collected), errors
+        scored_jobs = self._score_and_sort_jobs(collected)
+        self._record_collection_quality(new_raw_jobs=collected, deduped_jobs=scored_jobs)
+        return scored_jobs, errors
 
     def collect_initial_wave(
         self,
@@ -99,6 +113,10 @@ class JobMarketPipeline:
     ) -> tuple[list[JobListing], list[str], list[str]]:
         """Collect only page 1 and return as soon as the first visible wave is ready."""
         queries = queries or build_default_queries(self.role_targets)
+        self._reset_collection_quality()
+        dns_ok, dns_error = self._preflight_dns(self.connectors)
+        if not dns_ok:
+            return [], [dns_error], []
         collected: list[JobListing] = []
         errors: list[str] = []
         completed_sources: set[str] = set()
@@ -121,7 +139,9 @@ class JobMarketPipeline:
                     started_at=start_time,
                 ):
                     break
-            return self._score_and_sort_jobs(collected), errors, sorted(completed_sources)
+            scored_jobs = self._score_and_sort_jobs(collected)
+            self._record_collection_quality(new_raw_jobs=collected, deduped_jobs=scored_jobs)
+            return scored_jobs, errors, sorted(completed_sources)
 
         executor = ThreadPoolExecutor(max_workers=max_workers)
         future_map = {
@@ -184,7 +204,9 @@ class JobMarketPipeline:
                 future.cancel()
             executor.shutdown(wait=False, cancel_futures=True)
 
-        return self._score_and_sort_jobs(collected), errors, sorted(completed_sources)
+        scored_jobs = self._score_and_sort_jobs(collected)
+        self._record_collection_quality(new_raw_jobs=collected, deduped_jobs=scored_jobs)
+        return scored_jobs, errors, sorted(completed_sources)
 
     def collect_remaining_waves(
         self,
@@ -195,6 +217,10 @@ class JobMarketPipeline:
         completed_initial_sources: Sequence[str] | None = None,
     ) -> tuple[list[JobListing], list[str], int]:
         """Collect one follow-up search wave and merge it into the current scored results."""
+        dns_ok, dns_error = self._preflight_dns(self.connectors)
+        if not dns_ok:
+            stop_cursor = self.settings.max_pages_per_source + 1
+            return self._score_and_sort_jobs(existing_jobs), [dns_error], stop_cursor
         if page_cursor > self.settings.max_pages_per_source:
             return self._score_and_sort_jobs(existing_jobs), [], page_cursor
 
@@ -244,6 +270,7 @@ class JobMarketPipeline:
                         errors.append(f"{connector.source}: {exc}")
 
         merged_jobs = self._dedupe_jobs([*existing_jobs, *collected])
+        self._record_collection_quality(new_raw_jobs=collected, deduped_jobs=merged_jobs)
         return self._score_and_sort_jobs(merged_jobs), errors, page_cursor + 1
 
     def build_partial_snapshot(
@@ -255,14 +282,22 @@ class JobMarketPipeline:
         generated_at: str | None = None,
     ) -> MarketSnapshot:
         """Create a lightweight snapshot that can be rendered before analysis finishes."""
+        partial_jobs = deepcopy(jobs)
         return MarketSnapshot(
             generated_at=generated_at or now_iso(),
             queries=list(queries),
             role_targets=deepcopy(self.role_targets),
-            jobs=deepcopy(jobs),
+            jobs=partial_jobs,
             skills=[],
             task_insights=[],
             errors=list(errors),
+            snapshot_kind="partial",
+            data_quality=self._build_snapshot_data_quality(
+                queries=queries,
+                final_jobs=partial_jobs,
+                errors=errors,
+                snapshot_kind="partial",
+            ),
         )
 
     def complete_snapshot(
@@ -287,6 +322,13 @@ class JobMarketPipeline:
             skills=skills,
             task_insights=task_insights,
             errors=working_errors,
+            snapshot_kind="complete",
+            data_quality=self._build_snapshot_data_quality(
+                queries=queries,
+                final_jobs=filtered_jobs,
+                errors=working_errors,
+                snapshot_kind="complete",
+            ),
         )
         save_snapshot(snapshot, self.settings.snapshot_path)
         MarketHistoryStore(
@@ -381,14 +423,8 @@ class JobMarketPipeline:
         return filtered
 
     def _dedupe_jobs(self, jobs: list[JobListing]) -> list[JobListing]:
-        """Keep the most detailed version of each job across duplicated source URLs."""
-        deduped: dict[tuple[str, str], JobListing] = {}
-        for job in jobs:
-            key = (job.source, job.url or f"{job.title}|{job.company}|{job.location}")
-            if key in deduped and len(job.description) < len(deduped[key].description):
-                continue
-            deduped[key] = job
-        return list(deduped.values())
+        """Normalize fields, then merge same-source and cross-source duplicates."""
+        return merge_duplicate_jobs(jobs)
 
     def _collect_from_connector(
         self,
@@ -406,6 +442,29 @@ class JobMarketPipeline:
             return [], [f"{connector.source}: {exc}"]
         connector_errors = [str(message) for message in getattr(connector, "last_errors", [])]
         return jobs, connector_errors
+
+    @staticmethod
+    def _preflight_dns(connectors) -> tuple[bool, str]:
+        hosts: list[str] = []
+        for connector in connectors:
+            base_url = getattr(connector, "base_url", "") or ""
+            host = urlsplit(base_url).hostname
+            if not host:
+                host = urlsplit(str(getattr(connector, "search_url_template", ""))).hostname
+            if host:
+                hosts.append(host)
+        if not hosts:
+            return True, ""
+        for host in dict.fromkeys(hosts):
+            try:
+                socket.getaddrinfo(host, 443)
+            except OSError as exc:
+                return (
+                    False,
+                    f"DNS 解析失敗：{host} 無法解析（{exc}）。"
+                    "請確認網路連線或 DNS 設定。",
+                )
+        return True, ""
 
     def _detail_candidates_by_source(
         self,
@@ -457,3 +516,78 @@ class JobMarketPipeline:
             or len(completed_sources) >= self.INITIAL_WAVE_SOURCE_TARGET
             or elapsed >= self.INITIAL_WAVE_TIMEOUT_SECONDS
         )
+
+    def _reset_collection_quality(self) -> None:
+        """Reset collection-quality trackers for a new crawl session."""
+        self._raw_collection_jobs = []
+        self._last_deduped_jobs = []
+
+    def _record_collection_quality(
+        self,
+        *,
+        new_raw_jobs: list[JobListing],
+        deduped_jobs: list[JobListing],
+    ) -> None:
+        """Track raw and deduped jobs across staged crawl waves."""
+        self._raw_collection_jobs.extend(deepcopy(new_raw_jobs))
+        self._last_deduped_jobs = deepcopy(deduped_jobs)
+
+    def _build_snapshot_data_quality(
+        self,
+        *,
+        queries: list[str],
+        final_jobs: list[JobListing],
+        errors: list[str],
+        snapshot_kind: str,
+    ) -> dict[str, object]:
+        """Build quality and lineage metadata for the current snapshot."""
+        raw_jobs = deepcopy(self._raw_collection_jobs) if self._raw_collection_jobs else deepcopy(final_jobs)
+        deduped_jobs = deepcopy(self._last_deduped_jobs) if self._last_deduped_jobs else deepcopy(final_jobs)
+        report = build_snapshot_data_quality_report(
+            connector_sources=[connector.source for connector in self.connectors],
+            raw_jobs=raw_jobs,
+            deduped_jobs=deduped_jobs,
+            final_jobs=deepcopy(final_jobs),
+            errors=list(errors),
+            snapshot_kind=snapshot_kind,
+        )
+        cross_source_merge_count = sum(
+            1
+            for job in final_jobs
+            if bool((job.metadata or {}).get("cross_source_merged"))
+        )
+        lineage_record_count = sum(len(job.lineage_trail or []) for job in final_jobs)
+        detail_enriched_count = sum(
+            1
+            for job in final_jobs
+            if bool((job.metadata or {}).get("detail_enriched"))
+        )
+        report["snapshot_version"] = MARKET_SNAPSHOT_SCHEMA_VERSION
+        report["snapshot_query_signature"] = self._build_snapshot_query_signature(queries=queries)
+        report["lineage"] = {
+            "connector_sources": [connector.source for connector in self.connectors],
+            "query_terms": list(queries),
+            "role_targets": [role.name for role in self.role_targets],
+            "raw_collection_count": len(raw_jobs),
+            "deduped_count": len(deduped_jobs),
+            "final_count": len(final_jobs),
+            "detail_enriched_count": detail_enriched_count,
+            "cross_source_merge_count": cross_source_merge_count,
+            "lineage_record_count": lineage_record_count,
+        }
+        return report
+
+    def _build_snapshot_query_signature(self, *, queries: list[str]) -> str:
+        payload = {
+            "queries": list(queries),
+            "roles": [
+                {
+                    "name": role.name,
+                    "priority": role.priority,
+                    "keywords": role.keywords,
+                }
+                for role in self.role_targets
+            ],
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]

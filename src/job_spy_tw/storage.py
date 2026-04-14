@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from .models import ItemInsight, JobListing, MarketSnapshot, SkillInsight, TargetRole
+from .models import (
+    ItemInsight,
+    JobListing,
+    MARKET_SNAPSHOT_SCHEMA_VERSION,
+    MarketSnapshot,
+    SkillInsight,
+    TargetRole,
+)
 from .utils import dump_json, load_json
 
 
@@ -51,6 +58,9 @@ def load_snapshot(path) -> MarketSnapshot | None:
         skills=[SkillInsight(**skill) for skill in payload["skills"]],
         task_insights=[ItemInsight(**item) for item in payload.get("task_insights", [])],
         errors=payload.get("errors", []),
+        schema_version=payload.get("schema_version", MARKET_SNAPSHOT_SCHEMA_VERSION),
+        snapshot_kind=payload.get("snapshot_kind", "complete"),
+        data_quality=payload.get("data_quality", {}) or {},
     )
 
 

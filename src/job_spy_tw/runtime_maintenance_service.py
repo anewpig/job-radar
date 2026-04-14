@@ -8,6 +8,7 @@ from datetime import datetime
 from .crawl_application_service import build_query_runtime
 from .query_runtime import RuntimeSignalStore
 from .settings import Settings
+from .utils import CachedFetcher, purge_nested_cache_files
 
 
 MAINTENANCE_COMPONENT_KIND = "cleanup"
@@ -24,6 +25,10 @@ class RuntimeCleanupResult:
     deleted_snapshot_files: int = 0
     deleted_orphan_snapshot_files: int = 0
     deleted_signals: int = 0
+    deleted_cache_files: int = 0
+    deleted_cache_bytes: int = 0
+    retained_cache_files: int = 0
+    retained_cache_bytes: int = 0
     ran_at: str = ""
 
 
@@ -61,6 +66,28 @@ def run_runtime_cleanup(
         deleted_signals = signal_store.prune_signals(
             retention_days=settings.runtime_signal_retention_days
         )
+        cache_result = CachedFetcher(
+            cache_dir=settings.cache_dir,
+            timeout=settings.request_timeout,
+            delay_seconds=settings.request_delay,
+            user_agent=settings.user_agent,
+            allow_insecure_ssl_fallback=settings.allow_insecure_ssl_fallback,
+            backend=settings.cache_backend,
+        ).purge_cache(
+            max_bytes=settings.cache_max_bytes,
+            max_files=settings.cache_max_files,
+        )
+        root_cache_entries = sum(
+            1 for path in settings.cache_dir.glob("*.html") if path.is_file()
+        ) if settings.cache_dir.exists() else 0
+        root_cache_bytes = sum(
+            path.stat().st_size for path in settings.cache_dir.iterdir() if path.is_file()
+        ) if settings.cache_dir.exists() else 0
+        nested_cache_result = purge_nested_cache_files(
+            settings.cache_dir,
+            max_bytes=max(0, settings.cache_max_bytes - int(root_cache_bytes)),
+            max_files=max(0, settings.cache_max_files - int(root_cache_entries)),
+        )
         result = RuntimeCleanupResult(
             status="completed",
             trigger=trigger,
@@ -69,6 +96,10 @@ def run_runtime_cleanup(
             deleted_snapshot_files=int(snapshot_result["deleted_files"]),
             deleted_orphan_snapshot_files=int(snapshot_result["deleted_orphan_files"]),
             deleted_signals=deleted_signals,
+            deleted_cache_files=int(cache_result.deleted_files + nested_cache_result.deleted_files),
+            deleted_cache_bytes=int(cache_result.deleted_bytes + nested_cache_result.deleted_bytes),
+            retained_cache_files=int(root_cache_entries + nested_cache_result.retained_files),
+            retained_cache_bytes=int(root_cache_bytes + nested_cache_result.retained_bytes),
             ran_at=current_time,
         )
         signal_store.put_signal(
@@ -84,6 +115,10 @@ def run_runtime_cleanup(
                 "deleted_snapshot_files": int(result.deleted_snapshot_files),
                 "deleted_orphan_snapshot_files": int(result.deleted_orphan_snapshot_files),
                 "deleted_signals": int(result.deleted_signals),
+                "deleted_cache_files": int(result.deleted_cache_files),
+                "deleted_cache_bytes": int(result.deleted_cache_bytes),
+                "retained_cache_files": int(result.retained_cache_files),
+                "retained_cache_bytes": int(result.retained_cache_bytes),
             },
         )
         return result
@@ -130,5 +165,6 @@ def _format_cleanup_message(result: RuntimeCleanupResult) -> str:
         f"snapshots={result.deleted_snapshot_rows}, "
         f"snapshot_files={result.deleted_snapshot_files}, "
         f"orphans={result.deleted_orphan_snapshot_files}, "
-        f"signals={result.deleted_signals}"
+        f"signals={result.deleted_signals}, "
+        f"cache_files={result.deleted_cache_files}"
     )

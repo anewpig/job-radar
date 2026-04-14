@@ -12,6 +12,12 @@ services:
         value: 10000
       - key: JOB_SPY_DATA_DIR
         value: /app/data
+      - key: JOB_RADAR_DEPLOY_ENV
+        value: render
+      - key: JOB_RADAR_RELEASE_CHANNEL
+        value: stable
+      - key: JOB_RADAR_GIT_SHA
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_BASE_URL
@@ -24,6 +30,16 @@ services:
         value: text-embedding-3-large
       - key: JOB_SPY_ASSISTANT_MODEL
         value: gpt-4.1-mini
+      - key: JOB_SPY_ASSISTANT_GENERAL_CHAT_MODEL
+        value: gpt-4.1-mini
+      - key: JOB_SPY_ASSISTANT_PROMPT_VARIANT
+        value: control
+      - key: JOB_SPY_ASSISTANT_ANN_SYNC_INTERVAL_SECONDS
+        value: "900"
+      - key: JOB_SPY_LOG_FORMAT
+        value: json
+      - key: JOB_RADAR_BACKEND_CONSOLE_ALLOWED_ROLES
+        value: operator,admin
       - key: JOB_SPY_REQUEST_TIMEOUT
         value: "20"
       - key: JOB_SPY_REQUEST_DELAY

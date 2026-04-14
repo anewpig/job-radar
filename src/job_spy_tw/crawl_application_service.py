@@ -5,10 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import json
+import re
 import sqlite3
 from typing import Any
 
 from .crawl_tuning import CrawlPreset, apply_crawl_preset, get_crawl_preset
+from .global_search import ensure_global_saved_search
 from .models import (
     JobListing,
     MarketSnapshot,
@@ -119,6 +121,8 @@ class ScheduledRefreshCandidate:
     crawl_preset_label: str
     frequency: str
     last_run_at: str
+    force_refresh: bool = False
+    is_global: bool = False
 
 
 @dataclass(slots=True)
@@ -309,8 +313,13 @@ def _frequency_interval(frequency: str) -> timedelta:
     cleaned = str(frequency or "").strip()
     if cleaned == "每週":
         return timedelta(days=7)
-    if cleaned == "每日":
+    if cleaned in {"每日", "每天"}:
         return timedelta(days=1)
+    if cleaned in {"每兩天", "兩天"}:
+        return timedelta(days=2)
+    match = re.match(r"^每?(\d+)天$", cleaned)
+    if match:
+        return timedelta(days=max(1, int(match.group(1))))
     return timedelta(hours=1)
 
 
@@ -325,9 +334,24 @@ def is_saved_search_due(*, last_run_at: str, frequency: str, now: datetime | Non
     return current_time >= parsed + _frequency_interval(frequency)
 
 
-def collect_due_saved_searches(*, product_store: ProductStore) -> list[ScheduledRefreshCandidate]:
+def collect_due_saved_searches(
+    *,
+    product_store: ProductStore,
+    settings: Settings | None = None,
+) -> list[ScheduledRefreshCandidate]:
     """Collect all saved searches whose refresh window has elapsed."""
     candidates: list[ScheduledRefreshCandidate] = []
+    global_context = None
+    global_force_refresh = False
+    if settings is not None and settings.global_search_enabled:
+        global_context = ensure_global_saved_search(
+            settings=settings,
+            product_store=product_store,
+        )
+        global_force_refresh = bool(settings.global_search_force_refresh)
+    global_user_id = int(global_context.user_id) if global_context else None
+    global_search_id = int(global_context.search_id) if global_context else None
+
     for user in product_store.list_users(include_guest=False):
         preferences = product_store.get_notification_preferences(user_id=int(user.id))
         for saved_search in product_store.list_saved_searches(user_id=int(user.id)):
@@ -336,6 +360,12 @@ def collect_due_saved_searches(*, product_store: ProductStore) -> list[Scheduled
                 frequency=preferences.frequency,
             ):
                 continue
+            is_global = bool(
+                global_user_id is not None
+                and global_search_id is not None
+                and int(user.id) == global_user_id
+                and int(saved_search.id) == global_search_id
+            )
             candidates.append(
                 ScheduledRefreshCandidate(
                     user_id=int(user.id),
@@ -346,6 +376,8 @@ def collect_due_saved_searches(*, product_store: ProductStore) -> list[Scheduled
                     crawl_preset_label=saved_search.crawl_preset_label,
                     frequency=preferences.frequency,
                     last_run_at=saved_search.last_run_at,
+                    force_refresh=global_force_refresh if is_global else False,
+                    is_global=is_global,
                 )
             )
     return candidates
@@ -358,7 +390,10 @@ def schedule_due_saved_searches(
     worker_id: str,
 ) -> ScheduledRefreshRunResult:
     """Enqueue all saved searches whose scheduler window has elapsed."""
-    candidates = collect_due_saved_searches(product_store=product_store)
+    candidates = collect_due_saved_searches(
+        product_store=product_store,
+        settings=settings,
+    )
     result = ScheduledRefreshRunResult(checked_count=len(candidates))
     for candidate in candidates:
         role_targets = build_role_targets_from_rows(candidate.rows)
@@ -377,7 +412,7 @@ def schedule_due_saved_searches(
             role_targets=role_targets,
             queries=queries,
             query_signature=query_signature,
-            force_refresh=False,
+            force_refresh=bool(candidate.force_refresh),
             crawl_preset_label=candidate.crawl_preset_label,
             worker_id=worker_id,
             execution_mode="worker",
@@ -647,7 +682,7 @@ def start_crawl(
             settings=settings,
             role_targets=role_targets,
             force_refresh=force_refresh,
-            perform_cache_maintenance=True,
+            perform_cache_maintenance=False,
         )
         collected_jobs, crawl_errors, initial_wave_sources = pipeline.collect_initial_wave(
             queries=queries,
@@ -891,7 +926,7 @@ def process_queued_crawl_job(
             settings=runtime_settings,
             role_targets=role_targets,
             force_refresh=force_refresh,
-            perform_cache_maintenance=True,
+            perform_cache_maintenance=False,
         )
         collected_jobs, crawl_errors, initial_wave_sources = pipeline.collect_initial_wave(
             queries=queries

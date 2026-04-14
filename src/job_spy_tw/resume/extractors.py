@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import re
 from typing import Any, Iterable
 
 from ..analysis import JobAnalyzer
 from ..models import ResumeProfile, TargetRole
-from ..utils import normalize_text, unique_preserving_order
+from ..openai_usage import extract_openai_usage, merge_openai_usage
+from ..prompt_versions import RESUME_EXTRACTION_PROMPT_VERSION
+from ..utils import ensure_directory, normalize_text, unique_preserving_order
+from .scoring import _stable_hash
 from .schemas import LLMResumeProfile, OpenAI
 from .text import (
     DOMAIN_TAXONOMY,
@@ -21,6 +26,8 @@ from .text import (
     _sanitize_extracted_text,
     _sanitize_match_keywords,
 )
+
+RESUME_PROFILE_MEMORY_CACHE_MAX = 128
 
 
 class RuleBasedResumeExtractor:
@@ -310,6 +317,7 @@ class OpenAIResumeExtractor:
         model: str,
         base_url: str = "",
         client: Any | None = None,
+        cache_dir: Path | None = None,
     ) -> None:
         if OpenAI is None or LLMResumeProfile is None:
             raise RuntimeError("OpenAI 或 Pydantic 套件不可用，無法啟用 LLM 履歷分析。")
@@ -325,6 +333,15 @@ class OpenAIResumeExtractor:
                 client_kwargs["base_url"] = base_url
             self.client = OpenAI(**client_kwargs)
         self.model = model
+        self.cache_dir = ensure_directory(cache_dir) if cache_dir else None
+        self.profile_cache_dir = (
+            ensure_directory(self.cache_dir / "resume_profile_extracts")
+            if self.cache_dir
+            else None
+        )
+        self.last_usage = merge_openai_usage()
+        self.last_metrics: dict[str, Any] = {}
+        self._profile_memory_cache: dict[str, dict[str, Any]] = {}
 
     def extract(
         self,
@@ -332,59 +349,113 @@ class OpenAIResumeExtractor:
         source_name: str,
         fallback_profile: ResumeProfile,
     ) -> ResumeProfile:
-        role_hint = "\n".join(
-            f"- {role.priority}. {role.name}: {', '.join(role.keywords)}"
-            for role in self.role_targets
+        self.last_usage = merge_openai_usage()
+        self.last_metrics = {
+            "prompt_version": RESUME_EXTRACTION_PROMPT_VERSION,
+            "profile_cache_memory_hit": False,
+            "profile_cache_disk_hit": False,
+            "profile_cache_write": False,
+            "resume_context_chars": 0,
+        }
+        condensed_resume_text = self._build_resume_context(text, fallback_profile)
+        self.last_metrics["resume_context_chars"] = len(condensed_resume_text)
+        role_hint = self._build_role_hint()
+        fallback_brief = self._build_fallback_brief(fallback_profile)
+        cache_key = _stable_hash(
+            {
+                "schema": "resume_profile_extract_v2",
+                "model": self.model,
+                "source_name": source_name,
+                "role_hint": role_hint,
+                "fallback_brief": fallback_brief,
+                "resume_context": condensed_resume_text,
+            }
         )
+        cached = self._read_cache(cache_key)
+        if cached is not None:
+            self.last_metrics["profile_cache_memory_hit"] = bool(cached.get("_memory_hit"))
+            self.last_metrics["profile_cache_disk_hit"] = not bool(cached.get("_memory_hit"))
+            return self._build_profile_from_payload(
+                payload=cached,
+                source_name=source_name,
+                raw_text=text,
+                fallback_profile=fallback_profile,
+            )
         response = self.client.responses.parse(
             model=self.model,
             temperature=0.1,
-            max_output_tokens=900,
+            max_output_tokens=240,
             input=(
-                "請閱讀這份履歷，整理成結構化求職摘要，用於台灣職缺比對。\n"
-                "請優先判斷候選人最適合的職缺方向、核心技能、工具技能、偏好工作內容與匹配關鍵字。\n"
-                "generated_prompts 請輸出 3 句短 prompt，可直接拿去做職缺搜尋或比對。\n"
-                "target_roles 請盡量對齊下列目標職缺名稱：\n"
+                "請把這份履歷整理成台灣職缺比對用的結構化摘要。\n"
+                "重點輸出：target_roles、core_skills、tool_skills、preferred_tasks、match_keywords。\n"
+                "generated_prompts 只要 3 句短 prompt。\n"
+                "target_roles 請優先對齊下列目標職缺名稱：\n"
                 f"{role_hint}\n\n"
-                "以下是規則分析的初步結果，可當作參考但不要逐字照抄：\n"
-                f"summary: {fallback_profile.summary}\n"
-                f"target_roles: {', '.join(fallback_profile.target_roles)}\n"
-                f"core_skills: {', '.join(fallback_profile.core_skills)}\n"
-                f"tool_skills: {', '.join(fallback_profile.tool_skills)}\n"
-                f"preferred_tasks: {', '.join(fallback_profile.preferred_tasks)}\n"
-                f"domain_keywords: {', '.join(fallback_profile.domain_keywords)}\n\n"
-                "履歷原文如下：\n"
-                f"{text[:12000]}"
+                "以下是規則分析初稿，可參考但不要逐字照抄：\n"
+                f"{fallback_brief}\n\n"
+                "以下是清理後的履歷重點片段，請優先根據這些內容抽取：\n"
+                f"{condensed_resume_text}"
             ),
             text_format=LLMResumeProfile,
         )
+        self.last_usage = merge_openai_usage(extract_openai_usage(response))
         parsed = response.output_parsed
         if parsed is None:
             raise RuntimeError("LLM 沒有回傳可解析的結構化結果。")
 
-        target_roles = self._normalize_roles(parsed.target_roles, fallback_profile.target_roles)
+        payload = {
+            "summary": parsed.summary,
+            "target_roles": parsed.target_roles,
+            "core_skills": parsed.core_skills,
+            "tool_skills": parsed.tool_skills,
+            "domain_keywords": parsed.domain_keywords,
+            "preferred_tasks": parsed.preferred_tasks,
+            "generated_prompts": parsed.generated_prompts,
+            "match_keywords": parsed.match_keywords,
+        }
+        self._write_cache(cache_key, payload)
+        self.last_metrics["profile_cache_write"] = True
+        return self._build_profile_from_payload(
+            payload=payload,
+            source_name=source_name,
+            raw_text=text,
+            fallback_profile=fallback_profile,
+        )
+
+    def _build_profile_from_payload(
+        self,
+        *,
+        payload: dict[str, Any],
+        source_name: str,
+        raw_text: str,
+        fallback_profile: ResumeProfile,
+    ) -> ResumeProfile:
+        target_roles = self._normalize_roles(
+            payload.get("target_roles", []),
+            fallback_profile.target_roles,
+        )
         core_skills = unique_preserving_order(
-            [item.strip() for item in parsed.core_skills if item.strip()]
+            [item.strip() for item in payload.get("core_skills", []) if item and item.strip()]
             + fallback_profile.core_skills
         )[:8]
         tool_skills = unique_preserving_order(
-            [item.strip() for item in parsed.tool_skills if item.strip()]
+            [item.strip() for item in payload.get("tool_skills", []) if item and item.strip()]
             + fallback_profile.tool_skills
         )[:8]
         domain_keywords = _sanitize_domain_keywords(
-            [item.strip() for item in parsed.domain_keywords if item.strip()]
+            [item.strip() for item in payload.get("domain_keywords", []) if item and item.strip()]
             + fallback_profile.domain_keywords
         )[:10]
         preferred_tasks = unique_preserving_order(
-            [item.strip() for item in parsed.preferred_tasks if item.strip()]
+            [item.strip() for item in payload.get("preferred_tasks", []) if item and item.strip()]
             + fallback_profile.preferred_tasks
         )[:8]
         generated_prompts = unique_preserving_order(
-            [item.strip() for item in parsed.generated_prompts if item.strip()]
+            [item.strip() for item in payload.get("generated_prompts", []) if item and item.strip()]
             + fallback_profile.generated_prompts
         )[:4]
         match_keywords = _sanitize_match_keywords(
-            [item.strip() for item in parsed.match_keywords if item.strip()]
+            [item.strip() for item in payload.get("match_keywords", []) if item and item.strip()]
             + core_skills
             + tool_skills
             + domain_keywords
@@ -394,8 +465,8 @@ class OpenAIResumeExtractor:
 
         return ResumeProfile(
             source_name=source_name,
-            raw_text=text,
-            summary=parsed.summary.strip() or fallback_profile.summary,
+            raw_text=raw_text,
+            summary=(str(payload.get("summary", "")).strip() or fallback_profile.summary),
             target_roles=target_roles,
             core_skills=core_skills,
             tool_skills=tool_skills,
@@ -407,6 +478,102 @@ class OpenAIResumeExtractor:
             llm_model=self.model,
             notes=unique_preserving_order(fallback_profile.notes + ["已使用 LLM 擷取履歷重點。"]),
         )
+
+    def _build_role_hint(self) -> str:
+        lines = []
+        for role in self.role_targets[:4]:
+            keyword_text = ", ".join(role.keywords[:3])
+            lines.append(f"- {role.name}: {keyword_text}")
+        return "\n".join(lines)
+
+    def _build_fallback_brief(self, fallback_profile: ResumeProfile) -> str:
+        return "\n".join(
+            [
+                f"summary: {fallback_profile.summary[:120]}",
+                f"target_roles: {', '.join(fallback_profile.target_roles[:2])}",
+                f"core_skills: {', '.join(fallback_profile.core_skills[:4])}",
+                f"tool_skills: {', '.join(fallback_profile.tool_skills[:4])}",
+                f"preferred_tasks: {', '.join(fallback_profile.preferred_tasks[:3])}",
+                f"domain_keywords: {', '.join(fallback_profile.domain_keywords[:3])}",
+            ]
+        )
+
+    def _build_resume_context(self, text: str, fallback_profile: ResumeProfile) -> str:
+        cleaned_lines = _clean_resume_lines(text)
+        if not cleaned_lines:
+            return text[:1600]
+
+        role_terms = {normalize_text(item).lower() for item in fallback_profile.target_roles if item}
+        skill_terms = {
+            normalize_text(item).lower()
+            for item in (fallback_profile.core_skills + fallback_profile.tool_skills)
+            if item
+        }
+        task_terms = {normalize_text(item).lower() for item in fallback_profile.preferred_tasks if item}
+        keyword_terms = {
+            normalize_text(item).lower()
+            for item in (fallback_profile.domain_keywords + fallback_profile.match_keywords)
+            if item
+        }
+
+        scored_lines: list[tuple[int, int, str]] = []
+        for index, line in enumerate(cleaned_lines):
+            if _contains_personal_info(line) or _looks_garbled(line):
+                continue
+            normalized_line = normalize_text(line)
+            lowered = normalized_line.lower()
+            if not lowered:
+                continue
+
+            score = 0
+            score += sum(4 for term in role_terms if term and term in lowered)
+            score += sum(3 for term in skill_terms if term and term in lowered)
+            score += sum(2 for term in task_terms if term and term in lowered)
+            score += sum(1 for term in keyword_terms if term and term in lowered)
+            if any(token in lowered for token in ("經歷", "工作內容", "專案", "技能", "工具", "職稱")):
+                score += 1
+            if score == 0 and len(normalized_line) < 14:
+                continue
+            scored_lines.append((score, index, normalized_line))
+
+        if not scored_lines:
+            return text[:1600]
+
+        scored_lines.sort(key=lambda item: (-item[0], item[1]))
+        top_lines = scored_lines[:8]
+        top_lines.sort(key=lambda item: item[1])
+        selected = unique_preserving_order([line for _, _, line in top_lines])
+        context = "\n".join(selected)
+        return context[:1400]
+
+    def _read_cache(self, cache_key: str) -> dict[str, Any] | None:
+        memory_cached = self._profile_memory_cache.get(cache_key)
+        if memory_cached is not None:
+            payload = dict(memory_cached)
+            payload["_memory_hit"] = True
+            return payload
+        if self.profile_cache_dir is None:
+            return None
+        path = self.profile_cache_dir / f"{cache_key}.json"
+        if not path.exists():
+            return None
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        self._remember_profile_cache(cache_key, payload)
+        payload["_memory_hit"] = False
+        return payload
+
+    def _write_cache(self, cache_key: str, payload: dict[str, Any]) -> None:
+        self._remember_profile_cache(cache_key, payload)
+        if self.profile_cache_dir is None:
+            return
+        path = self.profile_cache_dir / f"{cache_key}.json"
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    def _remember_profile_cache(self, cache_key: str, payload: dict[str, Any]) -> None:
+        self._profile_memory_cache[cache_key] = dict(payload)
+        while len(self._profile_memory_cache) > RESUME_PROFILE_MEMORY_CACHE_MAX:
+            oldest_key = next(iter(self._profile_memory_cache))
+            self._profile_memory_cache.pop(oldest_key, None)
 
     def _normalize_roles(self, roles: Iterable[str], fallback_roles: list[str]) -> list[str]:
         normalized: list[str] = []

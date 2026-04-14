@@ -13,7 +13,9 @@ dependencies = [
   "pandas>=2.2.3",
   "pypdf>=5.4.0",
   "python-docx>=1.1.2",
+  "scikit-learn>=1.5.0",
   "streamlit>=1.44.1",
+  "streamlit-cookies-manager>=0.2.0",
 ]
 
 [project.scripts]
@@ -26,6 +28,8 @@ job-radar-sqlite-maintenance = "job_spy_tw.sqlite_backup:main"
 job-radar-sqlite-restore-drill = "job_spy_tw.sqlite_restore_drill:main"
 job-radar-backend-maintenance = "job_spy_tw.backend_maintenance:main"
 job-radar-backend-status = "job_spy_tw.backend_status:main"
+job-radar-auth-secrets = "job_spy_tw.auth_secrets:main"
+job-radar-user-admin = "job_spy_tw.user_admin:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

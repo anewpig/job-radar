@@ -1,0 +1,17 @@
+{
+  "strategy": "current_structured",
+  "case_set": "realistic",
+  "top_k": 5,
+  "chunks": 427,
+  "case_count": 19,
+  "hit_at_1": 0.789474,
+  "hit_at_3": 0.842105,
+  "hit_at_5": 0.842105,
+  "mrr": 0.807018,
+  "source_hit_rate": 0.842105,
+  "target_hit_rate": 1.0,
+  "prompt_variant": "control",
+  "prompt_version": "answer_prompt.v3.control",
+  "retrieval_policy_version": "retrieval_policy.v5",
+  "chunking_policy_version": "chunking.v5"
+}

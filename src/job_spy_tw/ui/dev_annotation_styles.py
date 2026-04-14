@@ -1,60 +1,276 @@
 """提供開發標註區塊的 CSS 片段。"""
 
 DEV_ANNOTATION_STYLES = """
+.element-container:has(.dev-card-annotation-host),
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host),
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host),
+.st-key-search-setup-shell:has(.dev-card-annotation-host),
+.st-key-overview-shell:has(.dev-card-annotation-host),
+.st-key-resume-shell:has(.dev-card-annotation-host),
+.st-key-assistant-shell:has(.dev-card-annotation-host),
+.st-key-tasks-shell:has(.dev-card-annotation-host),
+.st-key-skills-shell:has(.dev-card-annotation-host),
+.st-key-sources-shell:has(.dev-card-annotation-host),
+.st-key-tracking-shell:has(.dev-card-annotation-host),
+.st-key-board-shell:has(.dev-card-annotation-host),
+.st-key-export-shell:has(.dev-card-annotation-host),
+.st-key-notifications-shell:has(.dev-card-annotation-host),
+.st-key-database-shell:has(.dev-card-annotation-host),
+.st-key-auth-page-shell:has(.dev-card-annotation-host),
+.st-key-auth-account-shell:has(.dev-card-annotation-host),
+.st-key-nav-tab-bar-shell:has(.dev-card-annotation-host),
+.st-key-nav-drawer-toggle-shell:has(.dev-card-annotation-host),
+.st-key-assistant-launcher-trigger-shell:has(.dev-card-annotation-host),
+.st-key-assistant-launcher-card-shell:has(.dev-card-annotation-host),
+.st-key-assistant-launcher-form-shell:has(.dev-card-annotation-host) {
+    overflow: visible !important;
+}
+
+.dev-card-annotation-host {
+    position: relative;
+    height: 0;
+    z-index: 2147483000;
+    overflow: visible;
+    pointer-events: none;
+}
+
 .dev-card-annotation-shell {
-    margin: 0 0 0.7rem;
-    padding: 0.55rem 0.7rem;
-    border-radius: 18px;
-    border: 1px dashed rgba(79, 70, 229, 0.24);
-    background: linear-gradient(180deg, rgba(248, 247, 255, 0.98) 0%, rgba(242, 240, 255, 0.96) 100%);
+    position: relative;
+    top: -0.4rem;
+    left: 0.7rem;
+    display: inline-flex;
+    max-width: min(calc(100% - 1.4rem), 44rem);
+    padding: 0.1rem;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    pointer-events: auto;
 }
 
 .dev-card-annotation-shell--compact {
-    margin-bottom: 0.45rem;
-    padding: 0.48rem 0.6rem;
+    top: -0.28rem;
+    left: 0.55rem;
+    padding: 0.1rem;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="search-setup-shell"] {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="overview-shell"] {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"] {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"] {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"] {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"] {
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"] {
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="search-setup-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="overview-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2147483003 !important;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2147483003 !important;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2147483003 !important;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2147483003 !important;
+}
+
+[data-testid="stElementContainer"]:has(.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2147483003 !important;
+}
+
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host[data-dev-annotation-key="overview-shell"]),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host[data-dev-annotation-key="overview-shell"]) {
+}
+
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"]),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"]) {
+    z-index: 2147483003 !important;
+    overflow: visible !important;
+}
+
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"]),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"]) {
+    z-index: 2147483003 !important;
+    overflow: visible !important;
+}
+
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"]),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"]) {
+    z-index: 2147483003 !important;
+    overflow: visible !important;
+}
+
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"]),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"]) {
+    z-index: 2147483003 !important;
+    overflow: visible !important;
+}
+
+[data-testid="stVerticalBlock"]:has(.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"]),
+[data-testid="stVerticalBlockBorderWrapper"]:has(.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"]) {
+    z-index: 2147483003 !important;
+    overflow: visible !important;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="search-setup-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="search-setup-shell"] .dev-card-annotation-shell--compact {
+    top: -1.1rem;
+    left: auto;
+    margin-right: var(--space-6);
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="overview-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="overview-shell"] .dev-card-annotation-shell--compact {
+    top: -1.35rem;
+    left: auto;
+    margin-right: var(--space-6);
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"] .dev-card-annotation-shell--compact {
+    top: -0.85rem;
+    left: auto;
+    margin-right: var(--space-4);
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"] .dev-card-annotation-shell--compact {
+    top: -0.85rem;
+    left: auto;
+    margin-right: var(--space-4);
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"] .dev-card-annotation-shell--compact {
+    top: -1rem;
+    left: auto;
+    margin-right: var(--space-5);
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"] .dev-card-annotation-shell--compact {
+    top: -0.95rem;
+    left: 0;
+    margin-left: var(--space-4);
+    margin-right: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"] .dev-card-annotation-shell,
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"] .dev-card-annotation-shell--compact {
+    position: absolute;
+    top: -0.15rem;
+    left: auto;
+    right: calc(100% + 0.55rem);
+    margin: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="search-setup-shell"] .dev-card-annotation-details__panel {
+    left: auto;
+    right: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="overview-shell"] .dev-card-annotation-details__panel {
+    left: auto;
+    right: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="auth-page-shell"] .dev-card-annotation-details__panel {
+    left: auto;
+    right: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="auth-account-shell"] .dev-card-annotation-details__panel {
+    left: auto;
+    right: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-card-shell"] .dev-card-annotation-details__panel {
+    left: auto;
+    right: 0;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="nav-drawer-toggle-shell"] .dev-card-annotation-details__panel {
+    left: 0;
+    right: auto;
+}
+
+.dev-card-annotation-host[data-dev-annotation-key="assistant-launcher-trigger-shell"] .dev-card-annotation-details__panel {
+    left: auto;
+    right: 0;
 }
 
 .dev-card-annotation-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.7rem;
+    align-items: center;
+    gap: 0;
 }
 
 .dev-card-annotation-row--compact {
-    gap: 0.5rem;
+    gap: 0;
 }
 
 .dev-card-annotation-left {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-}
-
-.dev-card-annotation__pill,
-.dev-card-annotation__id {
-    display: inline-flex;
-    align-items: center;
-    min-height: 1.75rem;
-    padding: 0.22rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.76rem;
-    line-height: 1.3;
-}
-
-.dev-card-annotation__pill {
-    background: rgba(79, 70, 229, 0.12);
-    color: #3f33a1;
-    font-weight: 800;
-}
-
-.dev-card-annotation__id {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(79, 70, 229, 0.14);
-    color: #5e5690;
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    display: none;
 }
 
 details.dev-card-annotation-details {
@@ -63,18 +279,26 @@ details.dev-card-annotation-details {
     border: none !important;
     background: transparent;
     box-shadow: none;
+    position: relative;
+    z-index: 2147483001;
 }
 
 .dev-card-annotation-details__summary {
     cursor: pointer;
     list-style: none;
     border-radius: 999px;
-    border: 1px solid rgba(79, 70, 229, 0.16);
-    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(79, 70, 229, 0.22);
+    background: rgba(255, 255, 255, 0.78);
     color: #4338ca;
-    padding: 0.32rem 0.72rem;
-    font-size: 0.76rem;
-    font-weight: 700;
+    min-width: 2.35rem;
+    padding: 0.18rem 0.42rem;
+    font-size: 0.66rem;
+    line-height: 1.1;
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    box-shadow: 0 8px 18px rgba(45, 40, 110, 0.12);
+    backdrop-filter: blur(8px);
 }
 
 .dev-card-annotation-details__summary::-webkit-details-marker {
@@ -83,15 +307,20 @@ details.dev-card-annotation-details {
 
 .dev-card-annotation-details__summary:hover {
     border-color: rgba(79, 70, 229, 0.28);
-    background: rgba(255, 255, 255, 0.98);
+    background: rgba(255, 255, 255, 0.94);
 }
 
 .dev-card-annotation-details__panel {
-    margin-top: 0.6rem;
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    left: 0;
+    z-index: 2147483002;
+    width: min(42rem, calc(100vw - 3rem));
     padding: 0.78rem 0.9rem;
     border-radius: 16px;
     border: 1px solid rgba(79, 70, 229, 0.12);
     background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 18px 40px rgba(45, 40, 110, 0.14);
 }
 
 .dev-card-annotation-details__title {
@@ -167,8 +396,16 @@ details.dev-card-annotation-details {
 
 @media (max-width: 960px) {
     .dev-card-annotation-row {
-        flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
+    }
+
+    .dev-card-annotation-shell,
+    .dev-card-annotation-shell--compact {
+        max-width: calc(100% - 1rem);
+    }
+
+    .dev-card-annotation-details__panel {
+        width: min(32rem, calc(100vw - 2rem));
     }
 
     .dev-card-annotation-details__named-item {

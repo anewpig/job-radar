@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 4-1. Overview of the Evaluation Pipeline</title>
+  <desc id="desc">Evaluation pipeline showing fixture baseline, real snapshot eval, real model eval, resume label eval, human review, latency regression, AI regression, and training readiness gate.</desc>
+  <defs>
+    <style>
+      .title { font: 700 30px "Helvetica", "Arial", sans-serif; fill: #1f2a44; }
+      .subtitle { font: 400 16px "Helvetica", "Arial", sans-serif; fill: #52607a; }
+      .section { font: 700 20px "Helvetica", "Arial", sans-serif; fill: #1f2a44; }
+      .body { font: 400 15px "Helvetica", "Arial", sans-serif; fill: #33415c; }
+      .small { font: 400 13px "Helvetica", "Arial", sans-serif; fill: #5b677d; }
+      .panel { stroke-width: 2; rx: 20; ry: 20; }
+      .input { fill: #eef4ff; stroke: #b6c7ea; }
+      .offline { fill: #effaf4; stroke: #b9dbca; }
+      .model { fill: #fff7ec; stroke: #e2c79b; }
+      .review { fill: #f7f1ff; stroke: #c8b7ee; }
+      .gate { fill: #fff2f5; stroke: #d9839b; }
+      .arrow { stroke: #5f6f8f; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .dash { stroke-dasharray: 8 8; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#5f6f8f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="940" fill="#fcfdff"/>
+  <text x="70" y="70" class="title">Figure 4-1. Overview of the Evaluation Pipeline</text>
+  <text x="70" y="102" class="subtitle">Offline, real-snapshot, real-model, human-review, and telemetry gates are combined into one final decision flow.</text>
+
+  <rect x="70" y="170" width="280" height="130" class="panel input"/>
+  <text x="100" y="210" class="section">Evaluation Inputs</text>
+  <text x="100" y="245" class="body">assistant_questions</text>
+  <text x="100" y="270" class="body">resume_extraction_labels</text>
+  <text x="100" y="295" class="body">resume_match_labels</text>
+
+  <rect x="70" y="360" width="280" height="120" class="panel input"/>
+  <text x="100" y="400" class="section">Real Snapshots</text>
+  <text x="100" y="435" class="body">jobs_latest.json</text>
+  <text x="100" y="460" class="body">comparison-ready snapshot</text>
+
+  <rect x="70" y="540" width="280" height="120" class="panel input"/>
+  <text x="100" y="580" class="section">Product Telemetry</text>
+  <text x="100" y="615" class="body">latency / token / reliability</text>
+  <text x="100" y="640" class="body">warm vs. cold path traces</text>
+
+  <rect x="470" y="140" width="300" height="100" class="panel offline"/>
+  <text x="500" y="180" class="section">Fixture Baseline</text>
+  <text x="500" y="210" class="body">logic and regression checks</text>
+
+  <rect x="470" y="280" width="300" height="100" class="panel offline"/>
+  <text x="500" y="320" class="section">Real Snapshot Eval</text>
+  <text x="500" y="350" class="body">snapshot health and evidence</text>
+
+  <rect x="470" y="420" width="300" height="100" class="panel model"/>
+  <text x="500" y="460" class="section">Real Model Eval</text>
+  <text x="500" y="490" class="body">assistant / retrieval / resume</text>
+
+  <rect x="470" y="560" width="300" height="100" class="panel model"/>
+  <text x="500" y="600" class="section">Resume Label Eval</text>
+  <text x="500" y="630" class="body">ranking quality and ordering</text>
+
+  <rect x="470" y="700" width="300" height="100" class="panel review"/>
+  <text x="500" y="740" class="section">Formal Human Review</text>
+  <text x="500" y="770" class="body">blind packet and agreement</text>
+
+  <rect x="900" y="250" width="310" height="120" class="panel review"/>
+  <text x="930" y="292" class="section">Latency Regression</text>
+  <text x="930" y="322" class="body">assistant / retrieval / resume</text>
+  <text x="930" y="347" class="body">latency and budget checks</text>
+
+  <rect x="900" y="460" width="310" height="130" class="panel gate"/>
+  <text x="930" y="505" class="section">AI Regression</text>
+  <text x="930" y="535" class="body">combines quality, latency,</text>
+  <text x="930" y="560" class="body">human review, and product gates</text>
+
+  <rect x="1320" y="460" width="220" height="130" class="panel gate"/>
+  <text x="1350" y="505" class="section">Training Readiness</text>
+  <text x="1350" y="535" class="body">PASS / READY / DEFER</text>
+
+  <path d="M350 235 L470 190" class="arrow"/>
+  <path d="M350 420 L470 330" class="arrow"/>
+  <path d="M350 420 L470 470" class="arrow"/>
+  <path d="M350 235 L470 610" class="arrow dash"/>
+  <path d="M350 600 L900 310" class="arrow"/>
+  <path d="M770 190 L900 520" class="arrow dash"/>
+  <path d="M770 330 L900 520" class="arrow"/>
+  <path d="M770 470 L900 520" class="arrow"/>
+  <path d="M770 610 L900 520" class="arrow"/>
+  <path d="M770 750 L900 520" class="arrow"/>
+  <path d="M1210 525 L1320 525" class="arrow"/>
+
+  <text x="70" y="875" class="small">Offline and product-side signals are consolidated by AI Regression before the final training-readiness decision is made.</text>
+</svg>

@@ -1,167 +1,137 @@
-"""提供可從任意頁面開啟 AI 助理的浮動入口。"""
+"""提供全域客服式 AI / 說明 / 通知入口。"""
 
 from __future__ import annotations
 
 import streamlit as st
 
+from ..models import JobNotification
+from .assistant_launcher_content import (
+    LAUNCHER_TAB_ITEMS,
+    render_panel_header,
+    render_tab_content,
+    valid_launcher_tab,
+)
 from .dev_annotations import render_dev_card_annotation
 from .session import set_main_tab
 
 
-def render_assistant_launcher() -> None:
-    """渲染右下角的 AI 助理浮動入口。"""
-    with st.container(key="assistant-launcher-trigger-shell"):
-        if st.button("✦", key="assistant-launcher-trigger", type="secondary", help="打開 AI 助理"):
-            st.session_state.assistant_launcher_open = True
-            st.rerun()
+def _inject_launcher_offset(*, open_panel: bool) -> None:
+    active_offset = "var(--launcher-shell-stack-height)" if open_panel else "0px"
+    st.markdown(
+        f"<style>:root {{ --assistant-launcher-active-offset: {active_offset}; }}</style>",
+        unsafe_allow_html=True,
+    )
 
-    if not bool(st.session_state.get("assistant_launcher_open")):
+
+def _open_launcher_tab(tab_id: str) -> None:
+    st.session_state.launcher_bottom_tab = valid_launcher_tab(tab_id)
+    st.session_state.assistant_launcher_open = True
+    st.rerun()
+
+
+def _close_launcher() -> None:
+    st.session_state.assistant_launcher_open = False
+    st.rerun()
+
+
+def _switch_page_from_launcher(tab_id: str) -> None:
+    st.session_state.assistant_launcher_open = False
+    set_main_tab(tab_id)
+    st.rerun()
+
+
+def _submit_assistant_question(question: str) -> None:
+    cleaned_question = question.strip()
+    if not cleaned_question:
+        st.warning("請先輸入問題。")
         return
+    st.session_state.assistant_question_draft = cleaned_question
+    st.session_state.assistant_question_input = cleaned_question
+    st.session_state.assistant_launcher_submit_pending = True
+    st.session_state.assistant_launcher_open = False
+    set_main_tab("assistant")
+    st.rerun()
 
-    with st.container(border=True, key="assistant-launcher-card-shell"):
+
+def render_assistant_launcher(
+    *,
+    notifications: list[JobNotification],
+    unread_notification_count: int,
+    current_user_is_guest: bool,
+) -> None:
+    """渲染手機客服式的 AI / 說明 / 通知浮動入口。"""
+    current_tab = valid_launcher_tab(str(st.session_state.get("launcher_bottom_tab", "assistant")))
+    st.session_state.launcher_bottom_tab = current_tab
+    panel_open = bool(st.session_state.get("assistant_launcher_open"))
+    _inject_launcher_offset(open_panel=panel_open)
+
+    with st.container(key="assistant-launcher-trigger-shell"):
         render_dev_card_annotation(
-            "浮動 AI 助理卡",
-            element_id="assistant-launcher-card-shell",
-            description="右下角展開後的 AI 助理外框，包含品牌頭圖與提問表單。",
+            "AI 助手浮動入口",
+            element_id="assistant-launcher-trigger-shell",
+            description="登入頁與工作台右下角共用的 AI 浮動按鈕入口，可打開 AI / 說明 / 通知 launcher。",
             layers=[
-                "assistant-launcher-form-shell",
-                "assistant-launcher FAQ items",
+                "assistant-launcher-trigger-button-shell",
             ],
             text_nodes=[
-                ("launcher brand text", "卡片頭部的品牌名稱。"),
-                ("AI Assistant", "右上與卡片內的功能標示文字。"),
-                ("您好，想問什麼？", "浮動卡的主標題。"),
-                ("assistant-launcher-faq-item", "底部快捷問題文字。"),
+                ("assistant-launcher-trigger", "右下角 AI 浮動按鈕文字與點擊入口。"),
+            ],
+            notes=[
+                "點擊後會打開 assistant-launcher-card-shell 浮動視窗。",
+                "登入頁與一般工作台都共用這顆入口。",
+            ],
+            show_popover=True,
+            popover_key="assistant-launcher-trigger-shell",
+            compact=True,
+        )
+        with st.container(key="assistant-launcher-trigger-button-shell"):
+            if st.button("AI", key="assistant-launcher-trigger", type="secondary", help="打開 AI 助手"):
+                _open_launcher_tab("assistant")
+
+    if not panel_open:
+        return
+
+    with st.container(key="assistant-launcher-card-shell"):
+        render_dev_card_annotation(
+            "浮動 Launcher 視窗",
+            element_id="assistant-launcher-card-shell",
+            description="右下角 AI 浮動按鈕打開後的手機客服高卡視窗。",
+            layers=[
+                "assistant-launcher-mobile-shell",
+                "assistant-launcher-mobile-body",
+                "assistant-launcher-mobile-tabbar",
+                "assistant-launcher-guide-body",
+                "assistant-launcher-notification-feed",
+            ],
+            text_nodes=[
+                ("assistant-launcher-header-title", "Launcher 頂部的當前頁標題。"),
+                ("assistant-launcher-guide-title", "說明列表的功能標題。"),
+                ("assistant-launcher-notification-title", "通知卡片標題。"),
             ],
             show_popover=True,
             popover_key="assistant-launcher-card-shell",
         )
-        st.markdown(
-            """
-<div style="
-  background: linear-gradient(180deg, #f2cf63 0%, #efc24d 58%, #e9b33b 100%);
-  border-radius: 24px;
-  padding: 1.15rem 1.15rem 1.35rem;
-  box-shadow: 0 22px 44px rgba(153, 110, 23, 0.20);
-">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:0.8rem;">
-    <div style="display:inline-flex; align-items:center; gap:0.75rem;">
-      <span style="
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        width:3rem;
-        height:3rem;
-        border-radius:18px;
-        background:rgba(255,255,255,0.98);
-        color:#6f56f6;
-        font-weight:900;
-        font-size:1rem;
-      ">JR</span>
-      <span style="color:#3e2b07; font-size:1.35rem; line-height:1; font-weight:900;">Job Radar</span>
-    </div>
-    <span style="color:rgba(62,43,7,0.74); font-size:1rem; font-weight:700;">AI Assistant</span>
-  </div>
-  <div style="margin-top:1.15rem; color:rgba(62,43,7,0.64); font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; font-weight:800;">
-    AI Assistant
-  </div>
-  <div style="margin-top:0.45rem; color:#281a04; font-size:2rem; line-height:1.2; font-weight:900;">
-    您好，想問什麼？
-  </div>
-  <div style="margin-top:0.45rem; color:rgba(40,26,4,0.78); font-size:0.92rem; line-height:1.6;">
-    可直接詢問技能缺口、薪資、工作內容與履歷方向。
-  </div>
-</div>
-            """,
-            unsafe_allow_html=True,
-        )
 
-        close_cols = st.columns([1, 1, 0.42], gap="small")
-        with close_cols[2]:
-            if st.button(
-                "✕",
-                key="assistant-launcher-close-top",
-                type="secondary",
-                use_container_width=True,
-            ):
-                st.session_state.assistant_launcher_open = False
-                st.rerun()
+        with st.container(border=True, key="assistant-launcher-mobile-shell"):
+            render_panel_header(current_tab, on_close=_close_launcher)
 
-        st.markdown("<div style='height:0.4rem;'></div>", unsafe_allow_html=True)
-        with st.container(border=True, key="assistant-launcher-form-shell"):
-            render_dev_card_annotation(
-                "浮動 AI 助理表單卡",
-                element_id="assistant-launcher-form-shell",
-                description="浮動 AI 助理卡內的輸入、送出與快捷問題區。",
-                layers=[
-                    "assistant_launcher_question_input",
-                    "assistant-launcher-submit-question",
-                    "assistant-launcher-open-page",
-                ],
-                text_nodes=[
-                    ("assistant-launcher-form-label", "輸入框上方的小標。"),
-                    ("assistant_launcher_question_input", "問題輸入框。"),
-                    ("assistant-launcher-faq-item", "底部快捷問題文字。"),
-                ],
-                compact=True,
-                show_popover=True,
-                popover_key="assistant-launcher-form-shell",
-            )
-            st.markdown("<div class='assistant-launcher-form-label'>詢問客服</div>", unsafe_allow_html=True)
-            assistant_launcher_question = st.text_input(
-                "詢問客服",
-                key="assistant_launcher_question_input",
-                placeholder="例如：我該先補哪些技能？",
-                label_visibility="collapsed",
-            )
-            action_cols = st.columns(2, gap="small")
-            with action_cols[0]:
-                if st.button(
-                    "送出問題",
-                    key="assistant-launcher-submit-question",
-                    type="primary",
-                    use_container_width=True,
-                ):
-                    question = assistant_launcher_question.strip()
-                    if not question:
-                        st.warning("請先輸入問題。")
-                    else:
-                        st.session_state.assistant_question_draft = question
-                        st.session_state.assistant_question_input = question
-                        st.session_state.assistant_launcher_submit_pending = True
-                        st.session_state.assistant_launcher_open = False
-                        set_main_tab("assistant")
-                        st.rerun()
-            with action_cols[1]:
-                if st.button(
-                    "打開 AI 助理",
-                    key="assistant-launcher-open-page",
-                    type="secondary",
-                    use_container_width=True,
-                ):
-                    st.session_state.assistant_launcher_open = False
-                    set_main_tab("assistant")
-                    st.rerun()
-
-            faq_questions = [
-                "可以優先學習的技能有哪些？",
-                "目前市場對這類職缺最重視什麼條件？",
-            ]
-            for index, question in enumerate(faq_questions, start=1):
-                faq_cols = st.columns([6.2, 0.8], gap="small")
-                faq_cols[0].markdown(
-                    f"<div class='assistant-launcher-faq-item'>{question}</div>",
-                    unsafe_allow_html=True,
+            with st.container(key="assistant-launcher-mobile-body"):
+                render_tab_content(
+                    current_tab,
+                    notifications=notifications,
+                    unread_notification_count=unread_notification_count,
+                    current_user_is_guest=current_user_is_guest,
+                    on_submit_question=_submit_assistant_question,
+                    on_switch_page=_switch_page_from_launcher,
                 )
-                if faq_cols[1].button(
-                    "›",
-                    key=f"assistant-launcher-faq-{index}",
-                    type="secondary",
-                    use_container_width=True,
-                ):
-                    st.session_state.assistant_question_draft = question
-                    st.session_state.assistant_question_input = question
-                    st.session_state.assistant_launcher_submit_pending = True
-                    st.session_state.assistant_launcher_open = False
-                    set_main_tab("assistant")
-                    st.rerun()
+
+            with st.container(key="assistant-launcher-mobile-tabbar"):
+                tab_cols = st.columns(len(LAUNCHER_TAB_ITEMS), gap="small")
+                for index, (tab_id, label) in enumerate(LAUNCHER_TAB_ITEMS):
+                    if tab_cols[index].button(
+                        label,
+                        key=f"assistant-launcher-tab-{tab_id}",
+                        type="primary" if current_tab == tab_id else "secondary",
+                        use_container_width=True,
+                    ):
+                        _open_launcher_tab(tab_id)

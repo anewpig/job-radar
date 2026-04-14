@@ -1,0 +1,70 @@
+\documentclass[12pt,a4paper]{ctexbook}
+
+\usepackage[a4paper,margin=2.8cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{markdown}
+\usepackage{setspace}
+\usepackage{titlesec}
+
+\graphicspath{{../thesis_assets/}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  pdftitle={多來源職缺整合平台之 RAG 問答與履歷匹配系統設計與評估}
+}
+
+\titleformat{\chapter}{\bfseries\Huge}{Chapter \thechapter}{1em}{}
+\onehalfspacing
+
+\begin{document}
+
+\frontmatter
+\begin{titlepage}
+    \centering
+    {\Huge 多來源職缺整合平台之 RAG 問答與履歷匹配系統設計與評估 \par}
+    \vspace{1.5cm}
+    {\Large Design and Evaluation of a RAG-based Question Answering and Resume Matching System for a Multi-source Job Platform \par}
+    \vspace{3cm}
+    {\Large 作者：\underline{\hspace{5cm}} \par}
+    \vspace{0.8cm}
+    {\Large 指導教授：\underline{\hspace{5cm}} \par}
+    \vspace{0.8cm}
+    {\Large 學校 / 系所：\underline{\hspace{5cm}} \par}
+    \vfill
+    {\Large 日期：\underline{\hspace{5cm}} \par}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+\mainmatter
+
+% This manuscript scaffold directly loads the consolidated markdown draft.
+% If the local TeX distribution does not include the markdown package,
+% replace this block with manual chapter splitting based on
+% docs/ai_thesis_master_draft_merge_order.md.
+\markdownSetup{
+  hybrid=true,
+  fencedCode=true,
+  pipeTables=true,
+  tableCaptions=true
+}
+
+\markdownInput{../ai_thesis_master_draft.md}
+
+\backmatter
+\chapter*{Notes for Final Assembly}
+\begin{itemize}
+  \item Inline author-year citations are already embedded in the markdown master draft.
+  \item A BibTeX scaffold is provided in \texttt{references.bib} for later migration to a full citation workflow.
+  \item Figure assets are stored under \texttt{../thesis\_assets/}.
+\end{itemize}
+
+\end{document}

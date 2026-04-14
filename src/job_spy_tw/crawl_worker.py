@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from .config import load_settings
 from .crawl_application_service import build_query_runtime, process_queued_crawl_job
+from .logging_utils import configure_logging
 from .query_runtime import RuntimeSignalStore
 from .runtime_maintenance_service import run_runtime_cleanup
 
@@ -52,6 +53,10 @@ def run_worker_loop(
     once: bool,
 ) -> int:
     settings = load_settings(base_dir)
+    logger = configure_logging(
+        service_name="crawl_worker",
+        data_dir=settings.data_dir,
+    )
     registry, queue = build_query_runtime(settings)
     del registry
     effective_worker_id = worker_id.strip() or default_worker_id()
@@ -75,7 +80,7 @@ def run_worker_loop(
                 },
             )
             if once:
-                print("No pending crawl job found.")
+                logger.info("No pending crawl job found.")
                 return 0
             time.sleep(max(0.2, float(poll_interval)))
             continue
@@ -92,7 +97,11 @@ def run_worker_loop(
                 "query_signature": job.query_signature,
             },
         )
-        print(f"Processing crawl job #{job.id} for signature {job.query_signature}")
+        logger.info(
+            "Processing crawl job #%s for signature %s",
+            job.id,
+            job.query_signature,
+        )
         result = process_queued_crawl_job(settings=settings, job=job)
         if result.status == "completed":
             signal_store.put_signal(
@@ -110,9 +119,10 @@ def run_worker_loop(
                     ),
                 },
             )
-            print(
-                f"Completed crawl job #{job.id} with "
-                f"{len(result.snapshot.jobs) if result.snapshot is not None else 0} jobs."
+            logger.info(
+                "Completed crawl job #%s with %s jobs.",
+                job.id,
+                len(result.snapshot.jobs) if result.snapshot is not None else 0,
             )
             if once:
                 return 0
@@ -137,10 +147,12 @@ def run_worker_loop(
                     "next_retry_at": result.next_retry_at,
                 },
             )
-            print(
-                f"Retry scheduled for crawl job #{job.id} "
-                f"at {result.next_retry_at} "
-                f"({result.attempt_count}/{result.max_attempts})."
+            logger.info(
+                "Retry scheduled for crawl job #%s at %s (%s/%s).",
+                job.id,
+                result.next_retry_at,
+                result.attempt_count,
+                result.max_attempts,
             )
             if once:
                 return 0
@@ -158,7 +170,11 @@ def run_worker_loop(
                 "query_signature": job.query_signature,
             },
         )
-        print(f"Failed crawl job #{job.id}: {result.error_message}")
+        logger.error(
+            "Failed crawl job #%s: %s",
+            job.id,
+            result.error_message,
+        )
         if once:
             return 1
 
