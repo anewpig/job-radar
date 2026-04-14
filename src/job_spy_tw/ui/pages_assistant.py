@@ -20,6 +20,7 @@ from .pages_assistant_sections import (
     _render_assistant_quick_ask_section,
 )
 from .resources import get_rag_assistant
+from .search import merge_assistant_profiles
 
 
 def render_assistant_page(ctx: PageContext) -> None:
@@ -59,8 +60,9 @@ def render_assistant_page(ctx: PageContext) -> None:
     )
     resume_context_profile: ResumeProfile | None = st.session_state.resume_profile
     manual_context_profile: ResumeProfile | None = st.session_state.assistant_profile
-    assistant_profile: ResumeProfile | None = (
-        resume_context_profile or manual_context_profile
+    assistant_profile: ResumeProfile | None = merge_assistant_profiles(
+        resume_context_profile,
+        manual_context_profile,
     )
     _render_assistant_context_chips(assistant_profile)
 

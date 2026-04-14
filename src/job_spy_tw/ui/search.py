@@ -207,6 +207,70 @@ def build_manual_assistant_profile(
     )
 
 
+def _unique_profile_items(*groups: list[str]) -> list[str]:
+    seen: set[str] = set()
+    items: list[str] = []
+    for group in groups:
+        for raw in group:
+            cleaned = str(raw or "").strip()
+            if not cleaned or cleaned in seen:
+                continue
+            seen.add(cleaned)
+            items.append(cleaned)
+    return items
+
+
+def merge_assistant_profiles(
+    resume_profile: ResumeProfile | None,
+    manual_profile: ResumeProfile | None,
+) -> ResumeProfile | None:
+    """把履歷背景與手動補充背景合併成 AI 助理真正使用的上下文。"""
+    if resume_profile is None:
+        return manual_profile
+    if manual_profile is None:
+        return resume_profile
+
+    summary_parts = [
+        str(resume_profile.summary or "").strip(),
+        (
+            f"補充條件：{manual_profile.summary}"
+            if str(manual_profile.summary or "").strip()
+            else ""
+        ),
+    ]
+    return ResumeProfile(
+        source_name=resume_profile.source_name or manual_profile.source_name or "assistant_combined_context",
+        raw_text=resume_profile.raw_text,
+        summary="；".join(part for part in summary_parts if part),
+        target_roles=_unique_profile_items(manual_profile.target_roles, resume_profile.target_roles),
+        core_skills=_unique_profile_items(resume_profile.core_skills, manual_profile.core_skills)[:12],
+        tool_skills=_unique_profile_items(resume_profile.tool_skills, manual_profile.core_skills)[:12],
+        domain_keywords=_unique_profile_items(manual_profile.domain_keywords, resume_profile.domain_keywords)[:12],
+        preferred_tasks=_unique_profile_items(resume_profile.preferred_tasks, manual_profile.preferred_tasks)[:12],
+        generated_prompts=_unique_profile_items(
+            resume_profile.generated_prompts,
+            manual_profile.generated_prompts,
+        )[:10],
+        match_keywords=_unique_profile_items(
+            manual_profile.match_keywords,
+            resume_profile.match_keywords,
+            manual_profile.target_roles,
+            resume_profile.target_roles,
+            manual_profile.core_skills,
+            resume_profile.core_skills,
+            manual_profile.domain_keywords,
+            resume_profile.domain_keywords,
+        )[:24],
+        extraction_method="merged_resume_manual_profile",
+        llm_model=resume_profile.llm_model or manual_profile.llm_model,
+        notes=_unique_profile_items(
+            resume_profile.notes,
+            manual_profile.notes,
+            ["AI 助理會優先參考履歷內容，並補充使用你手動填寫的背景條件。"],
+        )[:8],
+    )
+
+
 def needs_personal_context(question: str) -> bool:
     """判斷某個問題是否需要使用者個人背景才能回答。"""
     lowered = question.lower()

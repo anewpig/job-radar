@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import re
 
 import streamlit as st
 
@@ -31,6 +32,7 @@ from .renderers_assistant_agent import render_agent_task_card
 from .session import assistant_question_batches, set_main_tab
 
 SUGGESTED_ASSISTANT_QUESTIONS = DEFAULT_ASSISTANT_QUESTIONS
+EXPERIENCE_LEVEL_OPTIONS = ["", "新鮮人 / 轉職中", "1-3 年", "3-5 年", "5 年以上"]
 
 
 @dataclass(slots=True)
@@ -86,6 +88,20 @@ def _render_assistant_profile_section(
     resume_context_profile: ResumeProfile | None,
     manual_context_profile: ResumeProfile | None,
 ) -> None:
+    manual_target_roles_text = "、".join(manual_context_profile.target_roles) if manual_context_profile else ""
+    manual_locations_text = "、".join(manual_context_profile.domain_keywords) if manual_context_profile else ""
+    manual_skills_text = "、".join(manual_context_profile.core_skills) if manual_context_profile else ""
+    manual_experience_level = ""
+    if manual_context_profile is not None:
+        matched = re.search(r"年資：([^；]+)", str(manual_context_profile.summary or ""))
+        if matched:
+            manual_experience_level = matched.group(1).strip()
+    experience_index = (
+        EXPERIENCE_LEVEL_OPTIONS.index(manual_experience_level)
+        if manual_experience_level in EXPERIENCE_LEVEL_OPTIONS
+        else 0
+    )
+
     with st.container(border=True, key="assistant-profile-card-shell"):
         render_dev_card_annotation(
             "AI 助理個人化背景卡",
@@ -106,14 +122,16 @@ def _render_assistant_profile_section(
         )
         st.markdown("**個人化背景**")
         if resume_context_profile is not None:
-            st.caption("目前已載入履歷，AI 助理會優先依照履歷內容回答。")
+            st.caption("目前已載入履歷，AI 助理會優先依照履歷內容回答；你也可以在下方補充條件。")
             st.markdown(
                 mask_personal_text(resume_context_profile.summary or "已載入履歷摘要。")
             )
-            return
 
         if manual_context_profile is not None:
-            st.caption("目前已載入求職基本資料。你也可以重新填寫或清除。")
+            if resume_context_profile is not None:
+                st.caption("目前也有手動補充的求職條件，AI 助理會一起參考。")
+            else:
+                st.caption("目前已載入求職基本資料。你也可以重新填寫或清除。")
             st.markdown(
                 mask_personal_text(
                     manual_context_profile.summary or "已載入求職基本資料。"
@@ -128,30 +146,37 @@ def _render_assistant_profile_section(
                 clear_manual_assistant_profile()
 
         with st.expander(
-            "填寫或更新求職基本資料",
-            expanded=manual_context_profile is None,
+            "補充或更新求職基本資料" if resume_context_profile is not None else "填寫或更新求職基本資料",
+            expanded=resume_context_profile is None and manual_context_profile is None,
         ):
             with st.form("assistant_profile_form"):
                 target_roles_text = st.text_area(
                     "目標職缺",
                     placeholder="例如：AI應用工程師、AI工程師",
                     height=100,
+                    value=manual_target_roles_text,
                 )
                 experience_level = st.selectbox(
                     "年資",
-                    ["", "新鮮人 / 轉職中", "1-3 年", "3-5 年", "5 年以上"],
+                    EXPERIENCE_LEVEL_OPTIONS,
+                    index=experience_index,
                 )
                 locations_text = st.text_area(
                     "希望工作地點",
                     placeholder="例如：台北市、新竹市、遠端",
                     height=80,
+                    value=manual_locations_text,
                 )
                 skills_text = st.text_area(
                     "目前技能",
                     placeholder="例如：Python、LLM、RAG、Docker",
                     height=100,
+                    value=manual_skills_text,
                 )
-                st.caption("備註：送出後會保存你填寫的基本資料與系統整理後的摘要。")
+                if resume_context_profile is not None:
+                    st.caption("備註：送出後會保存你補充的條件；AI 助理會以履歷為主，再加上這些補充資訊回答。")
+                else:
+                    st.caption("備註：送出後會保存你填寫的基本資料與系統整理後的摘要。")
                 save_profile = st.form_submit_button(
                     "儲存基本資料",
                     use_container_width=True,
