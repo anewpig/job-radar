@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from ..error_taxonomy import ERROR_KIND_LLM, format_error_message
 from ..models import AssistantResponse, ResumeProfile, TargetRole
 from ..search_keyword_recommender import normalize_search_role_rows
 
@@ -294,15 +295,8 @@ def build_context_request_response(question: str) -> AssistantResponse:
 
 def format_openai_error(exc: Exception) -> str:
     """把常見 OpenAI 例外轉成較容易理解的使用者提示。"""
-    message = str(exc)
-    lowered = message.lower()
-    if "invalid_api_key" in lowered or "incorrect api key provided" in lowered:
-        return (
-            "OpenAI API key 無效或已失效。請到 OpenAI Platform 重新建立一把新的 API key，"
-            "更新 `OPENAI_API_KEY` 後再重啟 Streamlit。"
-        )
-    if "401" in lowered and "authentication" in lowered:
-        return "OpenAI 驗證失敗，請確認 `OPENAI_API_KEY` 是否正確、是否已被撤銷。"
-    if "rate limit" in lowered or "429" in lowered:
-        return "OpenAI 請求次數已達上限，請稍後再試，或檢查帳戶配額。"
-    return f"OpenAI 請求失敗：{message}"
+    return format_error_message(
+        exc,
+        default_kind=ERROR_KIND_LLM,
+        metadata={"operation": "openai_request"},
+    )

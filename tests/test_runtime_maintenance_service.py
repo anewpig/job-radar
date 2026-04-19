@@ -93,6 +93,12 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
             payload_json='{"q": 1}',
         )
         queue.complete_job(completed_job.id, "snapshots/sig-old-job.json")
+        failed_job = queue.enqueue_crawl(
+            "sig-old-failed-job",
+            priority=10,
+            payload_json='{"q": 2}',
+        )
+        queue.fail_job(failed_job.id, "connector timed out")
         signal_store.put_signal(
             component_kind="worker",
             component_id="worker-old",
@@ -111,9 +117,17 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
                 """
                 UPDATE crawl_jobs
                 SET updated_at = '2026-03-01T10:00:00'
-                WHERE id = ?
+                WHERE id IN (?, ?)
                 """,
-                (completed_job.id,),
+                (completed_job.id, failed_job.id),
+            )
+            connection.execute(
+                """
+                UPDATE crawl_dead_letters
+                SET updated_at = '2026-03-01T10:00:00'
+                WHERE original_job_id = ?
+                """,
+                (failed_job.id,),
             )
             connection.execute(
                 """
@@ -149,13 +163,16 @@ class RuntimeMaintenanceServiceTests(unittest.TestCase):
         )
 
         self.assertEqual(result.status, "completed")
-        self.assertEqual(result.deleted_jobs, 1)
+        self.assertEqual(result.deleted_jobs, 2)
+        self.assertEqual(result.deleted_dead_letters, 1)
         self.assertEqual(result.deleted_snapshot_rows, 1)
         self.assertGreaterEqual(result.deleted_snapshot_files, 1)
         self.assertEqual(result.deleted_signals, 1)
         self.assertGreaterEqual(result.deleted_cache_files, 2)
         self.assertLessEqual(result.retained_cache_files, 2)
         self.assertIsNone(queue.get_job(completed_job.id))
+        self.assertIsNone(queue.get_job(failed_job.id))
+        self.assertEqual(queue.count_dead_letters(), 0)
         self.assertIsNone(registry.get_snapshot("sig-old-partial"))
         self.assertFalse((settings.snapshot_store_dir / old_partial.storage_key).exists())
 

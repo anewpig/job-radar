@@ -10,6 +10,13 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from .error_taxonomy import (
+    ERROR_CODE_RUNTIME_JOB_FAILED,
+    ERROR_KIND_RUNTIME,
+    ErrorInfo,
+    build_error_info,
+    serialize_error_info,
+)
 from .models import MarketSnapshot
 from .sqlite_utils import connect_sqlite
 from .storage import load_snapshot, save_snapshot
@@ -36,6 +43,81 @@ def _future_iso(seconds: int | float) -> str:
     )
 
 
+def _deserialize_json_object(payload: str, *, fallback: dict[str, Any] | None = None) -> dict[str, Any]:
+    cleaned = str(payload or "").strip()
+    if not cleaned:
+        return dict(fallback or {})
+    try:
+        parsed = json.loads(cleaned)
+    except json.JSONDecodeError:
+        return dict(fallback or {})
+    return parsed if isinstance(parsed, dict) else dict(fallback or {})
+
+
+def _error_info_from_record(
+    *,
+    error_message: str,
+    error_code: str,
+    error_kind: str,
+    error_user_message: str,
+    is_retryable: bool,
+    error_metadata_json: str,
+) -> ErrorInfo | None:
+    if not any(
+        (
+            str(error_message).strip(),
+            str(error_code).strip(),
+            str(error_kind).strip(),
+            str(error_user_message).strip(),
+            str(error_metadata_json).strip() not in {"", "{}"},
+        )
+    ):
+        return None
+    return build_error_info(
+        error_message,
+        default_kind=str(error_kind).strip() or ERROR_KIND_RUNTIME,
+        default_code=str(error_code).strip() or ERROR_CODE_RUNTIME_JOB_FAILED,
+        metadata=_deserialize_json_object(error_metadata_json),
+        retryable=bool(is_retryable),
+        user_message=str(error_user_message).strip() or None,
+    )
+
+
+def _error_columns(
+    error: Exception | ErrorInfo | str | None,
+    *,
+    default_kind: str = ERROR_KIND_RUNTIME,
+    default_code: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if error is None:
+        return {
+            "error_message": "",
+            "error_code": "",
+            "error_kind": "",
+            "error_user_message": "",
+            "is_retryable": 0,
+            "error_metadata_json": "{}",
+        }
+    info = build_error_info(
+        error,
+        default_kind=default_kind,
+        default_code=default_code,
+        metadata=metadata or {},
+    )
+    return {
+        "error_message": info.technical_message,
+        "error_code": info.code,
+        "error_kind": info.kind,
+        "error_user_message": info.user_message,
+        "is_retryable": int(info.retryable),
+        "error_metadata_json": json.dumps(
+            serialize_error_info(info)["metadata"],
+            ensure_ascii=False,
+        ),
+    }
+
+
 @dataclass(slots=True)
 class SnapshotRecord:
     query_signature: str
@@ -46,6 +128,11 @@ class SnapshotRecord:
     last_accessed_at: str
     updated_at: str
     error_message: str = ""
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata_json: str = "{}"
     is_partial: bool = False
     snapshot: MarketSnapshot | None = None
 
@@ -54,6 +141,19 @@ class SnapshotRecord:
         if not self.fresh_until:
             return False
         return _parse_iso(self.fresh_until) >= datetime.now()
+
+    def error_metadata(self) -> dict[str, Any]:
+        return _deserialize_json_object(self.error_metadata_json)
+
+    def error_info(self) -> ErrorInfo | None:
+        return _error_info_from_record(
+            error_message=self.error_message,
+            error_code=self.error_code,
+            error_kind=self.error_kind,
+            error_user_message=self.error_user_message,
+            is_retryable=self.is_retryable,
+            error_metadata_json=self.error_metadata_json,
+        )
 
 
 @dataclass(slots=True)
@@ -72,6 +172,11 @@ class CrawlJobRecord:
     updated_at: str
     snapshot_ref: str
     error_message: str
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata_json: str = "{}"
 
     def payload(self) -> dict[str, Any]:
         """Decode the stored job payload."""
@@ -90,6 +195,58 @@ class CrawlJobRecord:
         if self.status != "pending" or not self.next_retry_at:
             return False
         return _parse_iso(self.next_retry_at) > datetime.now()
+
+    def error_metadata(self) -> dict[str, Any]:
+        return _deserialize_json_object(self.error_metadata_json)
+
+    def error_info(self) -> ErrorInfo | None:
+        return _error_info_from_record(
+            error_message=self.error_message,
+            error_code=self.error_code,
+            error_kind=self.error_kind,
+            error_user_message=self.error_user_message,
+            is_retryable=self.is_retryable,
+            error_metadata_json=self.error_metadata_json,
+        )
+
+
+@dataclass(slots=True)
+class DeadLetterRecord:
+    id: int
+    original_job_id: int
+    replay_job_id: int
+    query_signature: str
+    payload_json: str
+    priority: int
+    status: str
+    attempt_count: int
+    max_attempts: int
+    error_message: str
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata_json: str = "{}"
+    created_at: str = ""
+    updated_at: str = ""
+    replayed_at: str = ""
+    replay_count: int = 0
+
+    def payload(self) -> dict[str, Any]:
+        return _deserialize_json_object(self.payload_json)
+
+    def error_metadata(self) -> dict[str, Any]:
+        return _deserialize_json_object(self.error_metadata_json)
+
+    def error_info(self) -> ErrorInfo | None:
+        return _error_info_from_record(
+            error_message=self.error_message,
+            error_code=self.error_code,
+            error_kind=self.error_kind,
+            error_user_message=self.error_user_message,
+            is_retryable=self.is_retryable,
+            error_metadata_json=self.error_metadata_json,
+        )
 
 
 @dataclass(slots=True)
@@ -137,6 +294,11 @@ class QuerySnapshotRegistry:
                     last_accessed_at,
                     updated_at,
                     error_message,
+                    error_code,
+                    error_kind,
+                    error_user_message,
+                    is_retryable,
+                    error_metadata_json,
                     is_partial
                 FROM query_snapshots
                 WHERE query_signature = ?
@@ -172,6 +334,7 @@ class QuerySnapshotRegistry:
         fresh_until: str | None = None,
         is_partial: bool = False,
         error_message: str = "",
+        error: Exception | ErrorInfo | str | None = None,
     ) -> SnapshotRecord:
         """Store the latest usable snapshot for a query signature."""
         storage_key = self._storage_key_for(query_signature, is_partial=is_partial)
@@ -185,6 +348,7 @@ class QuerySnapshotRegistry:
                 partial_path.unlink()
 
         now = now_iso()
+        error_columns = _error_columns(error or error_message)
         record = SnapshotRecord(
             query_signature=query_signature,
             status=status,
@@ -193,7 +357,12 @@ class QuerySnapshotRegistry:
             storage_key=storage_key,
             last_accessed_at=now,
             updated_at=now,
-            error_message=error_message,
+            error_message=str(error_columns["error_message"]),
+            error_code=str(error_columns["error_code"]),
+            error_kind=str(error_columns["error_kind"]),
+            error_user_message=str(error_columns["error_user_message"]),
+            is_retryable=bool(error_columns["is_retryable"]),
+            error_metadata_json=str(error_columns["error_metadata_json"]),
             is_partial=is_partial,
             snapshot=snapshot,
         )
@@ -209,9 +378,14 @@ class QuerySnapshotRegistry:
                     last_accessed_at,
                     updated_at,
                     error_message,
+                    error_code,
+                    error_kind,
+                    error_user_message,
+                    is_retryable,
+                    error_metadata_json,
                     is_partial
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(query_signature) DO UPDATE SET
                     status = excluded.status,
                     generated_at = excluded.generated_at,
@@ -220,6 +394,11 @@ class QuerySnapshotRegistry:
                     last_accessed_at = excluded.last_accessed_at,
                     updated_at = excluded.updated_at,
                     error_message = excluded.error_message,
+                    error_code = excluded.error_code,
+                    error_kind = excluded.error_kind,
+                    error_user_message = excluded.error_user_message,
+                    is_retryable = excluded.is_retryable,
+                    error_metadata_json = excluded.error_metadata_json,
                     is_partial = excluded.is_partial
                 """,
                 (
@@ -231,6 +410,11 @@ class QuerySnapshotRegistry:
                     record.last_accessed_at,
                     record.updated_at,
                     record.error_message,
+                    record.error_code,
+                    record.error_kind,
+                    record.error_user_message,
+                    int(record.is_retryable),
+                    record.error_metadata_json,
                     int(record.is_partial),
                 ),
             )
@@ -249,6 +433,50 @@ class QuerySnapshotRegistry:
                 WHERE query_signature = ?
                 """,
                 (now, now, query_signature),
+            )
+
+    def record_snapshot_error(
+        self,
+        query_signature: str,
+        error: Exception | ErrorInfo | str,
+        *,
+        status: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """Attach structured error details to an existing snapshot row."""
+        if not query_signature:
+            return
+        error_columns = _error_columns(error, metadata=metadata)
+        updates = [
+            "updated_at = ?",
+            "error_message = ?",
+            "error_code = ?",
+            "error_kind = ?",
+            "error_user_message = ?",
+            "is_retryable = ?",
+            "error_metadata_json = ?",
+        ]
+        params: list[Any] = [
+            now_iso(),
+            error_columns["error_message"],
+            error_columns["error_code"],
+            error_columns["error_kind"],
+            error_columns["error_user_message"],
+            error_columns["is_retryable"],
+            error_columns["error_metadata_json"],
+        ]
+        if status is not None:
+            updates.insert(0, "status = ?")
+            params.insert(0, str(status))
+        params.append(query_signature)
+        with self._connect() as connection:
+            connection.execute(
+                f"""
+                UPDATE query_snapshots
+                SET {", ".join(updates)}
+                WHERE query_signature = ?
+                """,
+                tuple(params),
             )
 
     def compute_fresh_until(self, ttl_seconds: int | None = None) -> str:
@@ -274,6 +502,11 @@ class QuerySnapshotRegistry:
                 last_accessed_at,
                 updated_at,
                 error_message,
+                error_code,
+                error_kind,
+                error_user_message,
+                is_retryable,
+                error_metadata_json,
                 is_partial
             FROM query_snapshots
         """
@@ -416,6 +649,11 @@ class QuerySnapshotRegistry:
                     last_accessed_at TEXT NOT NULL DEFAULT '',
                     updated_at TEXT NOT NULL DEFAULT '',
                     error_message TEXT NOT NULL DEFAULT '',
+                    error_code TEXT NOT NULL DEFAULT '',
+                    error_kind TEXT NOT NULL DEFAULT '',
+                    error_user_message TEXT NOT NULL DEFAULT '',
+                    is_retryable INTEGER NOT NULL DEFAULT 0,
+                    error_metadata_json TEXT NOT NULL DEFAULT '{}',
                     is_partial INTEGER NOT NULL DEFAULT 0
                 )
                 """
@@ -425,6 +663,36 @@ class QuerySnapshotRegistry:
                 table_name="query_snapshots",
                 column_name="error_message",
                 definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="error_code",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="error_kind",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="error_user_message",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="is_retryable",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
+            self._ensure_column(
+                connection,
+                table_name="query_snapshots",
+                column_name="error_metadata_json",
+                definition="TEXT NOT NULL DEFAULT '{}'",
             )
             self._ensure_column(
                 connection,
@@ -464,6 +732,11 @@ class QuerySnapshotRegistry:
             last_accessed_at=str(row["last_accessed_at"]),
             updated_at=str(row["updated_at"]),
             error_message=str(row["error_message"]),
+            error_code=str(row["error_code"]),
+            error_kind=str(row["error_kind"]),
+            error_user_message=str(row["error_user_message"]),
+            is_retryable=bool(row["is_retryable"]),
+            error_metadata_json=str(row["error_metadata_json"]),
             is_partial=bool(row["is_partial"]),
         )
 
@@ -523,9 +796,14 @@ class CrawlJobQueue:
                     created_at,
                     updated_at,
                     snapshot_ref,
-                    error_message
+                    error_message,
+                    error_code,
+                    error_kind,
+                    error_user_message,
+                    is_retryable,
+                    error_metadata_json
                 )
-                VALUES (?, ?, ?, 'pending', 0, ?, '', '', '', ?, ?, '', '')
+                VALUES (?, ?, ?, 'pending', 0, ?, '', '', '', ?, ?, '', '', '', '', '', 0, '{}')
                 """,
                 (
                     query_signature,
@@ -673,6 +951,56 @@ class CrawlJobQueue:
             row = connection.execute(query, tuple(params)).fetchone()
         return int(row[0]) if row else 0
 
+    def get_dead_letter(self, dead_letter_id: int) -> DeadLetterRecord | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM crawl_dead_letters WHERE id = ?",
+                (int(dead_letter_id),),
+            ).fetchone()
+        return self._row_to_dead_letter_record(row) if row is not None else None
+
+    def get_dead_letter_for_job(self, original_job_id: int) -> DeadLetterRecord | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM crawl_dead_letters
+                WHERE original_job_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (int(original_job_id),),
+            ).fetchone()
+        return self._row_to_dead_letter_record(row) if row is not None else None
+
+    def list_dead_letters(
+        self,
+        *,
+        limit: int = 20,
+        statuses: list[str] | None = None,
+    ) -> list[DeadLetterRecord]:
+        query = "SELECT * FROM crawl_dead_letters"
+        params: list[Any] = []
+        if statuses:
+            placeholders = ", ".join("?" for _ in statuses)
+            query += f" WHERE status IN ({placeholders})"
+            params.extend([str(status) for status in statuses])
+        query += " ORDER BY updated_at DESC, id DESC LIMIT ?"
+        params.append(max(1, int(limit)))
+        with self._connect() as connection:
+            rows = connection.execute(query, tuple(params)).fetchall()
+        return [self._row_to_dead_letter_record(row) for row in rows]
+
+    def count_dead_letters(self, *, status: str | None = None) -> int:
+        query = "SELECT COUNT(*) FROM crawl_dead_letters"
+        params: list[Any] = []
+        if status is not None:
+            query += " WHERE status = ?"
+            params.append(str(status))
+        with self._connect() as connection:
+            row = connection.execute(query, tuple(params)).fetchone()
+        return int(row[0]) if row else 0
+
     def prune_jobs(self, *, retention_days: int) -> int:
         """Delete terminal jobs older than the configured retention window."""
         if int(retention_days) <= 0:
@@ -692,10 +1020,27 @@ class CrawlJobQueue:
             )
         return max(0, int(cursor.rowcount))
 
+    def prune_dead_letters(self, *, retention_days: int) -> int:
+        if int(retention_days) <= 0:
+            return 0
+        cutoff = (datetime.now() - timedelta(days=int(retention_days))).isoformat(
+            timespec="seconds"
+        )
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                DELETE FROM crawl_dead_letters
+                WHERE updated_at != ''
+                  AND updated_at < ?
+                """,
+                (cutoff,),
+            )
+        return max(0, int(cursor.rowcount))
+
     def record_attempt_failure(
         self,
         job_id: int,
-        error: str,
+        error: Exception | ErrorInfo | str,
         *,
         allow_retry: bool,
         retry_backoff_seconds: int,
@@ -706,6 +1051,13 @@ class CrawlJobQueue:
             raise RuntimeError(f"Failed to find crawl job #{job_id} for failure handling")
 
         now = now_iso()
+        error_columns = _error_columns(
+            error,
+            metadata={
+                "job_id": int(job_id),
+                "query_signature": job.query_signature,
+            },
+        )
         with self._connect() as connection:
             if allow_retry and int(job.attempt_count) < int(job.max_attempts):
                 next_retry_at = _future_iso(max(0, int(retry_backoff_seconds)))
@@ -717,12 +1069,22 @@ class CrawlJobQueue:
                         lease_expires_at = '',
                         next_retry_at = ?,
                         error_message = ?,
+                        error_code = ?,
+                        error_kind = ?,
+                        error_user_message = ?,
+                        is_retryable = ?,
+                        error_metadata_json = ?,
                         updated_at = ?
                     WHERE id = ?
                     """,
                     (
                         next_retry_at,
-                        str(error),
+                        error_columns["error_message"],
+                        error_columns["error_code"],
+                        error_columns["error_kind"],
+                        error_columns["error_user_message"],
+                        error_columns["is_retryable"],
+                        error_columns["error_metadata_json"],
                         now,
                         int(job_id),
                     ),
@@ -736,14 +1098,30 @@ class CrawlJobQueue:
                         lease_expires_at = '',
                         next_retry_at = '',
                         error_message = ?,
+                        error_code = ?,
+                        error_kind = ?,
+                        error_user_message = ?,
+                        is_retryable = ?,
+                        error_metadata_json = ?,
                         updated_at = ?
                     WHERE id = ?
                     """,
                     (
-                        str(error),
+                        error_columns["error_message"],
+                        error_columns["error_code"],
+                        error_columns["error_kind"],
+                        error_columns["error_user_message"],
+                        error_columns["is_retryable"],
+                        error_columns["error_metadata_json"],
                         now,
                         int(job_id),
                     ),
+                )
+                self._upsert_dead_letter(
+                    connection,
+                    job=job,
+                    error_columns=error_columns,
+                    created_at=now,
                 )
         updated_job = self.get_job(job_id)
         if updated_job is None:
@@ -762,14 +1140,30 @@ class CrawlJobQueue:
                     next_retry_at = '',
                     snapshot_ref = ?,
                     error_message = '',
+                    error_code = '',
+                    error_kind = '',
+                    error_user_message = '',
+                    is_retryable = 0,
+                    error_metadata_json = '{}',
                     updated_at = ?
                 WHERE id = ?
                 """,
                 (snapshot_ref, now_iso(), int(job_id)),
             )
 
-    def fail_job(self, job_id: int, error: str) -> None:
+    def fail_job(self, job_id: int, error: Exception | ErrorInfo | str) -> None:
         """Mark a leased crawl job failed."""
+        job = self.get_job(job_id)
+        if job is None:
+            raise RuntimeError(f"Failed to find crawl job #{job_id} for failure handling")
+        error_columns = _error_columns(
+            error,
+            metadata={
+                "job_id": int(job_id),
+                "query_signature": job.query_signature,
+            },
+        )
+        current_time = now_iso()
         with self._connect() as connection:
             connection.execute(
                 """
@@ -779,11 +1173,110 @@ class CrawlJobQueue:
                     lease_expires_at = '',
                     next_retry_at = '',
                     error_message = ?,
+                    error_code = ?,
+                    error_kind = ?,
+                    error_user_message = ?,
+                    is_retryable = ?,
+                    error_metadata_json = ?,
                     updated_at = ?
                 WHERE id = ?
                 """,
-                (str(error), now_iso(), int(job_id)),
+                (
+                    error_columns["error_message"],
+                    error_columns["error_code"],
+                    error_columns["error_kind"],
+                    error_columns["error_user_message"],
+                    error_columns["is_retryable"],
+                    error_columns["error_metadata_json"],
+                    current_time,
+                    int(job_id),
+                ),
             )
+            self._upsert_dead_letter(
+                connection,
+                job=job,
+                error_columns=error_columns,
+                created_at=current_time,
+            )
+
+    def replay_dead_letter(
+        self,
+        dead_letter_id: int,
+        *,
+        priority: int | None = None,
+        max_attempts: int | None = None,
+    ) -> tuple[DeadLetterRecord, CrawlJobRecord]:
+        dead_letter = self.get_dead_letter(dead_letter_id)
+        if dead_letter is None:
+            raise RuntimeError(f"Failed to find dead letter #{dead_letter_id}")
+
+        replay_job = self.enqueue_crawl(
+            dead_letter.query_signature,
+            priority=int(priority if priority is not None else dead_letter.priority),
+            max_attempts=max(
+                1,
+                int(
+                    max_attempts
+                    if max_attempts is not None
+                    else dead_letter.max_attempts
+                ),
+            ),
+            payload_json=dead_letter.payload_json,
+        )
+        current_time = now_iso()
+        with self._connect() as connection:
+            connection.execute(
+                """
+                UPDATE crawl_dead_letters
+                SET replay_job_id = ?,
+                    replayed_at = ?,
+                    replay_count = replay_count + 1,
+                    status = 'replayed',
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    int(replay_job.id),
+                    current_time,
+                    current_time,
+                    int(dead_letter_id),
+                ),
+            )
+        refreshed_dead_letter = self.get_dead_letter(dead_letter_id)
+        if refreshed_dead_letter is None:
+            raise RuntimeError(f"Failed to read back dead letter #{dead_letter_id}")
+        return refreshed_dead_letter, replay_job
+
+    def reprocess_failed_job(
+        self,
+        job_id: int,
+        *,
+        priority: int | None = None,
+        max_attempts: int | None = None,
+    ) -> tuple[DeadLetterRecord, CrawlJobRecord]:
+        dead_letter = self.get_dead_letter_for_job(job_id)
+        if dead_letter is not None:
+            return self.replay_dead_letter(
+                dead_letter.id,
+                priority=priority,
+                max_attempts=max_attempts,
+            )
+        job = self.get_job(job_id)
+        if job is None:
+            raise RuntimeError(f"Failed to find crawl job #{job_id}")
+        if job.status != "failed":
+            raise RuntimeError(
+                f"Crawl job #{job_id} is not failed and cannot be reprocessed"
+            )
+        self.fail_job(job_id, job.error_info() or job.error_message or "reprocess requested")
+        dead_letter = self.get_dead_letter_for_job(job_id)
+        if dead_letter is None:
+            raise RuntimeError(f"Failed to create dead letter for crawl job #{job_id}")
+        return self.replay_dead_letter(
+            dead_letter.id,
+            priority=priority,
+            max_attempts=max_attempts,
+        )
 
     def _initialize(self) -> None:
         ensure_directory(self.db_path.parent)
@@ -804,7 +1297,37 @@ class CrawlJobQueue:
                     created_at TEXT NOT NULL DEFAULT '',
                     updated_at TEXT NOT NULL DEFAULT '',
                     snapshot_ref TEXT NOT NULL DEFAULT '',
-                    error_message TEXT NOT NULL DEFAULT ''
+                    error_message TEXT NOT NULL DEFAULT '',
+                    error_code TEXT NOT NULL DEFAULT '',
+                    error_kind TEXT NOT NULL DEFAULT '',
+                    error_user_message TEXT NOT NULL DEFAULT '',
+                    is_retryable INTEGER NOT NULL DEFAULT 0,
+                    error_metadata_json TEXT NOT NULL DEFAULT '{}'
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS crawl_dead_letters (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    original_job_id INTEGER NOT NULL UNIQUE,
+                    replay_job_id INTEGER NOT NULL DEFAULT 0,
+                    query_signature TEXT NOT NULL DEFAULT '',
+                    payload_json TEXT NOT NULL DEFAULT '',
+                    priority INTEGER NOT NULL DEFAULT 0,
+                    status TEXT NOT NULL DEFAULT 'dead_lettered',
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    max_attempts INTEGER NOT NULL DEFAULT 1,
+                    error_message TEXT NOT NULL DEFAULT '',
+                    error_code TEXT NOT NULL DEFAULT '',
+                    error_kind TEXT NOT NULL DEFAULT '',
+                    error_user_message TEXT NOT NULL DEFAULT '',
+                    is_retryable INTEGER NOT NULL DEFAULT 0,
+                    error_metadata_json TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL DEFAULT '',
+                    replayed_at TEXT NOT NULL DEFAULT '',
+                    replay_count INTEGER NOT NULL DEFAULT 0
                 )
                 """
             )
@@ -818,6 +1341,12 @@ class CrawlJobQueue:
                 """
                 CREATE INDEX IF NOT EXISTS idx_crawl_jobs_pending_order
                 ON crawl_jobs(status, priority DESC, created_at ASC, id ASC)
+                """
+            )
+            connection.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_crawl_dead_letters_updated_at
+                ON crawl_dead_letters(updated_at DESC, id DESC)
                 """
             )
             self._ensure_column(
@@ -837,6 +1366,138 @@ class CrawlJobQueue:
                 table_name="crawl_jobs",
                 column_name="next_retry_at",
                 definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_jobs",
+                column_name="error_code",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_jobs",
+                column_name="error_kind",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_jobs",
+                column_name="error_user_message",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_jobs",
+                column_name="is_retryable",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_jobs",
+                column_name="error_metadata_json",
+                definition="TEXT NOT NULL DEFAULT '{}'",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="replay_job_id",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="query_signature",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="payload_json",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="priority",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="status",
+                definition="TEXT NOT NULL DEFAULT 'dead_lettered'",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="attempt_count",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="max_attempts",
+                definition="INTEGER NOT NULL DEFAULT 1",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="error_message",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="error_code",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="error_kind",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="error_user_message",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="is_retryable",
+                definition="INTEGER NOT NULL DEFAULT 0",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="error_metadata_json",
+                definition="TEXT NOT NULL DEFAULT '{}'",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="created_at",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="updated_at",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="replayed_at",
+                definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name="crawl_dead_letters",
+                column_name="replay_count",
+                definition="INTEGER NOT NULL DEFAULT 0",
             )
 
     def _connect(self) -> sqlite3.Connection:
@@ -922,6 +1583,98 @@ class CrawlJobQueue:
             updated_at=str(row["updated_at"]),
             snapshot_ref=str(row["snapshot_ref"]),
             error_message=str(row["error_message"]),
+            error_code=str(row["error_code"]),
+            error_kind=str(row["error_kind"]),
+            error_user_message=str(row["error_user_message"]),
+            is_retryable=bool(row["is_retryable"]),
+            error_metadata_json=str(row["error_metadata_json"]),
+        )
+
+    def _row_to_dead_letter_record(self, row: sqlite3.Row) -> DeadLetterRecord:
+        return DeadLetterRecord(
+            id=int(row["id"]),
+            original_job_id=int(row["original_job_id"]),
+            replay_job_id=int(row["replay_job_id"]),
+            query_signature=str(row["query_signature"]),
+            payload_json=str(row["payload_json"]),
+            priority=int(row["priority"]),
+            status=str(row["status"]),
+            attempt_count=int(row["attempt_count"]),
+            max_attempts=int(row["max_attempts"]),
+            error_message=str(row["error_message"]),
+            error_code=str(row["error_code"]),
+            error_kind=str(row["error_kind"]),
+            error_user_message=str(row["error_user_message"]),
+            is_retryable=bool(row["is_retryable"]),
+            error_metadata_json=str(row["error_metadata_json"]),
+            created_at=str(row["created_at"]),
+            updated_at=str(row["updated_at"]),
+            replayed_at=str(row["replayed_at"]),
+            replay_count=int(row["replay_count"]),
+        )
+
+    def _upsert_dead_letter(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        job: CrawlJobRecord,
+        error_columns: dict[str, Any],
+        created_at: str,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO crawl_dead_letters (
+                original_job_id,
+                replay_job_id,
+                query_signature,
+                payload_json,
+                priority,
+                status,
+                attempt_count,
+                max_attempts,
+                error_message,
+                error_code,
+                error_kind,
+                error_user_message,
+                is_retryable,
+                error_metadata_json,
+                created_at,
+                updated_at,
+                replayed_at,
+                replay_count
+            )
+            VALUES (?, 0, ?, ?, ?, 'dead_lettered', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0)
+            ON CONFLICT(original_job_id) DO UPDATE SET
+                query_signature = excluded.query_signature,
+                payload_json = excluded.payload_json,
+                priority = excluded.priority,
+                status = 'dead_lettered',
+                attempt_count = excluded.attempt_count,
+                max_attempts = excluded.max_attempts,
+                error_message = excluded.error_message,
+                error_code = excluded.error_code,
+                error_kind = excluded.error_kind,
+                error_user_message = excluded.error_user_message,
+                is_retryable = excluded.is_retryable,
+                error_metadata_json = excluded.error_metadata_json,
+                updated_at = excluded.updated_at
+            """,
+            (
+                int(job.id),
+                job.query_signature,
+                job.payload_json,
+                int(job.priority),
+                int(job.attempt_count),
+                int(job.max_attempts),
+                error_columns["error_message"],
+                error_columns["error_code"],
+                error_columns["error_kind"],
+                error_columns["error_user_message"],
+                error_columns["is_retryable"],
+                error_columns["error_metadata_json"],
+                created_at,
+                created_at,
+            ),
         )
 
 

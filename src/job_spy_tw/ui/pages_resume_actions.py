@@ -7,7 +7,7 @@ from time import perf_counter
 import streamlit as st
 
 from ..application.resume import ResumeApplication, ResumeConfig
-from ..error_taxonomy import error_metadata
+from ..error_taxonomy import ERROR_KIND_LLM, error_metadata
 from ..observability import new_trace_id, trace_context
 from ..resume_analysis import extract_resume_text
 from .assistant_actions import (
@@ -93,7 +93,11 @@ def _analyze_resume_submission(
                     "text_chars": len(resume_text),
                     "source_kind": source_kind,
                     "use_llm_requested": use_llm,
-                    **error_metadata(exc),
+                    **error_metadata(
+                        exc,
+                        default_kind=ERROR_KIND_LLM if use_llm else None,
+                        metadata={"operation": "resume.build_profile"},
+                    ),
                 },
             )
             raise
@@ -134,7 +138,11 @@ def _analyze_resume_submission(
                     "trace_id": trace_id,
                     "jobs_considered": len(ctx.snapshot.jobs),
                     "use_llm_requested": use_llm,
-                    **error_metadata(exc),
+                    **error_metadata(
+                        exc,
+                        default_kind=ERROR_KIND_LLM if use_llm else None,
+                        metadata={"operation": "resume.match_jobs"},
+                    ),
                 },
             )
             raise
@@ -216,7 +224,11 @@ def _analyze_resume_submission(
                 "source_kind": source_kind,
                 "use_llm_requested": use_llm,
                 "snapshot_jobs": len(ctx.snapshot.jobs),
-                **error_metadata(exc),
+                **error_metadata(
+                    exc,
+                    default_kind=ERROR_KIND_LLM if use_llm else None,
+                    metadata={"operation": "resume.analyze_resume"},
+                ),
             },
         )
         resume_status.update(label="履歷分析失敗", state="error", expanded=True)

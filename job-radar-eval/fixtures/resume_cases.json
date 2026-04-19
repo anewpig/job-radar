@@ -1,0 +1,162 @@
+[
+  {
+    "id": "ai_engineer_case",
+    "resume_text": "AI應用工程師\n技能：Python、LLM、RAG\n工作內容：需求分析、API 串接、流程自動化\n",
+    "expected_top_job_url": "https://example.com/jobs/1",
+    "expected_top_role": "AI應用工程師",
+    "expected_matched_skills": ["Python", "LLM", "RAG"],
+    "expected_missing_skills": ["Docker", "AWS"]
+  },
+  {
+    "id": "product_manager_case",
+    "resume_text": "Product Manager\n技能：Figma、Jira、PRD、跨部門溝通\n工作內容：產品路線圖規劃、需求訪談、跨部門協作\n",
+    "expected_top_job_url": "https://example.com/jobs/3",
+    "expected_top_role": "PM",
+    "expected_matched_skills": ["Figma", "Jira"],
+    "expected_missing_skills": ["SQL"]
+  },
+  {
+    "id": "firmware_engineer_case",
+    "resume_text": "韌體工程師\n技能：C++、RTOS、ARM、Bluetooth\n工作內容：SoC 韌體開發、硬體 bring-up、除錯\n",
+    "expected_top_job_url": "https://example.com/jobs/4",
+    "expected_top_role": "韌體工程師",
+    "expected_matched_skills": ["C++", "RTOS", "ARM"],
+    "expected_missing_skills": []
+  },
+  {
+    "id": "rag_ai_engineer_case",
+    "resume_text": "RAG AI Engineer\n技能：Python、RAG、向量資料庫、API\n工作內容：知識庫系統開發、檢索優化、LLM 整合\n",
+    "expected_top_job_url": "https://example.com/jobs/5",
+    "expected_top_role": "AI應用工程師",
+    "expected_matched_skills": ["Python", "RAG", "向量資料庫"],
+    "expected_missing_skills": []
+  },
+  {
+    "id": "ai_platform_case",
+    "resume_text": "AI Platform Engineer\n技能：Python、RAG、Kubernetes、Docker\n工作內容：推理服務部署、平台建置、MLOps 協作\n",
+    "expected_top_job_url": "https://example.com/jobs/2",
+    "expected_top_role": "AI應用工程師",
+    "expected_matched_skills": ["Python", "RAG", "Kubernetes"],
+    "expected_missing_skills": []
+  },
+  {
+    "id": "embedded_linux_case",
+    "resume_text": "Embedded Linux Firmware Engineer\n技能：C++、Linux、RTOS、ARM\n工作內容：Bootloader 開發、系統 bring-up、軟硬體整合\n",
+    "expected_top_job_url": "https://example.com/jobs/6",
+    "expected_top_role": "韌體工程師",
+    "expected_matched_skills": ["C++", "Linux", "RTOS", "ARM"],
+    "expected_missing_skills": []
+  },
+  {
+    "id": "ai_agent_case",
+    "resume_text": "AI Agent Engineer\n技能：Python、RAG、Docker、API\n工作內容：AI Agent 流程設計、API 串接、自動化流程開發\n",
+    "expected_top_job_url": "https://example.com/jobs/1",
+    "expected_top_role": "AI應用工程師",
+    "expected_matched_skills": ["Python", "RAG", "Docker"],
+    "expected_missing_skills": ["LLM", "AWS"]
+  },
+  {
+    "id": "product_discovery_case",
+    "resume_text": "AI Product Manager\n技能：Figma、Jira、PRD、MVP\n工作內容：需求訪談、產品規劃、跨部門溝通\n",
+    "expected_top_job_url": "https://example.com/jobs/3",
+    "expected_top_role": "PM",
+    "expected_matched_skills": ["Figma", "Jira", "PRD"],
+    "expected_missing_skills": ["SQL"]
+  },
+  {
+    "id": "bluetooth_firmware_case",
+    "resume_text": "Bluetooth Firmware Engineer\n技能：C++、RTOS、Bluetooth、MIPS\n工作內容：Bluetooth SoC 韌體開發、FPGA 驗證、客戶支援\n",
+    "expected_top_job_url": "https://example.com/jobs/4",
+    "expected_top_role": "韌體工程師",
+    "expected_matched_skills": ["C++", "RTOS", "Bluetooth"],
+    "expected_missing_skills": ["ARM"]
+  },
+  {
+    "id": "llm_engineer_case",
+    "resume_text": "LLM Engineer\n技能：Python、LLM、Prompt Engineering、API\n工作內容：Prompt 設計、模型整合、知識庫流程開發\n",
+    "expected_top_job_url": "https://example.com/jobs/5",
+    "expected_top_role": "AI應用工程師",
+    "expected_matched_skills": ["Python", "LLM"],
+    "expected_missing_skills": ["RAG", "向量資料庫"]
+  },
+  {
+    "id": "ml_engineer_case",
+    "resume_text": "Machine Learning Engineer\n技能：Python、PyTorch、TensorFlow、AWS\n工作內容：模型訓練、特徵工程、模型部署\n",
+    "expected_top_job_url": "https://example.com/jobs/7",
+    "expected_top_role": "AI工程師",
+    "expected_matched_skills": ["Python", "PyTorch", "TensorFlow", "AWS"],
+    "expected_missing_skills": ["Docker"]
+  },
+  {
+    "id": "ai_engineer_mlops_case",
+    "resume_text": "AI Engineer\n技能：Python、PyTorch、AWS、Docker\n工作內容：模型訓練、部署與監控、資料處理\n",
+    "expected_top_job_url": "https://example.com/jobs/7",
+    "expected_top_role": "AI工程師",
+    "expected_matched_skills": ["Python", "PyTorch", "AWS", "Docker"],
+    "expected_missing_skills": ["TensorFlow"]
+  },
+  {
+    "id": "backend_engineer_case",
+    "resume_text": "Backend Engineer\n技能：Python、API Design、System Design、Docker\n工作內容：後端服務開發、REST API 設計、系統整合\n",
+    "expected_top_job_url": "https://example.com/jobs/8",
+    "expected_top_role": "軟體工程師",
+    "expected_matched_skills": ["Python", "API Design", "System Design", "Docker"],
+    "expected_missing_skills": ["AWS"]
+  },
+  {
+    "id": "software_engineer_case",
+    "resume_text": "Software Engineer\n技能：Python、Docker、API、System Design\n工作內容：微服務開發、資料庫串接、架構設計\n",
+    "expected_top_job_url": "https://example.com/jobs/8",
+    "expected_top_role": "軟體工程師",
+    "expected_matched_skills": ["Python", "Docker", "API Design", "System Design"],
+    "expected_missing_skills": ["AWS"]
+  },
+  {
+    "id": "application_engineer_case",
+    "resume_text": "Application Engineer\n技能：Requirement Analysis、Technical Support、Customer Communication、Solution Design\n工作內容：客戶需求訪談、導入規劃、技術支援\n",
+    "expected_top_job_url": "https://example.com/jobs/9",
+    "expected_top_role": "應用工程師",
+    "expected_matched_skills": ["Requirement Analysis", "Technical Support", "Customer Communication", "Solution Design"],
+    "expected_missing_skills": ["API Design"]
+  },
+  {
+    "id": "fae_case",
+    "resume_text": "Field Application Engineer\n技能：FAE、Technical Support、Requirement Analysis、客戶溝通\n工作內容：售前支援、需求分析、導入協作\n",
+    "expected_top_job_url": "https://example.com/jobs/9",
+    "expected_top_role": "應用工程師",
+    "expected_matched_skills": ["Technical Support", "Requirement Analysis", "Customer Communication"],
+    "expected_missing_skills": ["Solution Design", "API Design"]
+  },
+  {
+    "id": "solution_engineer_case",
+    "resume_text": "Solution Engineer\n技能：Solution Design、Requirement Analysis、Customer Communication、API\n工作內容：解決方案設計、客戶簡報、導入串接\n",
+    "expected_top_job_url": "https://example.com/jobs/9",
+    "expected_top_role": "應用工程師",
+    "expected_matched_skills": ["Solution Design", "Requirement Analysis", "Customer Communication", "API Design"],
+    "expected_missing_skills": ["Technical Support"]
+  },
+  {
+    "id": "project_manager_delivery_case",
+    "resume_text": "Project Manager\n技能：Project Management、Jira、Roadmap、Stakeholder\n工作內容：專案規劃、跨部門協調、進度追蹤\n",
+    "expected_top_job_url": "https://example.com/jobs/10",
+    "expected_top_role": "PM",
+    "expected_matched_skills": ["Project Management", "Jira", "Roadmap", "Stakeholder Management"],
+    "expected_missing_skills": ["PRD"]
+  },
+  {
+    "id": "project_manager_coordination_case",
+    "resume_text": "專案經理\n技能：專案管理、Jira、利害關係人溝通、Roadmap\n工作內容：時程控管、需求整理、跨部門溝通\n",
+    "expected_top_job_url": "https://example.com/jobs/10",
+    "expected_top_role": "PM",
+    "expected_matched_skills": ["Project Management", "Jira", "Stakeholder Management", "Roadmap"],
+    "expected_missing_skills": ["PRD"]
+  },
+  {
+    "id": "ai_consultant_case",
+    "resume_text": "AI Solution Consultant\n技能：Technical Support、Customer Communication、Requirement Analysis、API\n工作內容：客戶導入、需求訪談、POC 規劃\n",
+    "expected_top_job_url": "https://example.com/jobs/9",
+    "expected_top_role": "應用工程師",
+    "expected_matched_skills": ["Technical Support", "Customer Communication", "Requirement Analysis", "API Design"],
+    "expected_missing_skills": ["Solution Design"]
+  }
+]

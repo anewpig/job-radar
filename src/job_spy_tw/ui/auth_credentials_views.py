@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import streamlit as st
 
-from ..product_store import ProductStore
+from ..error_taxonomy import (
+    ERROR_CODE_AUTH_DUPLICATE_EMAIL,
+    ERROR_CODE_AUTH_INVALID_CREDENTIALS,
+    build_application_error,
+    build_error_info,
+)
 from ..observability import new_trace_id
+from ..product_store import ProductStore
 from .auth_state import (
     AUTH_VIEW_FORGOT_REQUEST,
     AUTH_VIEW_LOGIN,
@@ -46,16 +52,24 @@ def _handle_login_submit(*, product_store: ProductStore) -> None:
 
     user = product_store.authenticate_user(login_email, login_password)
     if user is None:
+        error_info = build_application_error(
+            code=ERROR_CODE_AUTH_INVALID_CREDENTIALS,
+            technical_message="帳號或密碼不正確。",
+            metadata={
+                "operation": "login",
+                "email": login_email.lower(),
+            },
+        ).info
         product_store.record_audit_event(
             event_type="auth.login.failed",
             status="error",
             target_type="user_email",
             target_id=login_email.lower(),
-            details={"reason": "invalid_credentials"},
+            details=error_info.to_dict(),
             trace_id=trace_id,
         )
         set_auth_feedback(
-            error="帳號或密碼不正確。",
+            error=error_info.user_message,
             field_errors={"login_password": "請重新確認密碼。"},
         )
         st.rerun()
@@ -176,15 +190,29 @@ def _handle_register_submit(*, product_store: ProductStore) -> None:
             display_name=register_name,
         )
     except ValueError as exc:
+        error_info = build_error_info(
+            exc,
+            default_code=ERROR_CODE_AUTH_DUPLICATE_EMAIL,
+            metadata={
+                "operation": "register",
+                "email": register_email.lower(),
+            },
+        )
         product_store.record_audit_event(
             event_type="auth.register.failed",
             status="error",
             target_type="user_email",
             target_id=register_email.lower(),
-            details={"reason": str(exc)},
+            details=error_info.to_dict(),
             trace_id=trace_id,
         )
-        set_auth_feedback(error=str(exc), field_errors={"register_email": str(exc)})
+        field_key = "register_email"
+        if "密碼至少需要" in error_info.technical_message:
+            field_key = "register_password"
+        set_auth_feedback(
+            error=error_info.user_message,
+            field_errors={field_key: error_info.user_message},
+        )
         st.rerun()
 
     st.session_state.show_auth_dialog = False

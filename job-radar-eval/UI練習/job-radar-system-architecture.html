@@ -1,0 +1,2665 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Job Radar System Architecture</title>
+<style>
+    :root {
+      --bg: #f6f3ff;
+      --surface: rgba(255, 255, 255, 0.88);
+      --surface-strong: #ffffff;
+      --surface-soft: #f4efff;
+      --line: rgba(108, 86, 176, 0.14);
+      --line-strong: rgba(108, 86, 176, 0.26);
+      --text: #1f1836;
+      --muted: #6a6287;
+      --accent: #6a52d8;
+      --accent-soft: rgba(106, 82, 216, 0.1);
+      --accent-strong: #5133c9;
+      --good: #15803d;
+      --warn: #b45309;
+      --danger: #b42318;
+      --shadow: 0 22px 64px rgba(92, 69, 175, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --content-width: 1440px;
+      --toc-width: 280px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: "SF Pro TC", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(165, 142, 255, 0.24), transparent 38%),
+        radial-gradient(circle at top right, rgba(248, 211, 255, 0.28), transparent 32%),
+        linear-gradient(180deg, #faf7ff 0%, #f4f0ff 100%);
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      max-width: var(--content-width);
+      margin: 0 auto;
+      padding: 28px 20px 120px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(177, 156, 255, 0.3), transparent 28%),
+        radial-gradient(circle at 90% 10%, rgba(255, 222, 243, 0.5), transparent 26%),
+        linear-gradient(135deg, rgba(255,255,255,0.95), rgba(244,239,255,0.98));
+      box-shadow: var(--shadow);
+      padding: 34px 34px 32px;
+      margin-bottom: 22px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -80px auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      border: 1px solid rgba(106, 82, 216, 0.08);
+      box-shadow:
+        0 0 0 38px rgba(106, 82, 216, 0.05),
+        0 0 0 92px rgba(106, 82, 216, 0.03);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid var(--line);
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      max-width: 980px;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 1040px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.8;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 0.95fr;
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .hero-card,
+    .glass-card,
+    .section,
+    .mini-card,
+    .table-wrap,
+    details.component {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 22px;
+    }
+
+    .hero-card h2,
+    .section-header h2 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-card p,
+    .section-header p,
+    .content p,
+    .list-block li,
+    .note,
+    .table-wrap td,
+    .table-wrap th,
+    .metric small,
+    .mini-card p,
+    .scale-card p,
+    .flow-box p,
+    .glossary-item p {
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .hero-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .hero-list li {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .hero-callout {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .hero-callout .mini-card {
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.84);
+    }
+
+    .hero-callout h3,
+    .mini-card h3,
+    .content h3,
+    .flow-box h3,
+    .scale-card h3,
+    .glossary-item h3,
+    .table-wrap caption {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--toc-width);
+      gap: 22px;
+      align-items: start;
+      margin-top: 22px;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .toc a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .section {
+      padding: 28px;
+    }
+
+    .section-header {
+      margin-bottom: 18px;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .metric-grid,
+    .scale-grid,
+    .glossary-grid,
+    .store-grid,
+    .flow-grid,
+    .decision-grid,
+    .extension-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .metric-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .metric {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .topology-stack {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .topology-layer {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.84);
+      position: relative;
+    }
+
+    .topology-layer:not(:last-child)::after {
+      content: "↓";
+      position: absolute;
+      left: 50%;
+      bottom: -19px;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--accent);
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(92, 69, 175, 0.14);
+      z-index: 2;
+    }
+
+    .topology-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 84px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(106,82,216,0.12), rgba(255,255,255,0.9));
+      border: 1px solid var(--line);
+      color: var(--accent-strong);
+      font-weight: 800;
+      font-size: 26px;
+      letter-spacing: 0.02em;
+    }
+
+    .topology-content h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .topology-content p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .chip-row,
+    .module-row,
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip,
+    .module-tag,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.8);
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    details.component {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    details.component + details.component {
+      margin-top: 14px;
+    }
+
+    details.component summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 20px 22px;
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) 42px;
+      gap: 16px;
+      align-items: center;
+      background: rgba(255,255,255,0.92);
+    }
+
+    details.component summary::-webkit-details-marker { display: none; }
+
+    .summary-icon {
+      min-height: 72px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent-strong);
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(106,82,216,0.11), rgba(255,255,255,0.92));
+    }
+
+    .summary-copy h3 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .summary-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .summary-arrow {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      color: var(--accent-strong);
+      font-weight: 800;
+      background: #fff;
+    }
+
+    details[open] .summary-arrow {
+      transform: rotate(45deg);
+    }
+
+    .content {
+      border-top: 1px solid var(--line);
+      padding: 0 22px 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(244,239,255,0.72));
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      padding-top: 18px;
+    }
+
+    .list-block {
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.84);
+    }
+
+    .list-block h4 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: var(--accent-strong);
+      letter-spacing: 0.02em;
+    }
+
+    .list-block ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .module-map {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.84);
+    }
+
+    .module-map h4 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: var(--accent-strong);
+    }
+
+    .store-grid,
+    .flow-grid,
+    .decision-grid,
+    .extension-grid,
+    .scale-grid,
+    .glossary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .store-card,
+    .flow-box,
+    .decision-card,
+    .extension-card,
+    .scale-card,
+    .glossary-item {
+      padding: 20px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .store-card header,
+    .flow-box header,
+    .decision-card header,
+    .extension-card header,
+    .scale-card header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .store-card .icon,
+    .flow-box .icon,
+    .decision-card .icon,
+    .extension-card .icon,
+    .scale-card .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      min-height: 58px;
+      padding: 0 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(106,82,216,0.11), rgba(255,255,255,0.92));
+      color: var(--accent-strong);
+      font-weight: 800;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .meta span {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .kv {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+    }
+
+    .kv strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .step-line {
+      display: grid;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .step {
+      position: relative;
+      padding: 14px 16px 14px 54px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.84);
+      line-height: 1.7;
+    }
+
+    .step::before {
+      content: attr(data-step);
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .arrow-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .node {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.84);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .arrow {
+      color: var(--accent-strong);
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    .table-wrap {
+      padding: 18px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 880px;
+    }
+
+    caption {
+      text-align: left;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    th,
+    td {
+      text-align: left;
+      vertical-align: top;
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--accent-strong);
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(106,82,216,0.06);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px dashed var(--line-strong);
+      background: rgba(255,255,255,0.68);
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .footer {
+      margin-top: 24px;
+      padding: 26px;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .footer p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .footer-links {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.78);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .footer-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px rgba(18, 38, 54, 0.1);
+      border-color: var(--line-strong);
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      color: rgba(84, 96, 112, 0.9);
+      font-size: 0.86rem;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1180px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .toc {
+        position: static;
+        order: -1;
+      }
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 920px) {
+      .hero-grid,
+      .content-grid,
+      .store-grid,
+      .flow-grid,
+      .decision-grid,
+      .extension-grid,
+      .scale-grid,
+      .glossary-grid {
+        grid-template-columns: 1fr;
+      }
+      .topology-layer {
+        grid-template-columns: 1fr;
+      }
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-list {
+        grid-template-columns: 1fr;
+      }
+      .kv-grid {
+        grid-template-columns: 1fr;
+      }
+      details.component summary {
+        grid-template-columns: 1fr;
+      }
+      .summary-arrow {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 14px 12px 96px;
+      }
+      .hero,
+      .section,
+      .footer {
+        padding: 20px;
+      }
+      .hero h1 {
+        font-size: 34px;
+      }
+      .topology-layer:not(:last-child)::after {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+<header class="hero" id="top">
+<div class="eyebrow">Job Radar Architecture Handbook</div>
+<h1>Job Radar 全系統架構深度版說明</h1>
+<p>
+        這份頁面不是抽象的教科書版本，而是以你目前這個專案的真實實作為基礎，
+        把前端、後端、AI、資料庫、排程、資料流、設計取捨、可替代方案、擴充路線一次攤開。
+        重點不是只說「系統現在長什麼樣」，而是說清楚「為什麼會這樣設計、這樣設計的好處和代價是什麼、
+        如果未來要擴張，下一步應該先動哪裡」。
+      </p>
+<div class="hero-grid">
+<section class="hero-card">
+<h2>一句話總結</h2>
+<p>
+            目前這套系統本質上是「<strong>Streamlit 工作台 + Python 模組化單體 + SQLite/JSON 落地 + 背景排程抓取 + AI 輔助分析</strong>」的產品型內部平台。
+            它不是傳統前後端分離，也不是重量級微服務，而是刻意選擇一條能最快把求職工作流整合在一起、又保留後續演進空間的中間路線。
+          </p>
+<ul class="hero-list">
+<li><strong>前端形態</strong><br/>Streamlit 單工作台，靠 session_state 承接使用者流程。</li>
+<li><strong>後端形態</strong><br/>Python 模組化單體，service / pipeline / store 分層。</li>
+<li><strong>AI 形態</strong><br/>履歷分析與市場問答兩條線，且都有 fallback。</li>
+<li><strong>資料層</strong><br/>4 份 SQLite + JSON snapshots + cache 目錄。</li>
+</ul>
+</section>
+<aside class="hero-callout">
+<article class="mini-card">
+<h3>這份文件特別補強的點</h3>
+<p>比原本版本更細，除了架構圖，還包含模組責任、資料生命週期、設計動機、優缺點、替代方案與擴充觸發條件。</p>
+</article>
+<article class="mini-card">
+<h3>適合拿來做什麼</h3>
+<p>新成員 onboarding、產品技術簡報、未來拆前後端評估、資料層升級決策、AI 成本與品質治理。</p>
+</article>
+<article class="mini-card">
+<h3>閱讀順序建議</h3>
+<p>先看整體拓樸，再看前端/後端/AI/DB，最後看資料流、設計取捨、擴充路線與替代方案。</p>
+</article>
+</aside>
+</div>
+</header>
+<div class="layout">
+<main class="main">
+<section class="section" id="overview">
+<div class="section-header">
+<div class="kicker">Overview</div>
+<h2>系統定位與目前邊界</h2>
+<p>
+              這套系統解的不是單一問題，而是把「職缺搜尋、資料整併、履歷匹配、AI 問答、通知追蹤」串成同一個工作台。
+              因此它的架構選型重點，不是追求理論上最乾淨，而是追求在中小型團隊情境下，
+              以最少基礎設施換到最快的產品整合速度與足夠清楚的擴充邊界。
+            </p>
+</div>
+<div class="metric-grid">
+<article class="metric">
+<span>UI Runtime</span>
+<strong>Streamlit App Shell</strong>
+<small>讓 Python 直接操作 UI、狀態與資料，適合快速建立求職工作台。</small>
+</article>
+<article class="metric">
+<span>Execution Model</span>
+<strong>Inline + Worker Dual Mode</strong>
+<small>可直接在 UI 進程跑，也可切背景 scheduler / worker 模式。</small>
+</article>
+<article class="metric">
+<span>Persistence</span>
+<strong>4 SQLite + JSON</strong>
+<small>把產品狀態、執行期 runtime、歷史資料與使用者提交資料分層落地。</small>
+</article>
+<article class="metric">
+<span>AI Strategy</span>
+<strong>Fallback First</strong>
+<small>AI 是能力增強而不是單點依賴，沒有模型也盡量保可用。</small>
+</article>
+</div>
+<div class="footnote">
+<strong>這種架構最適合的情境：</strong>
+            單一產品工作台、開發團隊人數不多、需求仍在快速變動、目前併發量不高，但希望未來可以逐步升級成更正式的服務型平台。
+            <br/>
+<strong>這種架構最不適合的情境：</strong>
+            一開始就要多人高併發、要嚴格 API 契約治理、要多前端客戶端共用、或必須滿足企業級分散式可用性與合規要求。
+          </div>
+</section>
+<section class="section" id="topology">
+<div class="section-header">
+<div class="kicker">Topology</div>
+<h2>整體拓樸圖</h2>
+<p>
+              可以把整套系統視為五層：使用者互動入口、UI 協調層、核心服務層、持久化與背景執行層、外部系統層。
+              這種分層方式的關鍵價值，在於讓 UI 不直接滲透進爬蟲與資料落地，也讓 AI、通知與排程不必互相知道太多細節。
+            </p>
+</div>
+<div class="topology-stack">
+<article class="topology-layer">
+<div class="topology-badge">UI</div>
+<div class="topology-content">
+<h3>使用者與互動入口</h3>
+<p>搜尋設定、登入流程、AI 浮動助理、漢堡抽屜、追蹤中心、投遞看板、通知設定都從瀏覽器中的 Streamlit 工作台進來。</p>
+<div class="chip-row">
+<span class="chip">Hero / Search Setup</span>
+<span class="chip">Auth Dialog</span>
+<span class="chip">AI Launcher</span>
+<span class="chip">Tracking / Board / Notifications</span>
+</div>
+</div>
+</article>
+<article class="topology-layer">
+<div class="topology-badge">APP</div>
+<div class="topology-content">
+<h3>UI 協調層</h3>
+<p>這層負責 bootstrap、session state、router、page orchestration、以及把使用者操作翻譯成 service 呼叫。</p>
+<div class="chip-row">
+<span class="chip">app.py</span>
+<span class="chip">bootstrap_*</span>
+<span class="chip">session_*</span>
+<span class="chip">router_* / navigation_*</span>
+<span class="chip">pages_*</span>
+</div>
+</div>
+</article>
+<article class="topology-layer">
+<div class="topology-badge">SVC</div>
+<div class="topology-content">
+<h3>核心服務層</h3>
+<p>抓取、資料標準化、履歷分析、AI 問答、通知與市場歷史寫入都在這層完成，這一層才是真正的業務核心。</p>
+<div class="chip-row">
+<span class="chip">crawl_application_service.py</span>
+<span class="chip">pipeline.py</span>
+<span class="chip">resume/service.py</span>
+<span class="chip">assistant/service.py</span>
+<span class="chip">notifications/service.py</span>
+</div>
+</div>
+</article>
+<article class="topology-layer">
+<div class="topology-badge">DB</div>
+<div class="topology-content">
+<h3>持久化與背景執行</h3>
+<p>產品狀態、queue runtime、歷史資料、使用者提交內容與 JSON 快照都落在本機 SQLite / file system；scheduler 與 worker 也以此協作。</p>
+<div class="chip-row">
+<span class="chip">product_state.sqlite3</span>
+<span class="chip">query_runtime.sqlite3</span>
+<span class="chip">user_submissions.sqlite3</span>
+<span class="chip">market_history.sqlite3</span>
+<span class="chip">snapshots / cache</span>
+</div>
+</div>
+</article>
+<article class="topology-layer">
+<div class="topology-badge">EXT</div>
+<div class="topology-content">
+<h3>外部系統</h3>
+<p>真正的資訊來源與外部能力包括 104、1111、Cake、LinkedIn、OpenAI、Email、LINE webhook。這些都被限制在 adapter 邊界之外。</p>
+<div class="chip-row">
+<span class="chip">104 / 1111 / Cake / LinkedIn</span>
+<span class="chip">OpenAI Responses / Embeddings</span>
+<span class="chip">SMTP</span>
+<span class="chip">LINE Bot / Webhook</span>
+</div>
+</div>
+</article>
+</div>
+</section>
+<section class="section" id="frontend">
+<div class="section-header">
+<div class="kicker">Frontend</div>
+<h2>前端架構</h2>
+<p>
+              這裡說的前端，不是 React 或 Vue 意義上的 SPA，而是以 Streamlit 為載體的應用工作台。
+              核心是三件事：<strong>狀態如何保留、畫面如何切換、搜尋與分析如何分階段回饋</strong>。
+            </p>
+</div>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">UI</div>
+<div class="summary-copy">
+<h3>App Shell 與 Session State</h3>
+<p>整個工作台建立在 Streamlit rerun 模型之上，核心狀態由 session_state 承接。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼這樣做</h3>
+<p>
+                    這個產品最重要的是「同一個人」能在同一個工作台裡依序做搜尋、看結果、保存搜尋、履歷匹配、再追問 AI。
+                    如果一開始就走前後端分離，雖然結構會更正規，但你會先花大量時間在 API 契約、前端資料抓取與狀態同步。
+                    Streamlit 讓 Python 直接碰 UI，因此可以優先把產品工作流打通。
+                  </p>
+<p>
+                    `st.session_state` 在這裡扮演的是應用級暫存記憶體：它保存目前使用者、目前 snapshot、主頁籤、crawl phase、
+                    AI launcher tab、履歷分析結果、登入 dialog 狀態等。沒有這層，整個工作台會在每次 rerun 後變成碎片化操作。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>Python 從 UI 到資料層一路到底，產品整合速度非常快。</li>
+<li>同一份市場快照可直接讓總覽、履歷、AI 共用，不必先做 API 序列化。</li>
+<li>很適合早期產品探索，需求變動時調整成本低。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>state key 與 render 順序變成系統穩定性的核心，心智負擔高。</li>
+<li>不是自然的多客戶端架構，之後若要做 Web + Mobile 共用會卡住。</li>
+<li>多人高併發、跨裝置同步、細緻權限控管時邊界會很快出現。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">app.py</span>
+<span class="module-tag">ui/bootstrap.py</span>
+<span class="module-tag">ui/session.py</span>
+<span class="module-tag">ui/session_defaults.py</span>
+<span class="module-tag">ui/session_helpers.py</span>
+<span class="module-tag">ui/context_builder.py</span>
+</div>
+</div>
+<div class="content-grid">
+<div class="list-block">
+<h4>可替代方案</h4>
+<ul>
+<li>React / Next.js + FastAPI：正式前後端分離，適合多人協作與高互動產品。</li>
+<li>保留 Streamlit 當內部工作台，另外做 API server 承接寫入與背景流程。</li>
+<li>更嚴格的 command / query 分離，讓 session_state 只保留 UI 狀態，不直接帶 domain state。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>若要擴充，先做什麼</h4>
+<ul>
+<li>先把 session schema 收斂，避免 key 命名繼續自由增生。</li>
+<li>把 mutation 盡量下沉到 service，頁面只做 orchestration。</li>
+<li>如果要拆前後端，先定義 PageContext 對應的 API response schema。</li>
+</ul>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">NAV</div>
+<div class="summary-copy">
+<h3>導航系統與薄頁面架構</h3>
+<p>router / navigation / pages_* 已被整理成薄入口，降低單檔 God Object 風險。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼這樣做</h3>
+<p>
+                    一開始很多 Streamlit 專案會讓每一頁變成 800 行以上的大雜燴：畫面、邏輯、動作、資料查詢全部混在一起。
+                    你這個專案已經做過多輪重構，現在的策略是把頁面收斂成 orchestrator，真正的 sections、actions、helpers 都移到子模組。
+                  </p>
+<p>
+                    這樣做的核心好處不是「檔案變短」而已，而是把責任邊界明確化：導航層只做切頁，page 入口只做流程安排，
+                    真正的畫面區塊與使用者操作分別落在 sections / actions。這讓你之後調整追蹤中心或履歷頁時，不必再擔心牽動整頁其他區塊。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>單一頁面修改的 blast radius 變小。</li>
+<li>後續可以替重要頁面補單元測試或 smoke test。</li>
+<li>功能邊界清楚後，比較容易把部分頁面遷移成 API + 前端頁。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>模組數量增加，新人第一次看專案會覺得跳躍。</li>
+<li>如果命名不一致，拆檔後反而會更難找東西。</li>
+<li>沒有測試時，拆檔本身不等於有回歸保證。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">ui/router.py</span>
+<span class="module-tag">ui/router_config.py</span>
+<span class="module-tag">ui/router_dispatch.py</span>
+<span class="module-tag">ui/navigation.py</span>
+<span class="module-tag">ui/navigation_tabs.py</span>
+<span class="module-tag">ui/navigation_drawer.py</span>
+<span class="module-tag">ui/pages_*</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">UX</div>
+<div class="summary-copy">
+<h3>搜尋工作台與分階段回饋</h3>
+<p>不是等所有細節都抓完才顯示，而是 partial snapshot 先出來，後面再 finalize enrich。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼這樣做</h3>
+<p>
+                    求職查詢最怕的是使用者按下搜尋後等待過久。你的系統把抓取分成首波與補完兩段，
+                    先讓使用者看到可用職缺列表、技能與任務洞察，再在後台補更多 detail enrich。
+                    這讓整體體感更接近「有回應的工作台」，而不是「黑盒子跑很久」。
+                  </p>
+<p>
+                    這種 staged feedback 的前提，是快照要變成全系統的共用知識底：同一份 snapshot 不只用在市場頁，
+                    還要用在履歷匹配、AI 助理、saved search refresh 和通知判斷。也因此搜尋頁不是單純的表單頁，
+                    而是整個產品最重要的資料入口。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>首屏可見結果更快，使用者留存與操作意願更高。</li>
+<li>相同查詢命中 cache 時，可直接吃現成快照，避免重抓。</li>
+<li>同一份市場結果能同時支援多個子功能，資料一致性更好。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>partial / final 狀態切換使 UI 邏輯變複雜。</li>
+<li>使用者可能在尚未完全 enrich 的時候就開始判斷資料品質。</li>
+<li>inline 模式下，UI 仍需要知道部分 runtime 狀態。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="content-grid">
+<div class="list-block">
+<h4>替代方案</h4>
+<ul>
+<li>全部 blocking 到完整抓完再顯示：流程最單純，但等待時間長。</li>
+<li>純 enqueue 模式：使用者送出後只看到 job status，等完成再回來看。</li>
+<li>WebSocket / SSE 即時推送：使用體驗最好，但基礎設施成本更高。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>擴充時的建議</h4>
+<ul>
+<li>把 partial / ready / stale / failed 做成正式狀態圖與文件。</li>
+<li>若未來常態開 worker，讓 UI 只負責 enqueue + poll。</li>
+<li>把 crawl progress 改成全站可重用的 notification / status center。</li>
+</ul>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">ui/search_setup.py</span>
+<span class="module-tag">ui/search_setup_state.py</span>
+<span class="module-tag">ui/search_setup_sections.py</span>
+<span class="module-tag">ui/crawl_runtime_flow.py</span>
+<span class="module-tag">ui/crawl_runtime_status.py</span>
+</div>
+</div>
+</div>
+</details>
+</section>
+<section class="section" id="backend">
+<div class="section-header">
+<div class="kicker">Backend</div>
+<h2>後端架構</h2>
+<p>
+              雖然目前沒有獨立 API server，但後端其實已經很完整：bootstrap 負責 wiring，
+              crawl application service 扛 use case，pipeline + connectors 扛抓取與標準化，
+              query runtime 扛 queue / snapshot registry / heartbeat，通知與 webhook 則走獨立邊界。
+            </p>
+</div>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">BOOT</div>
+<div class="summary-copy">
+<h3>Bootstrap 與 Resource Factory</h3>
+<p>先建立 settings、stores、services 與 user context，再開始 render UI。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>核心責任</h3>
+<p>
+                    `bootstrap_runtime()` 的責任不是做業務邏輯，而是建立整個應用需要的資源圖：settings、stores、notification service、
+                    visit tracking、guest session、active user context、initial snapshot hydration。這一層如果清楚，app.py 本體就能保持很薄。
+                  </p>
+<p>
+                    這種設計的價值在於，把「應用初始化」和「頁面行為」分開。你不用在每一頁到處判斷 DB 是否存在、使用者是否初始化、
+                    最新快照是否需要讀取，因為 bootstrap 已經先幫你把上下文整理好。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>為什麼好</h4>
+<ul>
+<li>所有依賴建立點集中，設定與 cache_resource 行為一致。</li>
+<li>UI 頁面不需要知道 service 建立細節。</li>
+<li>未來若改成 API server，bootstrap 是最容易搬遷的一層。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>風險</h4>
+<ul>
+<li>如果一直往裡面塞業務邏輯，bootstrap 會變成新的巨石檔。</li>
+<li>resource cache 與 Streamlit rerun 行為需要持續小心。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">ui/bootstrap.py</span>
+<span class="module-tag">ui/bootstrap_services.py</span>
+<span class="module-tag">ui/bootstrap_user_context.py</span>
+<span class="module-tag">ui/resources.py</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">CRAWL</div>
+<div class="summary-copy">
+<h3>Crawl Application Service</h3>
+<p>負責把 UI 動作翻成 crawl use case，統一 inline 與 worker 兩種模式。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>這層真正解決的問題</h3>
+<p>
+                    搜尋不只是「去抓資料」而已，而是包含 query signature、快照命中、saved search 同步、排程 due search、queue payload、
+                    job polling、partial finalize、通知觸發。這些如果直接散在 UI，就會非常難維護，所以需要一個用例協調層把它們包起來。
+                  </p>
+<p>
+                    目前 `crawl_application_service.py` 就扛了這個角色。從設計角度來看，它是最像 application service / use-case coordinator 的地方。
+                    這也是未來如果要抽出 API server 時，最值得保留的 domain 邏輯核心。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>UI 看起來只像在呼叫少數幾個高層動作，複雜度被壓住。</li>
+<li>inline 與 worker execution mode 共用大部分業務流程。</li>
+<li>queue、saved search、snapshot registry 的界面比較一致。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>目前仍偏大，跨了太多 concern，後續還有再拆空間。</li>
+<li>尚未完全採 command/event style，流程變更仍可能牽動大片程式。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="content-grid">
+<div class="list-block">
+<h4>替代方案</h4>
+<ul>
+<li>拆成 start-crawl / finalize / sync-search / schedule-refresh 多個 command modules。</li>
+<li>用 event-driven 模式，在 crawl complete 後再觸發同步與通知。</li>
+<li>把 runtime queue 和 saved search orchestration 進一步拆為獨立 services。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>擴充建議</h4>
+<ul>
+<li>先把 queue concern 與 saved search concern 拆開。</li>
+<li>讓 completion hook 變成正式事件，而不是 service 內部串呼叫。</li>
+<li>若要做 API server，共用 package 就從這層開始抽。</li>
+</ul>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">crawl_application_service.py</span>
+<span class="module-tag">ui/crawl_runtime_flow.py</span>
+<span class="module-tag">query_runtime.py</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">PIPE</div>
+<div class="summary-copy">
+<h3>JobMarketPipeline 與來源 Connectors</h3>
+<p>把首波搜尋、後續頁次與 detail enrich 拆開，並把來源差異限制在 connector 邊界。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼需要 Pipeline</h3>
+<p>
+                    外部來源的現實是：每個網站的搜尋頁、明細頁、欄位完整度、反爬限制、更新頻率都不同。
+                    如果沒有 pipeline 和 connector 分層，最後會演變成「每一頁直接去 call 某個站點爬蟲」，那整個系統很快就失控。
+                  </p>
+<p>
+                    目前的做法是先把各來源統一轉成標準化 `JobListing`，再交給後續分析、儲存與 AI 使用。
+                    這代表 UI、履歷分析器與 AI 助理根本不需要知道 104 和 LinkedIn 原始 HTML 長什麼樣。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>來源差異被局部化，修 parser 時不必動整個產品。</li>
+<li>首波結果可先提供，資料體感更快。</li>
+<li>標準化後，分析與 AI 層可重用同一份 schema。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>HTML scraper 本質脆弱，來源一改版就要修。</li>
+<li>目前還不是分散式抓取架構，高量時會碰到瓶頸。</li>
+<li>detail enrich 的品質很受來源站結構限制。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">pipeline.py</span>
+<span class="module-tag">connectors/site_104.py</span>
+<span class="module-tag">connectors/site_1111.py</span>
+<span class="module-tag">connectors/cake.py</span>
+<span class="module-tag">connectors/linkedin.py</span>
+<span class="module-tag">market_analysis/analyzer.py</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">OPS</div>
+<div class="summary-copy">
+<h3>Query Runtime、Scheduler 與 Worker</h3>
+<p>用最少的基礎設施做出 queue、lease、runtime signal 與 snapshot registry。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>核心設計意圖</h3>
+<p>
+                    這套系統目前沒有直接上 Redis/Celery，而是用 `query_runtime.sqlite3` 先承接抓取執行期資料。
+                    這是一個很務實的取捨：如果現在就直接上完整分散式 queue，系統會更正式，但部署與本機 debug 成本會大幅上升。
+                    用 SQLite runtime queue 雖然不是終局方案，但足夠把背景刷新、自動排程、心跳與租約概念先跑起來。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>這樣做的好處</h4>
+<ul>
+<li>本機可觀察性高，queue 與 signal 狀態直接可查。</li>
+<li>不用先引入外部 broker，也能把 scheduler / worker 模式跑起來。</li>
+<li>非常適合產品仍在探索期、但又需要背景刷新的情境。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>代價</h4>
+<ul>
+<li>SQLite queue 在高併發與多 worker 下不是長久之計。</li>
+<li>lease / retry / cleanup 全都得自己維護。</li>
+<li>若未來跨機部署，這層會是最早要重構的地方。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="content-grid">
+<div class="list-block">
+<h4>替代方案</h4>
+<ul>
+<li>Redis + RQ / Celery / Dramatiq。</li>
+<li>Postgres queue + SKIP LOCKED。</li>
+<li>雲端 managed queue，如 SQS / Cloud Tasks / PubSub。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>升級觸發條件</h4>
+<ul>
+<li>saved search 數量明顯成長，worker 需要多實例並行。</li>
+<li>單機 SQLite 鎖競爭開始明顯影響延遲。</li>
+<li>需要 dead-letter、重試策略、併發度治理與正式監控時。</li>
+</ul>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">query_runtime.py</span>
+<span class="module-tag">crawl_scheduler.py</span>
+<span class="module-tag">crawl_worker.py</span>
+<span class="module-tag">runtime_maintenance_service.py</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">MSG</div>
+<div class="summary-copy">
+<h3>通知與外部回呼邊界</h3>
+<p>通知發送與 LINE 綁定被限制在清楚的邊界上，不直接滲進 UI。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼要獨立邊界</h3>
+<p>
+                    通知不是只是 UI 上顯示一個 badge，而是跨通道發送、偏好管理、綁定狀態追蹤、站內與站外行為整合。
+                    如果沒有統一入口，之後 Email、LINE、站內通知很快會各自長出不同規則。
+                  </p>
+<p>
+                    因此目前以 `NotificationService` 統一發送，並讓 LINE webhook 走獨立進程／入口。這個選擇的重點是：
+                    webhook 本來就不該被塞進 Streamlit render lifecycle 裡面。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>發送邏輯集中，saved search 刷新後容易串接通知。</li>
+<li>LINE webhook 與主應用解耦，不會干擾前端工作台。</li>
+<li>偏好與通知記錄可在產品 DB 追蹤。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>未來風險</h4>
+<ul>
+<li>若通道變多，NotificationService 仍可能膨脹。</li>
+<li>通知若同步送出，可能拖慢主要 use case。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">notifications/service.py</span>
+<span class="module-tag">line_webhook.py</span>
+<span class="module-tag">product_store.py</span>
+</div>
+</div>
+</div>
+</details>
+</section>
+<section class="section" id="ai">
+<div class="section-header">
+<div class="kicker">AI</div>
+<h2>AI 架構</h2>
+<p>
+              系統中的 AI 不是單一聊天機器人，而是至少三件事：履歷抽取與匹配、以市場快照為知識底的 RAG 助理、
+              以及 AI 監控與 fallback。真正好的點不在於「用了模型」，而在於模型不可用時產品仍盡量能工作。
+            </p>
+</div>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">CV</div>
+<div class="summary-copy">
+<h3>ResumeAnalysisService</h3>
+<p>規則分析保底，OpenAI extractor / matcher 再往上疊，避免單點依賴。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>設計哲學</h3>
+<p>
+                    履歷分析屬於高敏感資料流程，而且使用者通常希望功能穩定，不會接受「今天模型壞了所以整頁不能用」。
+                    因此現在的設計不是完全倚賴 LLM，而是先有 rule-based extractor / matcher 保底，
+                    再在 OpenAI 可用時加上更高品質的抽取與比對能力。
+                  </p>
+<p>
+                    這種設計比純 LLM 路線保守，但更接近產品現實：先求穩定，再求品質提升。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>沒有 API key 時功能不至於完全失效。</li>
+<li>可以根據成本與品質在規則與 AI 間調整。</li>
+<li>ResumeProfile 與匹配結果有較清楚的資料結構。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>雙軌維護成本高，測試矩陣也會增加。</li>
+<li>不同模式下，使用者體感可能不完全一致。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">resume/service.py</span>
+<span class="module-tag">resume/extractors.py</span>
+<span class="module-tag">resume/matchers.py</span>
+<span class="module-tag">ui/pages_resume_actions.py</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">RAG</div>
+<div class="summary-copy">
+<h3>JobMarketRAGAssistant</h3>
+<p>不是泛用聊天，而是以「這批職缺快照」為知識底做檢索再回答。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼要走 RAG 而不是純聊天</h3>
+<p>
+                    使用者問的是「我現在這批市場資料代表什麼」、「我的履歷跟這批職缺差在哪」、「這些 JD 的技能趨勢是什麼」，
+                    這些問題都強依賴當前快照。如果只靠模型預訓練知識，答案很容易脫離當前實際市場。
+                  </p>
+<p>
+                    因此助理流程是：把 snapshot、履歷輪廓、對話上下文 chunk 化，做 embedding retrieval，
+                    再交給 OpenAI 產生 grounded answer。這樣答案比較像是在「讀你現在的市場資料後給建議」，而不是一般聊天。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>答案與當前市場資料更一致，有 grounding。</li>
+<li>可以進一步做 citation 與 retrieval note，增加可解釋性。</li>
+<li>市場摘要、履歷建議、職缺比較都能用同一條知識底。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>缺點</h4>
+<ul>
+<li>embedding + generation 會帶來延遲與成本。</li>
+<li>chunking、retrieval、prompt schema 都需要持續優化。</li>
+<li>快照如果偏舊或不完整，回答也會跟著偏。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="content-grid">
+<div class="list-block">
+<h4>替代方案</h4>
+<ul>
+<li>純統計 / SQL 問答，不用生成式模型。</li>
+<li>上正式向量資料庫，讓 retrieval 更穩定。</li>
+<li>走 agent + tools 模式，讓模型動態查多個子系統。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>擴充建議</h4>
+<ul>
+<li>把 embeddings 與 answer cache 正式持久化。</li>
+<li>為常見問題預先生成摘要，降低每次推理成本。</li>
+<li>建立 prompt / schema version，搭配離線回歸評估。</li>
+</ul>
+</div>
+</div>
+<div class="module-map">
+<h4>主要模組</h4>
+<div class="module-row">
+<span class="module-tag">assistant/service.py</span>
+<span class="module-tag">assistant/retrieval.py</span>
+<span class="module-tag">assistant/prompts.py</span>
+<span class="module-tag">ui/assistant_actions.py</span>
+</div>
+</div>
+</div>
+</details>
+<details class="component" open="">
+<summary>
+<div class="summary-icon">MON</div>
+<div class="summary-copy">
+<h3>AI 監控、回退與成本邊界</h3>
+<p>所有重要 AI 行為都應可被追蹤，且失敗時要先回到「可用」而不是整條功能中斷。</p>
+</div>
+<div class="summary-arrow">+</div>
+</summary>
+<div class="content">
+<div class="content-grid">
+<div>
+<h3>為什麼這塊很重要</h3>
+<p>
+                    當 AI 已經參與履歷分析與職涯建議，它就不再只是裝飾功能，而是會直接影響使用者決策。
+                    因此你不只要讓模型能回答，還要知道它花了多少 token、延遲如何、是否失敗、失敗時 fallback 是否有正常啟動。
+                  </p>
+<p>
+                    目前這些資訊主要寫進 `ai_monitoring_events`，這已經是一個好的開始。
+                    未來如果要更正式治理成本與品質，這條紀錄會成為你最重要的決策基礎。
+                  </p>
+</div>
+<div>
+<div class="list-block">
+<h4>優點</h4>
+<ul>
+<li>可以追模型延遲、失敗率與 token budget。</li>
+<li>fallback 路徑有機會被驗證，而不是只存在設計稿裡。</li>
+<li>後續要做 model compare 或成本治理較容易。</li>
+</ul>
+</div>
+<div class="list-block">
+<h4>不足</h4>
+<ul>
+<li>目前仍偏 SQLite 報表層級，還不是正式 observability 平台。</li>
+<li>沒有完整品質評估，只是行為與成本監控。</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</details>
+</section>
+<section class="section" id="db">
+<div class="section-header">
+<div class="kicker">Data Layer</div>
+<h2>DB 與持久化架構</h2>
+<p>
+              目前資料層最值得注意的點，不是用了 SQLite，而是<strong>刻意把不同責任的資料分檔</strong>。
+              產品狀態、執行期 queue、敏感使用者提交內容、歷史市場資料分開，代表你已經在為未來的遷移與治理做準備。
+            </p>
+</div>
+<div class="store-grid">
+<article class="store-card">
+<header>
+<div>
+<h3>product_state.sqlite3</h3>
+<p>產品主資料庫：帳號、saved search、收藏、通知、AI monitoring、履歷 profile。</p>
+</div>
+<div class="icon">PDB</div>
+</header>
+<p>
+                這份 DB 承載的是「產品狀態」，也就是使用者操作之後會留下什麼。把這層集中是合理的，
+                因為使用者、收藏、通知與 saved search 都是同一條產品生命週期的一部分。
+              </p>
+<div class="meta">
+<span>優點：集中、可備份、容易本機帶著走</span>
+<span>缺點：成長後會變重</span>
+<span>替代：Postgres / Supabase</span>
+</div>
+<div class="kv-grid">
+<div class="kv"><strong>為什麼這樣做</strong>小型產品階段用單一 SQL 檔案管理產品狀態最務實。</div>
+<div class="kv"><strong>未來怎麼升級</strong>先搬到 Postgres，再分 schema 或拆 analytics。</div>
+</div>
+</article>
+<article class="store-card">
+<header>
+<div>
+<h3>query_runtime.sqlite3</h3>
+<p>抓取執行期資料庫：query snapshots、crawl jobs、runtime signals。</p>
+</div>
+<div class="icon">QDB</div>
+</header>
+<p>
+                它不是產品資料，而是 runtime metadata。這種分離非常關鍵，因為 runtime concern 與產品資料完全不同。
+                如果把 queue 狀態和使用者資料混在同一份 DB，後續維護會非常痛苦。
+              </p>
+<div class="meta">
+<span>優點：好 debug、少依賴</span>
+<span>缺點：不適合高併發 queue</span>
+<span>替代：Redis / Postgres queue</span>
+</div>
+<div class="kv-grid">
+<div class="kv"><strong>為什麼這樣做</strong>先用最小基礎設施完成 queue、lease 與 snapshot registry。</div>
+<div class="kv"><strong>擴充方向</strong>把 queue 換成 Redis/Postgres，registry metadata 可暫時保留。</div>
+</div>
+</article>
+<article class="store-card">
+<header>
+<div>
+<h3>user_submissions.sqlite3</h3>
+<p>使用者履歷與投稿內容的遮罩後留存資料。</p>
+</div>
+<div class="icon">UDB</div>
+</header>
+<p>
+                履歷是高敏感資料，所以至少先與 product_state 分檔，這是一個很正確的資料治理方向。
+                這也意味著日後要做 TTL、加密、審計或分層保存時，切入點很清楚。
+              </p>
+<div class="meta">
+<span>優點：敏感資料分離</span>
+<span>缺點：仍是本地磁碟資料</span>
+<span>替代：加密 DB / object storage + metadata</span>
+</div>
+<div class="kv-grid">
+<div class="kv"><strong>為什麼這樣做</strong>先把 PII 風險和一般產品資料風險分開。</div>
+<div class="kv"><strong>擴充方向</strong>做 retention、刪除流程、必要時進一步加密。</div>
+</div>
+</article>
+<article class="store-card">
+<header>
+<div>
+<h3>market_history.sqlite3</h3>
+<p>保存 crawl runs、job posts、crawl_run_jobs，提供長期市場趨勢基底。</p>
+</div>
+<div class="icon">HIS</div>
+</header>
+<p>
+                最新快照只能回答「現在」，但你遲早會想問「這個角色過去幾週變化如何」。
+                因此歷史層獨立出來是對的，它讓趨勢分析不會污染 live product tables。
+              </p>
+<div class="meta">
+<span>優點：可做趨勢與回顧</span>
+<span>缺點：檔案會持續膨脹</span>
+<span>替代：DuckDB / Warehouse / Parquet</span>
+</div>
+<div class="kv-grid">
+<div class="kv"><strong>為什麼這樣做</strong>歷史 archive 與產品即時使用場景本來就該分開。</div>
+<div class="kv"><strong>擴充方向</strong>資料量一大就該往分析型儲存移動。</div>
+</div>
+</article>
+<article class="store-card">
+<header>
+<div>
+<h3>JSON Snapshots / HTTP Cache</h3>
+<p>最新市場快照、partial snapshots、來源抓取 cache 的檔案落點。</p>
+</div>
+<div class="icon">SNAP</div>
+</header>
+<p>
+                檔案層存在的目的不是取代資料庫，而是讓「payload 本體」與「metadata / registry」分工。
+                DB 存查詢、狀態與索引；JSON 存完整市場內容，debug 與重載都更直覺。
+              </p>
+<div class="meta">
+<span>優點：可讀、好 debug</span>
+<span>缺點：要管理 orphan / stale file</span>
+<span>替代：Object Storage / JSONB / materialized views</span>
+</div>
+<div class="kv-grid">
+<div class="kv"><strong>為什麼這樣做</strong>payload 與 metadata 分開，能保有可觀察性與靈活度。</div>
+<div class="kv"><strong>擴充方向</strong>上雲時優先把 snapshot / cache 移到 object storage。</div>
+</div>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:18px;">
+<table>
+<caption>資料分層背後的設計理由</caption>
+<thead>
+<tr>
+<th>資料層</th>
+<th>承載什麼</th>
+<th>為什麼不能混在一起</th>
+<th>未來第一個升級方向</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>product_state</td>
+<td>帳號、saved search、收藏、通知、AI 監控、履歷 profile</td>
+<td>這是產品操作狀態，跟 queue / 執行期 metadata 屬性不同。</td>
+<td>搬到 Postgres，補 migration 與索引治理。</td>
+</tr>
+<tr>
+<td>query_runtime</td>
+<td>query snapshots、crawl jobs、runtime signals</td>
+<td>這是系統執行期狀態，不該與使用者主資料共享生命週期。</td>
+<td>換成 Redis 或 Postgres queue。</td>
+</tr>
+<tr>
+<td>user_submissions</td>
+<td>履歷原文或遮罩內容、投稿資料</td>
+<td>敏感度較高，治理策略與一般產品資料不同。</td>
+<td>加 retention / 刪除流程，必要時再加密。</td>
+</tr>
+<tr>
+<td>market_history</td>
+<td>crawl run archive、歷史職缺</td>
+<td>這是長期分析資料，不應拖慢 live product 查詢。</td>
+<td>轉向分析型儲存如 DuckDB / Parquet / Warehouse。</td>
+</tr>
+<tr>
+<td>JSON / Cache</td>
+<td>完整快照 payload、來源回應 cache</td>
+<td>payload 本體與 relational metadata 的最佳保存方式不同。</td>
+<td>object storage + manifest/checksum。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="flow">
+<div class="section-header">
+<div class="kicker">Data Flow</div>
+<h2>主要資料流圖</h2>
+<p>
+              架構是否清楚，最後都要回到資料流來檢驗。下面把最重要的四條路徑拆開：手動查詢、自動刷新、履歷分析、AI 助理。
+              每一條路徑都會說明資料怎麼進來、怎麼被標準化、在哪裡落地、最後被誰消費。
+            </p>
+</div>
+<div class="flow-grid">
+<article class="flow-box">
+<header>
+<div>
+<h3>手動查詢資料流</h3>
+<p>使用者輸入條件後，系統優先命中快照；沒有快照才觸發抓取。</p>
+</div>
+<div class="icon">Flow 1</div>
+</header>
+<div class="arrow-line">
+<span class="node">搜尋設定</span><span class="arrow">→</span>
+<span class="node">maybe_start_crawl</span><span class="arrow">→</span>
+<span class="node">query signature</span><span class="arrow">→</span>
+<span class="node">cache / runtime check</span><span class="arrow">→</span>
+<span class="node">pipeline 首波搜尋</span><span class="arrow">→</span>
+<span class="node">partial snapshot</span><span class="arrow">→</span>
+<span class="node">final enrich</span>
+</div>
+<div class="step-line">
+<div class="step" data-step="1">把搜尋條件規格化，產生可重複比對的 query signature。</div>
+<div class="step" data-step="2">若 query runtime 已有 fresh snapshot，就直接重用，不重抓。</div>
+<div class="step" data-step="3">若沒有，pipeline 先跑初波來源搜尋，盡快給出 partial snapshot。</div>
+<div class="step" data-step="4">後續 detail enrich 完成後，才把快照推成更完整的 ready 狀態。</div>
+</div>
+<p class="note"><strong>這樣做的價值：</strong>速度與完整度分離，讓使用者先看到可用資料，再等補完。</p>
+</article>
+<article class="flow-box">
+<header>
+<div>
+<h3>排程自動刷新資料流</h3>
+<p>scheduler 負責找 due search，worker 才真正執行抓取。</p>
+</div>
+<div class="icon">Flow 2</div>
+</header>
+<div class="arrow-line">
+<span class="node">saved searches</span><span class="arrow">→</span>
+<span class="node">scheduler</span><span class="arrow">→</span>
+<span class="node">crawl_jobs</span><span class="arrow">→</span>
+<span class="node">worker lease</span><span class="arrow">→</span>
+<span class="node">pipeline</span><span class="arrow">→</span>
+<span class="node">query_snapshots ready</span><span class="arrow">→</span>
+<span class="node">notifications</span>
+</div>
+<div class="step-line">
+<div class="step" data-step="1">scheduler 只掃描哪些 saved search 已到刷新時間，不直接做重活。</div>
+<div class="step" data-step="2">worker 透過 lease 機制接 job，避免重複處理。</div>
+<div class="step" data-step="3">完成後更新 query snapshot、saved search 狀態，必要時送通知。</div>
+<div class="step" data-step="4">runtime_signals 提供 heartbeat，讓後端控制台能看到 scheduler / worker 是否還活著。</div>
+</div>
+<p class="note"><strong>這樣做的價值：</strong>把使用者操作與背景維運分開，不需要人在線上才刷新資料。</p>
+</article>
+<article class="flow-box">
+<header>
+<div>
+<h3>履歷分析與匹配資料流</h3>
+<p>履歷不是單獨分析完就結束，而是要回到當前市場快照做匹配。</p>
+</div>
+<div class="icon">Flow 3</div>
+</header>
+<div class="arrow-line">
+<span class="node">履歷檔 / 貼文</span><span class="arrow">→</span>
+<span class="node">build_profile</span><span class="arrow">→</span>
+<span class="node">mask / store</span><span class="arrow">→</span>
+<span class="node">match snapshot.jobs</span><span class="arrow">→</span>
+<span class="node">ResumeJobMatch</span><span class="arrow">→</span>
+<span class="node">履歷頁</span>
+</div>
+<div class="step-line">
+<div class="step" data-step="1">先把履歷抽成結構化 ResumeProfile，而不是直接拿全文比對。</div>
+<div class="step" data-step="2">敏感內容進 store 前先做 mask，降低開發與分析風險。</div>
+<div class="step" data-step="3">匹配是針對當前市場快照做，因此履歷頁本質上依賴市場資料，而不是一個完全獨立功能。</div>
+</div>
+<p class="note"><strong>這樣做的價值：</strong>履歷建議會對準你目前真的在看的市場，而不是抽象的職涯建議。</p>
+</article>
+<article class="flow-box">
+<header>
+<div>
+<h3>AI 助理與報告資料流</h3>
+<p>問題、快照、履歷輪廓與上下文一起形成 retrieval 與回答素材。</p>
+</div>
+<div class="icon">Flow 4</div>
+</header>
+<div class="arrow-line">
+<span class="node">user question</span><span class="arrow">→</span>
+<span class="node">chunk build</span><span class="arrow">→</span>
+<span class="node">embedding retrieval</span><span class="arrow">→</span>
+<span class="node">OpenAI response</span><span class="arrow">→</span>
+<span class="node">answer + notes</span><span class="arrow">→</span>
+<span class="node">AI monitoring</span>
+</div>
+<div class="step-line">
+<div class="step" data-step="1">市場快照與履歷輪廓會先被切成可檢索的內容塊。</div>
+<div class="step" data-step="2">retrieval 決定要把哪一部分市場證據送進 prompt。</div>
+<div class="step" data-step="3">回答生成後再寫入監控事件，追蹤延遲、token 與模型資訊。</div>
+</div>
+<p class="note"><strong>這樣做的價值：</strong>讓 AI 回答更 grounded，同時保留成本與品質治理的資料。</p>
+</article>
+</div>
+</section>
+<section class="section" id="decisions">
+<div class="section-header">
+<div class="kicker">Trade-offs</div>
+<h2>這些關鍵設計，為什麼是這樣做</h2>
+<p>
+              好的架構文件不只要講現在的做法，還要把「為什麼這樣選」與「什麼時候該改」說清楚。
+              下面列出幾個目前最關鍵的結構性決策。
+            </p>
+</div>
+<div class="decision-grid">
+<article class="decision-card">
+<header>
+<div>
+<h3>選 Streamlit，而不是先做前後端分離</h3>
+<p>目的不是偷懶，而是先把產品工作流串起來。</p>
+</div>
+<div class="icon">D1</div>
+</header>
+<p>
+                優點是開發速度極快、資料與 UI 整合自然；缺點是 session 與 render 順序複雜、多人高併發不自然。
+                替代方案是 React + FastAPI。當你要多前端客戶端共用、多人協作變多、或要做正式 API 契約治理時，就該開始轉。
+              </p>
+</article>
+<article class="decision-card">
+<header>
+<div>
+<h3>選模組化單體，而不是一開始就微服務</h3>
+<p>先用明確分層壓住複雜度，避免過早分散式。</p>
+</div>
+<div class="icon">D2</div>
+</header>
+<p>
+                目前產品規模與團隊情境下，模組化單體是最合理的中間型態。微服務會讓部署、觀察、資料一致性與本機開發成本大幅上升。
+                但現在已經把 service / store / pages / runtime 邊界整理出來，所以未來要拆並不會從零開始。
+              </p>
+</article>
+<article class="decision-card">
+<header>
+<div>
+<h3>選 SQLite runtime queue，而不是直接上 Redis/Celery</h3>
+<p>目標是先跑出背景模型，再逐步升級基礎設施。</p>
+</div>
+<div class="icon">D3</div>
+</header>
+<p>
+                這個決策的優點是部署簡單、本機好 debug；缺點是併發能力有限。當你看到 queue 壓力、worker 數量、跨機需求明顯上升時，
+                這一層就該最優先替換成 Redis 或 Postgres queue。
+              </p>
+</article>
+<article class="decision-card">
+<header>
+<div>
+<h3>AI 採 fallback-first，而不是 LLM-only</h3>
+<p>先保證產品可用，再追求最佳回答品質。</p>
+</div>
+<div class="icon">D4</div>
+</header>
+<p>
+                這讓產品即使 OpenAI 不可用，仍能維持部分履歷與分析能力。缺點是雙軌維護比較重。
+                如果未來要全面轉 AI-first，就必須同步補齊 quality eval、成本監控與失敗補救策略。
+              </p>
+</article>
+</div>
+</section>
+<section class="section" id="scale">
+<div class="section-header">
+<div class="kicker">Scaling</div>
+<h2>如果要擴充，下一步怎麼走</h2>
+<p>
+              擴充不是一次大重寫，而是看哪一層先成為瓶頸，再有順序地替換。下面用階段方式說明比較實際。
+            </p>
+</div>
+<div class="scale-grid">
+<article class="scale-card">
+<header>
+<div>
+<h3>Stage 0：現在這個形態</h3>
+<p>單工作台、模組化單體、SQLite + file-based runtime。</p>
+</div>
+<div class="icon">S0</div>
+</header>
+<p>適合快速迭代、內部使用、產品需求仍在探索階段。重點是把工作流打通與結構整理好。</p>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Stage 1：使用者數量開始提升</h3>
+<p>先升級產品主 DB，不要一開始就全面微服務。</p>
+</div>
+<div class="icon">S1</div>
+</header>
+<p>
+                第一優先通常是把 `product_state.sqlite3` 搬到 Postgres。這能先處理多使用者寫入、migration、索引治理等問題。
+                這一步完成前，不建議急著拆太多服務。
+              </p>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Stage 2：排程與抓取量上升</h3>
+<p>把 runtime queue 從 SQLite 升級成正式 broker。</p>
+</div>
+<div class="icon">S2</div>
+</header>
+<p>
+                如果 scheduler / worker 開始常態運行，而且 crawl_jobs 壓力增加，就該把 `query_runtime` 的 queue 能力換到 Redis 或 Postgres queue。
+                snapshot registry 可先留，等穩定後再進一步重構。
+              </p>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Stage 3：AI 與分析需求成長</h3>
+<p>把 embeddings、快照與長期歷史資料轉成更正式的索引與分析層。</p>
+</div>
+<div class="icon">S3</div>
+</header>
+<p>
+                這時要做的是把快照與 embeddings 搬去更適合 retrieval 的儲存層，把歷史資料移到 DuckDB/Parquet/warehouse，
+                並補齊 quality eval、prompt version 與 response cache。
+              </p>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Stage 4：正式前後端分離</h3>
+<p>當要支援多客戶端或多人協作時，UI 與 domain service 再拆開。</p>
+</div>
+<div class="icon">S4</div>
+</header>
+<p>
+                這時最合理的做法不是重寫整個系統，而是把現有的 crawl / assistant / resume / notification use case 抽成 API server，
+                再逐步把 Streamlit 前端替換成正式 Web 前端。你前面做的多輪拆檔，就是在為這一步鋪路。
+              </p>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Stage 5：企業化與治理</h3>
+<p>補合規、權限、審計、觀察性與資料生命週期治理。</p>
+</div>
+<div class="icon">S5</div>
+</header>
+<p>
+                若要企業版，最先要收的是 PII 治理、權限模型、稽核紀錄、刪除流程、通知可靠性與 AI 品質控制。這已不是單純技術擴充，而是產品治理升級。
+              </p>
+</article>
+</div>
+</section>
+<section class="section" id="extensions">
+<div class="section-header">
+<div class="kicker">Extension Guide</div>
+<h2>如果未來要擴新功能，應該怎麼接</h2>
+<p>
+              擴充最怕的是每來一個新需求就把既有層次打穿。下面是幾種常見擴充方式與建議切入點。
+            </p>
+</div>
+<div class="extension-grid">
+<article class="extension-card">
+<header>
+<div>
+<h3>新增一個求職來源站</h3>
+<p>例如再加一個本地求職平台或國際來源。</p>
+</div>
+<div class="icon">EX1</div>
+</header>
+<p>
+                正確做法是新增 connector adapter，讓它輸出標準化 `JobListing`，而不是從 UI 或市場頁直接去抓新來源。
+                若來源穩定性差，應該在 connector 裡做 rate limit、parser fallback 與錯誤分類。
+              </p>
+</article>
+<article class="extension-card">
+<header>
+<div>
+<h3>新增新的 AI 功能</h3>
+<p>例如職涯路徑建議、履歷重寫、面試模擬。</p>
+</div>
+<div class="icon">EX2</div>
+</header>
+<p>
+                先決定它是屬於 ResumeAnalysis、RAG Assistant，還是新的 AI capability。不要直接在 UI 按鈕裡塞 prompt。
+                新能力最好也要接 monitoring、fallback、版本化 schema。
+              </p>
+</article>
+<article class="extension-card">
+<header>
+<div>
+<h3>新增一個產品頁面</h3>
+<p>例如公司研究頁、面試追蹤頁。</p>
+</div>
+<div class="icon">EX3</div>
+</header>
+<p>
+                建議延續目前做法：page 入口保持薄，sections 與 actions 拆開；若有共用狀態，走 PageContext 或 session helper，不要直接跨頁互相取內部變數。
+              </p>
+</article>
+<article class="extension-card">
+<header>
+<div>
+<h3>要拆前後端</h3>
+<p>不是推倒重練，而是抽 use case 與 DTO。</p>
+</div>
+<div class="icon">EX4</div>
+</header>
+<p>
+                最好的切法是先把 crawl、resume、assistant、notification 的 application service 對外化成 API，
+                再讓新前端接入。不要先從 CSS 或頁面切，而要從 use case 與資料契約切。
+              </p>
+</article>
+</div>
+</section>
+<section class="section" id="module-map">
+<div class="section-header">
+<div class="kicker">Module Map</div>
+<h2>你現在應該把哪些檔案當成核心入口</h2>
+<p>
+              這一區不是完整檔案清單，而是「如果你要快速掌握整套系統，先看哪些地方」。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>核心檔案導覽</caption>
+<thead>
+<tr>
+<th>層級</th>
+<th>先看哪些檔</th>
+<th>為什麼先看這些</th>
+<th>常見修改情境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App / UI Shell</td>
+<td>app.py, ui/bootstrap.py, ui/session.py, ui/router.py, ui/navigation.py</td>
+<td>掌握啟動、頁籤、session、整體工作台如何組起來。</td>
+<td>入口調整、切頁、全域狀態、頁面導向。</td>
+</tr>
+<tr>
+<td>搜尋工作流</td>
+<td>ui/search_setup.py, ui/crawl_runtime.py, crawl_application_service.py</td>
+<td>這是整個產品最重要的主流程。</td>
+<td>查詢條件、saved search、刷新流程、進度回饋。</td>
+</tr>
+<tr>
+<td>抓取與標準化</td>
+<td>pipeline.py, connectors/*, market_analysis/analyzer.py</td>
+<td>外部資料如何被抓回、正規化、分析。</td>
+<td>修 parser、新增來源、改善欄位萃取。</td>
+</tr>
+<tr>
+<td>AI</td>
+<td>resume/service.py, assistant/service.py, assistant/retrieval.py</td>
+<td>履歷分析與市場問答的核心能力都在這裡。</td>
+<td>提升履歷品質、改 prompt、加新 AI 功能。</td>
+</tr>
+<tr>
+<td>Runtime / Ops</td>
+<td>query_runtime.py, crawl_scheduler.py, crawl_worker.py, runtime_maintenance_service.py</td>
+<td>背景刷新、queue、lease、heartbeat 的核心。</td>
+<td>排程調整、worker debug、runtime cleanup。</td>
+</tr>
+<tr>
+<td>資料層</td>
+<td>product_store.py, storage.py, market_history_store.py</td>
+<td>產品狀態、快照與歷史資料落地。</td>
+<td>新增表、持久化策略、報表與歷史追蹤。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="glossary">
+<div class="section-header">
+<div class="kicker">Glossary</div>
+<h2>關鍵名詞對照</h2>
+<p>
+              下面這份對照可以幫你快速理解文件裡重複出現的關鍵詞到底指什麼。
+            </p>
+</div>
+<div class="glossary-grid">
+<article class="glossary-item">
+<h3>Snapshot</h3>
+<p>某一次查詢條件下整理出的市場結果集合，包含 jobs、skills、tasks、errors 等分析後內容。</p>
+</article>
+<article class="glossary-item">
+<h3>Query Signature</h3>
+<p>一組查詢條件的穩定簽名，用來命中 cache、snapshot registry 與 queue job。</p>
+</article>
+<article class="glossary-item">
+<h3>Partial Snapshot</h3>
+<p>首波結果已可顯示，但 detail enrich 或額外頁次還沒全部完成的快照狀態。</p>
+</article>
+<article class="glossary-item">
+<h3>Ready Snapshot</h3>
+<p>完整抓取與分析已完成，可被視為當前查詢條件的正式結果。</p>
+</article>
+<article class="glossary-item">
+<h3>Saved Search</h3>
+<p>使用者保存的搜尋條件，會被 scheduler 用來判斷是否需要自動刷新。</p>
+</article>
+<article class="glossary-item">
+<h3>Runtime Signal</h3>
+<p>scheduler / worker / cleanup 等背景組件留下的心跳或執行期訊號。</p>
+</article>
+<article class="glossary-item">
+<h3>Resume Profile</h3>
+<p>從履歷文本抽出的結構化個人輪廓，用來做匹配與 AI personalization。</p>
+</article>
+<article class="glossary-item">
+<h3>Grounded Answer</h3>
+<p>答案不是只靠模型記憶，而是基於目前市場快照與檢索結果生成的回答。</p>
+</article>
+</div>
+</section>
+<section class="section" id="deployment">
+<div class="section-header">
+<div class="kicker">Deployment</div>
+<h2>部署拓樸與進程分工</h2>
+<p>
+              前面講的是邏輯架構，這裡講的是系統實際跑起來時，哪些東西應該是同一個進程，哪些最好拆開。
+              目前這套系統最務實的部署方式不是微服務叢集，而是「單應用 + 背景 worker + 排程 + webhook」的多進程拓樸。
+            </p>
+</div>
+<div class="scale-grid">
+<article class="scale-card">
+<header>
+<div>
+<h3>Process A：Streamlit App</h3>
+<p>提供使用者工作台、查詢、履歷分析頁、AI 問答頁、追蹤中心與後端控制台。</p>
+</div>
+<div class="icon">APP</div>
+</header>
+<p>
+                這個進程最適合承載互動式 UI 與少量同步工作。它不應成為所有背景任務的長期執行者，
+                否則使用者操作與背景處理會互相干擾。現在保留 inline mode 是為了開發效率，但正式常態運行時，最好讓它逐步退回 UI orchestrator。
+              </p>
+<div class="meta">
+<span>職責：UI / session / page orchestration</span>
+<span>不要做：高頻背景批次 / 長時間 queue worker</span>
+</div>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Process B：Scheduler</h3>
+<p>週期性掃描 saved search，決定哪些查詢已到刷新時間，並把工作 enqueue。</p>
+</div>
+<div class="icon">SCH</div>
+</header>
+<p>
+                scheduler 的工作應該很窄，只做「判斷該不該做」，不要自己做抓取。這樣它可以維持穩定、簡單且低負載。
+                若它同時又負責抓資料，就會很難推斷問題到底出在排程還是執行。
+              </p>
+<div class="meta">
+<span>職責：collect due searches / enqueue jobs</span>
+<span>優點：可觀察、可預測、容易維運</span>
+</div>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Process C：Worker</h3>
+<p>真正執行抓取、pipeline、同步快照、觸發通知與寫 runtime signal。</p>
+</div>
+<div class="icon">WRK</div>
+</header>
+<p>
+                這個進程是最容易成為資源瓶頸的地方。因為抓取會碰外部來源、detail enrich、快照落地與通知觸發，
+                所以它應該與 UI 進程分開。未來如果要 scale out，最先增加實例數的也會是 worker，而不是 app 本體。
+              </p>
+<div class="meta">
+<span>職責：lease job / pipeline / finalize / sync / notify</span>
+<span>擴充：最先被水平擴充的進程</span>
+</div>
+</article>
+<article class="scale-card">
+<header>
+<div>
+<h3>Process D：LINE Webhook</h3>
+<p>專門接收外部回呼，處理 LINE 綁定或回傳事件。</p>
+</div>
+<div class="icon">WEB</div>
+</header>
+<p>
+                webhook 入口和使用者工作台不是同一種型態的流量。前者需要被外部系統穩定呼叫，後者是人操作的互動式 UI。
+                因此 webhook 進程應維持獨立，避免因 UI 進程重載或 rerun 模型影響外部回呼可靠性。
+              </p>
+<div class="meta">
+<span>職責：接 webhook / 驗證簽章 / 完成綁定</span>
+<span>好處：網路入口更穩定、責任更單純</span>
+</div>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:18px;">
+<table>
+<caption>建議部署型態對照</caption>
+<thead>
+<tr>
+<th>階段</th>
+<th>推薦部署</th>
+<th>適合情境</th>
+<th>風險</th>
+<th>何時應升級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本機開發</td>
+<td>App 單獨啟動，必要時手動跑 scheduler / worker</td>
+<td>功能迭代、UI 調整、parser 修正</td>
+<td>無法模擬真正的背景壓力</td>
+<td>開始做自動刷新與多使用者測試時</td>
+</tr>
+<tr>
+<td>單機常態運行</td>
+<td>App + Scheduler + Worker + Webhook 四進程</td>
+<td>小型正式環境、內部平台、低到中量流量</td>
+<td>仍受限於單機資源與本機磁碟 DB</td>
+<td>worker 壓力、queue 長度或多機需求出現時</td>
+</tr>
+<tr>
+<td>中量規模</td>
+<td>App 與 Worker 分主機 / 容器，DB 與 queue 升級</td>
+<td>背景抓取開始與 UI 競爭資源</td>
+<td>部署複雜度上升</td>
+<td>要多實例與高可用時</td>
+</tr>
+<tr>
+<td>正式服務化</td>
+<td>前端、API、worker、webhook、queue、DB 各自獨立</td>
+<td>多人協作、多客戶端、高併發</td>
+<td>維運成本顯著上升</td>
+<td>產品真的進入平台化階段</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="failure-modes">
+<div class="section-header">
+<div class="kicker">Failure Modes</div>
+<h2>故障模式與目前的應對方式</h2>
+<p>
+              了解系統不只要知道「成功時怎麼跑」，還要知道「失敗時怎麼壞」。真正有價值的架構文件，會說清楚失敗會落在哪一層、目前是如何退化、未來還缺哪些保護。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>常見故障模式</caption>
+<thead>
+<tr>
+<th>故障類型</th>
+<th>會發生在哪</th>
+<th>目前系統如何表現</th>
+<th>目前已有保護</th>
+<th>未來建議</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>來源站變版</td>
+<td>connectors / parsers</td>
+<td>某來源欄位變空、detail enrich 失敗、甚至整批抓不到</td>
+<td>來源 adapter 隔離，至少不會直接污染其他來源</td>
+<td>做 parser 健康檢查、錯誤分類、raw response archive</td>
+</tr>
+<tr>
+<td>Queue 卡住</td>
+<td>query runtime / worker</td>
+<td>crawl_jobs 累積、saved search 不刷新、通知延遲</td>
+<td>runtime_signals 可看到心跳，後端控制台可觀察</td>
+<td>補 dead-letter queue、lease timeout 可視化、重試策略</td>
+</tr>
+<tr>
+<td>OpenAI 失敗或額度問題</td>
+<td>resume / assistant</td>
+<td>AI 能力退化，回到 rule-based 或 disabled flow</td>
+<td>fallback-first 設計，部分功能仍可用</td>
+<td>加 usage budget 告警、模型切換策略、品質回歸測試</td>
+</tr>
+<tr>
+<td>SQLite 鎖競爭</td>
+<td>product DB / query runtime</td>
+<td>延遲上升、部分寫入失敗、worker 競爭變差</td>
+<td>目前主要靠單機低量與分檔策略降低衝突</td>
+<td>把 product DB / queue 分別升級到更合適的儲存層</td>
+</tr>
+<tr>
+<td>Snapshot 舊資料</td>
+<td>JSON / query registry</td>
+<td>AI 與市場頁回答的是舊市場狀態</td>
+<td>saved search 刷新與 snapshot freshness 檢查</td>
+<td>更明確的 freshness policy、UI 顯示 stale 狀態</td>
+</tr>
+<tr>
+<td>通知通道故障</td>
+<td>Email / LINE</td>
+<td>站外通知送不出去，但站內資料仍更新</td>
+<td>通知與主流程分邊界，不至於整條抓取失敗</td>
+<td>通知改 async worker、provider retry、發送告警</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="footnote">
+<strong>一個重要觀念：</strong>
+            目前這套系統真正好的地方不是「永遠不會壞」，而是已經有初步的分層，讓你知道壞在哪裡、哪些功能能退化、哪些資料還可用。下一步需要補的是更正式的故障處理策略，而不是盲目再加功能。
+          </div>
+</section>
+<section class="section" id="observability">
+<div class="section-header">
+<div class="kicker">Observability</div>
+<h2>觀察性、監控與營運視角</h2>
+<p>
+              當系統開始有背景刷新、AI 成本與多份 DB 時，單靠「有沒有報錯」已經不夠。你需要知道現在系統是不是健康、哪一層最慢、哪些資料已經陳舊、哪一條能力正在偷吃成本。
+            </p>
+</div>
+<div class="decision-grid">
+<article class="decision-card">
+<header>
+<div>
+<h3>目前已經有的觀察性資產</h3>
+<p>不是完整 observability stack，但已經有一些很關鍵的訊號。</p>
+</div>
+<div class="icon">OBS1</div>
+</header>
+<p>
+                目前可用的觀察性包括：runtime_signals 的心跳、query_snapshots 與 crawl_jobs 的執行期狀態、ai_monitoring_events 的 AI 行為、
+                後端控制台的 live 狀態頁、SQLite 與 JSON file 的可直接檢查性。這些東西雖然原始，但對單機系統其實很有價值。
+              </p>
+</article>
+<article class="decision-card">
+<header>
+<div>
+<h3>目前缺的東西</h3>
+<p>大多數是「知道有沒有發生」，但還沒有「為什麼發生」與「趨勢怎麼變」。</p>
+</div>
+<div class="icon">OBS2</div>
+</header>
+<p>
+                目前較缺：跨流程 tracing、正式 metrics dashboard、告警門檻、dead-letter job 報表、per-source 失敗趨勢、AI 品質評估面板、資料新鮮度儀表板。
+                換句話說，現在是可 debug，但還不是可治理。
+              </p>
+</article>
+<article class="decision-card">
+<header>
+<div>
+<h3>若要做營運級監控，先補什麼</h3>
+<p>優先補最會影響產品體感與成本的指標。</p>
+</div>
+<div class="icon">OBS3</div>
+</header>
+<p>
+                第一批建議指標：scheduler / worker heartbeat、queue backlog、crawl success rate、per-source parser failure rate、snapshot freshness、
+                AI latency、AI token cost、notification send success rate。這些指標一旦可見，很多問題不必等使用者反映才知道。
+              </p>
+</article>
+<article class="decision-card">
+<header>
+<div>
+<h3>替代方案與演進方向</h3>
+<p>從 SQLite 報表一路走到正式 observability 平台。</p>
+</div>
+<div class="icon">OBS4</div>
+</header>
+<p>
+                早期可以先用後端控制台 + SQLite 報表；中期可導入 Prometheus/Grafana 或雲端監控；
+                長期若 AI 與背景任務變重，則應加 tracing、structured logs、job event stream 與品質評估儀表板。
+              </p>
+</article>
+</div>
+</section>
+<section class="section" id="governance">
+<div class="section-header">
+<div class="kicker">Governance</div>
+<h2>安全、資料治理與權限邊界</h2>
+<p>
+              這套系統雖然目前是產品型工作台，但它已經碰到帳號資料、履歷內容、通知綁定、AI 輸入輸出與市場歷史。這些都不是純展示資料，因此治理與邊界設計很重要。
+            </p>
+</div>
+<div class="extension-grid">
+<article class="extension-card">
+<header>
+<div>
+<h3>敏感資料分流</h3>
+<p>把履歷與使用者提交內容分到 user_submissions，是正確方向。</p>
+</div>
+<div class="icon">G1</div>
+</header>
+<p>
+                這個決策的核心價值是讓 PII 與一般產品狀態分層。未來若要做 retention、刪除、加密、權限隔離，
+                你不需要先從一個混雜的 product DB 裡慢慢拆資料。
+              </p>
+</article>
+<article class="extension-card">
+<header>
+<div>
+<h3>AI 輸入與輸出治理</h3>
+<p>AI 不是只有 prompt，要考慮哪些資料被送出去、送出去多久、留下哪些紀錄。</p>
+</div>
+<div class="icon">G2</div>
+</header>
+<p>
+                對履歷與市場資料做最小必要送出、保留監控但避免保存過多原文，是比較穩健的方向。若未來要企業化，AI 使用政策與資料遮罩流程會是必要項。
+              </p>
+</article>
+<article class="extension-card">
+<header>
+<div>
+<h3>通知通道與帳號綁定</h3>
+<p>LINE / Email 不只是發通知，還涉及身份與偏好管理。</p>
+</div>
+<div class="icon">G3</div>
+</header>
+<p>
+                通知綁定資料要被當成帳號相關資料來看待，而不是單純 UI 設定。未來若有多身份 provider 或更多通道，
+                權限與綁定資料模型需要再明確化。
+              </p>
+</article>
+<article class="extension-card">
+<header>
+<div>
+<h3>未來應補的治理能力</h3>
+<p>真正企業化前應先把刪除、稽核與權限邊界補上。</p>
+</div>
+<div class="icon">G4</div>
+</header>
+<p>
+                優先順序通常是：資料 retention policy、刪除與匯出流程、權限模型、操作稽核、秘密管理、AI prompt/version 審計。這些事情現在不急著全上，但要先留設計空間。
+              </p>
+</article>
+</div>
+</section>
+<section class="section" id="db-lifecycle">
+<div class="section-header">
+<div class="kicker">DB Lifecycle</div>
+<h2>資料生命週期與 Schema 演進建議</h2>
+<p>
+              很多系統不是壞在功能，而是壞在資料沒有生命週期。下面這張表不是實際 schema dump，而是告訴你不同資料該活多久、該怎麼演進、什麼時候該搬家。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>資料生命週期建議</caption>
+<thead>
+<tr>
+<th>資料類型</th>
+<th>目前落點</th>
+<th>建議保存策略</th>
+<th>何時該 prune / 搬移</th>
+<th>Schema 演進建議</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>帳號 / saved search / favorites</td>
+<td>product_state.sqlite3</td>
+<td>長期保存，屬產品主資料</td>
+<td>通常不 prune，只做 migration 與索引治理</td>
+<td>補 migration 機制、明確 unique/index 策略</td>
+</tr>
+<tr>
+<td>AI monitoring events</td>
+<td>product_state.sqlite3</td>
+<td>中期保存，視報表需求保留 30~180 天</td>
+<td>體積開始變大或要做獨立分析時</td>
+<td>考慮拆到 analytics 表或獨立 store</td>
+</tr>
+<tr>
+<td>crawl jobs / runtime signals</td>
+<td>query_runtime.sqlite3</td>
+<td>短到中期保存，以執行期維運為主</td>
+<td>job 完成且超過 retention window 後</td>
+<td>加 job status enum 與 signal TTL policy</td>
+</tr>
+<tr>
+<td>latest / partial snapshots</td>
+<td>JSON files + query registry</td>
+<td>保留當前可用版本與必要歷史版本</td>
+<td>snapshot store 開始堆太多檔案時</td>
+<td>加 manifest、version、checksum</td>
+</tr>
+<tr>
+<td>履歷遮罩內容</td>
+<td>user_submissions.sqlite3</td>
+<td>盡量短到中期保存，避免不必要長留</td>
+<td>使用者刪除、TTL 到期、合規要求變動時</td>
+<td>原文與衍生 profile 分層；必要時加密</td>
+</tr>
+<tr>
+<td>歷史市場職缺</td>
+<td>market_history.sqlite3</td>
+<td>長期保存，但應逐步轉往分析型儲存</td>
+<td>歷史量級變大、查詢分析需求增加時</td>
+<td>建立維度表、預先彙總、轉倉儲格式</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="footnote">
+<strong>最實際的建議：</strong>
+            不要等資料已經膨脹到難以搬移才開始談生命週期。只要你現在就先定義「哪些資料是產品主資料、哪些是執行期資料、哪些是歷史 archive、哪些帶 PII」，之後每一層搬家都會輕鬆很多。
+          </div>
+</section>
+</main>
+<aside class="toc">
+<h2>章節索引</h2>
+<ol>
+<li><a href="#overview">系統定位與目前邊界</a></li>
+<li><a href="#topology">整體拓樸圖</a></li>
+<li><a href="#frontend">前端架構</a></li>
+<li><a href="#backend">後端架構</a></li>
+<li><a href="#ai">AI 架構</a></li>
+<li><a href="#db">DB 與持久化架構</a></li>
+<li><a href="#flow">主要資料流圖</a></li>
+<li><a href="#decisions">關鍵設計取捨</a></li>
+<li><a href="#scale">擴充路線圖</a></li>
+<li><a href="#extensions">擴充接法</a></li>
+<li><a href="#module-map">核心模組導覽</a></li>
+<li><a href="#glossary">名詞對照</a></li>
+<li><a href="#deployment">部署拓樸與進程分工</a></li>
+<li><a href="#failure-modes">故障模式與應對</a></li>
+<li><a href="#observability">觀察性與監控</a></li>
+<li><a href="#governance">安全與治理</a></li>
+<li><a href="#db-lifecycle">資料生命週期</a></li>
+<li><a href="#top">回到頂部</a></li>
+</ol>
+</aside>
+</div>
+<footer class="footer">
+<p>這份頁面是 Job Radar 的主架構手冊，負責把產品邊界、模組分工、資料流、故障模式與演進路線串成主線故事。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</div>
+</body>
+</html>

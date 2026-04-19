@@ -10,7 +10,15 @@ from typing import Any
 from ..models import MarketSnapshot, SavedSearch
 from ..sqlite_utils import connect_sqlite
 from .auth import GUEST_USER_ID
-from .common import build_signature, canonical_rows, job_summary, now_iso, row_to_saved_search
+from .common import (
+    build_signature,
+    canonical_rows,
+    job_summary,
+    normalize_crawl_preset_label,
+    normalize_text,
+    now_iso,
+    row_to_saved_search,
+)
 
 
 class SavedSearchRepository:
@@ -41,8 +49,14 @@ class SavedSearchRepository:
         cleaned_name = name.strip()
         if not cleaned_name:
             raise ValueError("搜尋名稱不可為空。")
+        cleaned_custom_queries_text = normalize_text(custom_queries_text)
+        cleaned_crawl_preset_label = normalize_crawl_preset_label(crawl_preset_label)
         created_at = now_iso()
-        signature = self.build_signature(rows, custom_queries_text, crawl_preset_label)
+        signature = self.build_signature(
+            rows,
+            cleaned_custom_queries_text,
+            cleaned_crawl_preset_label,
+        )
         known_job_urls = self._normalize_job_urls(
             job.url for job in snapshot.jobs
         ) if snapshot is not None else []
@@ -60,8 +74,8 @@ class SavedSearchRepository:
                     (
                         cleaned_name,
                         json.dumps(canonical_rows(rows), ensure_ascii=False),
-                        custom_queries_text.strip(),
-                        crawl_preset_label.strip() or "快速",
+                        cleaned_custom_queries_text,
+                        cleaned_crawl_preset_label,
                         signature,
                         "[]",
                         snapshot.generated_at if snapshot is not None else "",
@@ -97,8 +111,8 @@ class SavedSearchRepository:
                     """,
                     (
                         json.dumps(canonical_rows(rows), ensure_ascii=False),
-                        custom_queries_text.strip(),
-                        crawl_preset_label.strip() or "快速",
+                        cleaned_custom_queries_text,
+                        cleaned_crawl_preset_label,
                         signature,
                         "[]",
                         snapshot.generated_at if snapshot is not None else "",
@@ -138,8 +152,8 @@ class SavedSearchRepository:
                     int(user_id),
                     cleaned_name,
                     json.dumps(canonical_rows(rows), ensure_ascii=False),
-                    custom_queries_text.strip(),
-                    crawl_preset_label.strip() or "快速",
+                    cleaned_custom_queries_text,
+                    cleaned_crawl_preset_label,
                     signature,
                     "[]",
                     snapshot.generated_at if snapshot is not None else "",
@@ -278,7 +292,11 @@ class SavedSearchRepository:
         *,
         user_id: int = GUEST_USER_ID,
     ) -> SavedSearch | None:
-        signature = self.build_signature(rows, custom_queries_text, crawl_preset_label)
+        signature = self.build_signature(
+            rows,
+            normalize_text(custom_queries_text),
+            normalize_crawl_preset_label(crawl_preset_label),
+        )
         with connect_sqlite(self.db_path) as connection:
             row = connection.execute(
                 """
@@ -366,7 +384,13 @@ class SavedSearchRepository:
                 current_urls,
             )
             updated_at = now_iso()
-            signature = self.build_signature(rows, custom_queries_text, crawl_preset_label)
+            cleaned_custom_queries_text = normalize_text(custom_queries_text)
+            cleaned_crawl_preset_label = normalize_crawl_preset_label(crawl_preset_label)
+            signature = self.build_signature(
+                rows,
+                cleaned_custom_queries_text,
+                cleaned_crawl_preset_label,
+            )
             connection.execute(
                 """
                 UPDATE saved_searches
@@ -377,8 +401,8 @@ class SavedSearchRepository:
                 """,
                 (
                     json.dumps(canonical_rows(rows), ensure_ascii=False),
-                    custom_queries_text.strip(),
-                    crawl_preset_label.strip() or "快速",
+                    cleaned_custom_queries_text,
+                    cleaned_crawl_preset_label,
                     signature,
                     "[]",
                     snapshot.generated_at,

@@ -14,6 +14,16 @@ def now_iso() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 
+def normalize_text(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def normalize_crawl_preset_label(value: Any) -> str:
+    return normalize_text(value) or "快速"
+
+
 def generate_line_bind_code(length: int = 6) -> str:
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     return "LINE-" + "".join(secrets.choice(alphabet) for _ in range(length))
@@ -31,8 +41,8 @@ def canonical_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             {
                 "enabled": bool(row.get("enabled", True)),
                 "priority": int(row.get("priority", 1) or 1),
-                "role": str(row.get("role", "")).strip(),
-                "keywords": str(row.get("keywords", "")).strip(),
+                "role": normalize_text(row.get("role", "")),
+                "keywords": normalize_text(row.get("keywords", "")),
             }
         )
     return normalized
@@ -45,13 +55,13 @@ def signature_payload(
 ) -> dict[str, Any]:
     custom_queries = [
         line.strip()
-        for line in str(custom_queries_text).splitlines()
+        for line in normalize_text(custom_queries_text).splitlines()
         if line.strip()
     ]
     return {
         "rows": canonical_rows(rows),
         "custom_queries": custom_queries,
-        "crawl_preset_label": crawl_preset_label.strip() or "快速",
+        "crawl_preset_label": normalize_crawl_preset_label(crawl_preset_label),
     }
 
 
@@ -71,21 +81,21 @@ def row_to_saved_search(
 ) -> SavedSearch:
     return SavedSearch(
         id=int(row[0]),
-        name=str(row[1]),
+        name=normalize_text(row[1]),
         rows=json.loads(row[2] or "[]"),
-        custom_queries_text=str(row[3]),
-        crawl_preset_label=str(row[4]),
-        signature=str(row[5]),
+        custom_queries_text=normalize_text(row[3]),
+        crawl_preset_label=normalize_crawl_preset_label(row[4]),
+        signature=normalize_text(row[5]),
         known_job_urls=(
             list(known_job_urls)
             if known_job_urls is not None
             else json.loads(row[6] or "[]")
         ),
-        last_run_at=str(row[7]),
+        last_run_at=normalize_text(row[7]),
         last_job_count=int(row[8]),
         last_new_job_count=int(row[9]),
-        created_at=str(row[10]),
-        updated_at=str(row[11]),
+        created_at=normalize_text(row[10]),
+        updated_at=normalize_text(row[11]),
     )
 
 

@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Job Radar UI Catalog</title>
+<style>
+      :root {
+        --bg: #f6f1e8;
+        --paper: rgba(255, 250, 242, 0.86);
+        --panel: rgba(255, 255, 255, 0.66);
+        --ink: #1f1c17;
+        --muted: #6c6357;
+        --line: rgba(31, 28, 23, 0.12);
+        --line-strong: rgba(31, 28, 23, 0.2);
+        --brand: #d75f2f;
+        --brand-soft: rgba(215, 95, 47, 0.12);
+        --green: #2c7a51;
+        --gold: #c88a21;
+        --shadow: 0 24px 48px rgba(63, 45, 21, 0.12);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 18px;
+        --radius-sm: 14px;
+        --font-display: "Iowan Old Style", "Palatino Linotype", "Noto Serif TC", serif;
+        --font-ui: "Avenir Next", "PingFang TC", "Noto Sans TC", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-ui);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 30%),
+          radial-gradient(circle at 82% 10%, rgba(215, 95, 47, 0.14), transparent 24%),
+          linear-gradient(145deg, #f5efe5 0%, #efe6d6 52%, #f9f4eb 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(31, 28, 23, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(31, 28, 23, 0.03) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: radial-gradient(circle at center, black 44%, transparent 85%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 290px minmax(0, 1fr);
+        gap: 24px;
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 18px;
+        align-self: start;
+        display: grid;
+        gap: 16px;
+      }
+
+      .panel {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--paper);
+        backdrop-filter: blur(16px);
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .brand-mark {
+        width: 50px;
+        height: 50px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        background: linear-gradient(145deg, #1f1b17, #6d6256);
+        color: #fff8ed;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .brand-copy h1 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        line-height: 1;
+      }
+
+      .brand-copy p,
+      .side-note p,
+      .mini-card p,
+      .mini-card li {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .brand-copy p {
+        margin-top: 6px;
+        font-size: 0.92rem;
+      }
+
+      .nav-list,
+      .tiny-list,
+      .list-group,
+      .tool-grid,
+      .stack,
+      .mini-grid,
+      .anatomy,
+      .ux-stack,
+      .prompt-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .nav-link {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.38);
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      .nav-link:hover,
+      .nav-link:focus-visible {
+        transform: translateX(4px);
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.75);
+      }
+
+      .nav-link strong {
+        font-size: 0.94rem;
+      }
+
+      .nav-link span {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .mini-card {
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.58);
+      }
+
+      .mini-card h2,
+      .mini-card h3 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+      }
+
+      .tiny-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .content {
+        display: grid;
+        gap: 20px;
+      }
+
+      .hero {
+        padding: clamp(28px, 5vw, 48px);
+        border: 1px solid var(--line);
+        border-radius: 34px;
+        background:
+          linear-gradient(135deg, rgba(255, 250, 240, 0.92), rgba(246, 236, 222, 0.82)),
+          radial-gradient(circle at top right, rgba(215, 95, 47, 0.12), transparent 36%);
+        box-shadow: var(--shadow);
+      }
+
+      .hero-top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow,
+      .meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.68);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .hero h2 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(2.4rem, 4vw, 4.2rem);
+        line-height: 1.04;
+      }
+
+      .hero p {
+        max-width: 780px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        line-height: 1.72;
+        font-size: 1rem;
+      }
+
+      .hero-controls {
+        display: grid;
+        gap: 16px;
+        margin-top: 28px;
+      }
+
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--line-strong);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.84);
+        color: var(--muted);
+      }
+
+      .search input {
+        width: 100%;
+        border: none;
+        background: transparent;
+        outline: none;
+        color: var(--ink);
+        font-size: 0.98rem;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.68);
+        border-radius: 999px;
+        padding: 10px 14px;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .chip.active {
+        border-color: rgba(215, 95, 47, 0.28);
+        background: var(--brand-soft);
+        color: var(--brand);
+      }
+
+      .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .summary-card {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.58);
+        box-shadow: var(--shadow);
+      }
+
+      .summary-card .kpi {
+        font-size: 1.8rem;
+        font-weight: 800;
+      }
+
+      .summary-card p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .no-results {
+        display: none;
+        padding: 18px 20px;
+        border: 1px dashed var(--line-strong);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.54);
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .section {
+        display: grid;
+        gap: 16px;
+      }
+
+      .section.section-hidden {
+        display: none;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px;
+      }
+
+      .section-head h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(1.7rem, 2vw, 2.3rem);
+      }
+
+      .section-head p {
+        margin: 0;
+        max-width: 760px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        display: grid;
+        gap: 14px;
+        min-height: 220px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        transition: transform 180ms ease, border-color 180ms ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(31, 28, 23, 0.18);
+      }
+
+      .card.hidden {
+        display: none;
+      }
+
+      .card.span-2 {
+        grid-column: span 2;
+      }
+
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .title-wrap {
+        display: grid;
+        gap: 6px;
+      }
+
+      .title-wrap h4 {
+        margin: 0;
+        font-size: 1.04rem;
+      }
+
+      .title-wrap p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+
+      .preview {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        min-height: 120px;
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(31, 28, 23, 0.08);
+        background: rgba(255, 255, 255, 0.62);
+      }
+
+      .label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .field-group {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field-group label {
+        font-weight: 700;
+        font-size: 0.88rem;
+      }
+
+      .ui-input,
+      .ui-textarea,
+      .ui-select,
+      .ui-date {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        background: #fffdf8;
+        color: var(--ink);
+        outline: none;
+      }
+
+      .ui-textarea {
+        min-height: 86px;
+        resize: vertical;
+      }
+
+      .helper,
+      .ux-helper,
+      .mini-note {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(31, 28, 23, 0.05);
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.88rem;
+      }
+
+      .check-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .check-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .box,
+      .radio {
+        width: 18px;
+        height: 18px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--line-strong);
+        background: #fffdf8;
+      }
+
+      .box {
+        border-radius: 6px;
+      }
+
+      .box.checked::after {
+        content: "✓";
+        font-size: 0.72rem;
+        color: var(--brand);
+        font-weight: 900;
+      }
+
+      .radio {
+        border-radius: 50%;
+      }
+
+      .radio.checked::after {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--brand);
+      }
+
+      .switch {
+        width: 46px;
+        height: 28px;
+        padding: 3px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: rgba(215, 95, 47, 0.22);
+      }
+
+      .switch span {
+        width: 22px;
+        height: 22px;
+        margin-left: auto;
+        border-radius: 50%;
+        background: #fffdf8;
+        box-shadow: 0 3px 10px rgba(31, 28, 23, 0.16);
+      }
+
+      .upload-box {
+        display: grid;
+        place-items: center;
+        min-height: 92px;
+        border: 1px dashed var(--line-strong);
+        border-radius: 16px;
+        background: #fffdf8;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .btn-row,
+      .tag-row,
+      .tabs,
+      .breadcrumb,
+      .pagination,
+      .stepper,
+      .avatar-row,
+      .ux-flow,
+      .package-compare {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .btn,
+      .icon-btn {
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+      }
+
+      .btn {
+        padding: 11px 14px;
+        font-weight: 700;
+      }
+
+      .btn-primary {
+        background: var(--brand);
+        color: #fff8ed;
+      }
+
+      .btn-secondary {
+        background: #fffdf8;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .icon-btn {
+        width: 42px;
+        height: 42px;
+        display: inline-grid;
+        place-items: center;
+        background: #fffdf8;
+        border: 1px solid var(--line);
+        font-size: 1.05rem;
+      }
+
+      .tab {
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fffdf8;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      .tab.active {
+        background: var(--brand-soft);
+        border-color: rgba(215, 95, 47, 0.22);
+        color: var(--brand);
+      }
+
+      .crumb,
+      .page-link,
+      .step {
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fffdf8;
+        font-size: 0.88rem;
+      }
+
+      .page-link.active,
+      .step.active {
+        background: var(--brand-soft);
+        color: var(--brand);
+        border-color: rgba(215, 95, 47, 0.22);
+      }
+
+      .stepper .line {
+        width: 26px;
+        height: 1px;
+        background: var(--line-strong);
+      }
+
+      .alert,
+      .toast,
+      .empty-state,
+      .tool-item,
+      .guide-box,
+      .package-box {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+      }
+
+      .alert strong,
+      .toast strong,
+      .tool-item strong,
+      .guide-box strong,
+      .package-box strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .alert p,
+      .toast p,
+      .tool-item p,
+      .guide-box p,
+      .package-box p,
+      .empty-state p,
+      .kanban-card p,
+      .popover-card p,
+      .ux-box p,
+      .ux-panel p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .alert.success {
+        border-color: rgba(44, 122, 81, 0.22);
+        background: rgba(44, 122, 81, 0.08);
+      }
+
+      .alert.warning {
+        border-color: rgba(200, 138, 33, 0.22);
+        background: rgba(200, 138, 33, 0.08);
+      }
+
+      .toast {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background: var(--ink);
+        color: #fff8ed;
+      }
+
+      .toast p,
+      .mobile-snack span {
+        color: inherit;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        border: 1px solid transparent;
+      }
+
+      .tag-brand {
+        background: var(--brand-soft);
+        color: var(--brand);
+        border-color: rgba(215, 95, 47, 0.2);
+      }
+
+      .tag-green {
+        background: rgba(44, 122, 81, 0.12);
+        color: var(--green);
+        border-color: rgba(44, 122, 81, 0.2);
+      }
+
+      .tag-neutral {
+        background: rgba(31, 28, 23, 0.06);
+        color: var(--muted);
+        border-color: rgba(31, 28, 23, 0.08);
+      }
+
+      .progress {
+        width: 100%;
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(31, 28, 23, 0.08);
+        overflow: hidden;
+      }
+
+      .progress span {
+        display: block;
+        width: 58%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--brand), #e58d4e);
+      }
+
+      .spinner {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 3px solid rgba(215, 95, 47, 0.2);
+        border-top-color: var(--brand);
+        animation: spin 1s linear infinite;
+      }
+
+      .skeleton {
+        height: 16px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(31, 28, 23, 0.08), rgba(31, 28, 23, 0.18), rgba(31, 28, 23, 0.08));
+        background-size: 200% 100%;
+        animation: shimmer 1.5s linear infinite;
+      }
+
+      .skeleton.short {
+        width: 42%;
+      }
+
+      .empty-state {
+        display: grid;
+        justify-items: start;
+        gap: 10px;
+      }
+
+      .empty-icon {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: rgba(31, 28, 23, 0.06);
+        font-size: 1.2rem;
+      }
+
+      .error-line {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(184, 61, 49, 0.2);
+        background: rgba(184, 61, 49, 0.08);
+        color: #8b3d31;
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .stat-grid,
+      .tool-grid,
+      .calendar-grid,
+      .anatomy,
+      .package-compare,
+      .mini-grid,
+      .wire-grid,
+      .package-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .stat-grid,
+      .tool-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stat-card,
+      .anatomy-part,
+      .list-item,
+      .pkg-demo {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fffdf8;
+      }
+
+      .stat-card strong {
+        display: block;
+        font-size: 1.3rem;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fffdf8;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      .table th,
+      .table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(31, 28, 23, 0.08);
+        text-align: left;
+        font-size: 0.88rem;
+      }
+
+      .table th {
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .calendar {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+      }
+
+      .calendar-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+      }
+
+      .day-header,
+      .day-cell {
+        display: grid;
+        place-items: center;
+        height: 34px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+      }
+
+      .day-header {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .day-cell {
+        border: 1px solid rgba(31, 28, 23, 0.06);
+        background: rgba(31, 28, 23, 0.03);
+      }
+
+      .day-cell.active {
+        background: var(--brand);
+        color: #fff8ed;
+        border-color: transparent;
+      }
+
+      .day-cell.muted {
+        color: rgba(108, 99, 87, 0.58);
+      }
+
+      .list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .kanban-card,
+      .popover-card,
+      .modal,
+      .drawer {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+      }
+
+      .kanban-card {
+        display: grid;
+        gap: 10px;
+      }
+
+      .modal {
+        box-shadow: 0 18px 34px rgba(31, 28, 23, 0.12);
+      }
+
+      .drawer {
+        min-height: 120px;
+        background: linear-gradient(180deg, #fffdf8, #f7efe2);
+      }
+
+      .tooltip {
+        width: fit-content;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: var(--ink);
+        color: #fff8ed;
+        font-size: 0.84rem;
+      }
+
+      .dropdown-menu {
+        display: grid;
+        gap: 8px;
+        width: min(100%, 240px);
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+        box-shadow: 0 18px 32px rgba(31, 28, 23, 0.1);
+      }
+
+      .dropdown-menu button {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(31, 28, 23, 0.03);
+      }
+
+      details.accordion {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+      }
+
+      details.accordion summary {
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      details.accordion p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .phone-shell {
+        display: grid;
+        gap: 10px;
+        max-width: 230px;
+        padding: 10px;
+        border: 1px solid rgba(31, 28, 23, 0.1);
+        border-radius: 28px;
+        background: linear-gradient(180deg, #fffaf1, #f4ecde);
+      }
+
+      .phone-notch {
+        justify-self: center;
+        width: 72px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(31, 28, 23, 0.16);
+      }
+
+      .phone-screen {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(31, 28, 23, 0.08);
+      }
+
+      .phone-bar,
+      .phone-tabbar span,
+      .wire-block.wire-bar {
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(31, 28, 23, 0.12);
+      }
+
+      .phone-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .phone-row.two,
+      .wire-row.two,
+      .ux-compare,
+      .package-compare {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .phone-block,
+      .wire-block {
+        min-height: 18px;
+        border-radius: 10px;
+        border: 1px solid rgba(31, 28, 23, 0.08);
+        background: rgba(188, 160, 99, 0.18);
+      }
+
+      .phone-block.hero,
+      .wire-block.wire-hero {
+        min-height: 54px;
+      }
+
+      .phone-block.card,
+      .wire-block.wire-panel {
+        min-height: 40px;
+      }
+
+      .phone-block.list,
+      .wire-block.wire-list {
+        min-height: 28px;
+      }
+
+      .phone-block.small {
+        min-height: 14px;
+      }
+
+      .phone-block.accent,
+      .wire-block.wire-accent,
+      .phone-tabbar span.active {
+        background: rgba(215, 95, 47, 0.2);
+      }
+
+      .phone-tabbar {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid rgba(31, 28, 23, 0.08);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.84);
+      }
+
+      .fab-wrap {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .fab-btn {
+        width: 52px;
+        height: 52px;
+        border: none;
+        border-radius: 50%;
+        background: var(--brand);
+        color: #fff8ed;
+        font-size: 1.5rem;
+        box-shadow: 0 14px 22px rgba(215, 95, 47, 0.28);
+      }
+
+      .phone-sheet {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 18px 18px 12px 12px;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .phone-sheet-handle {
+        justify-self: center;
+        width: 44px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(31, 28, 23, 0.14);
+      }
+
+      .segmented-mini {
+        display: inline-grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fffdf8;
+      }
+
+      .segmented-mini span {
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 0.78rem;
+        text-align: center;
+        font-weight: 800;
+        color: var(--muted);
+      }
+
+      .segmented-mini span.active {
+        background: var(--brand-soft);
+        color: var(--brand);
+      }
+
+      .swipe-cell {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(90deg, #fffdf8 0 72%, rgba(215, 95, 47, 0.12) 72% 100%);
+      }
+
+      .mobile-snack {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--ink);
+        color: #fff8ed;
+        font-size: 0.88rem;
+      }
+
+      .mobile-snack strong {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .sticky-cta,
+      .pull-stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      .sticky-cta {
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #fffdf8;
+      }
+
+      .pull-indicator {
+        justify-self: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(215, 95, 47, 0.3);
+        border-top-color: var(--brand);
+      }
+
+      .mini-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .mini-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .mini-card-block,
+      .ux-box,
+      .ux-panel,
+      .pkg-demo {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+      }
+
+      .mini-card-block strong,
+      .ux-box strong,
+      .ux-panel strong,
+      .pkg-demo strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .mini-card-block p,
+      .pkg-demo p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.9rem;
+      }
+
+      .term-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .term-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fffdf8;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .prompt-block {
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--ink);
+        color: #fff8ed;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.82rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      .wire-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .wire-card {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fffdf8;
+      }
+
+      .wire-card strong {
+        display: block;
+      }
+
+      .wire-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.88rem;
+      }
+
+      .wire-shell {
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        border: 1px solid rgba(31, 28, 23, 0.08);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255, 251, 242, 0.96), rgba(247, 238, 223, 0.9));
+      }
+
+      .wire-row {
+        display: grid;
+        gap: 6px;
+      }
+
+      .wire-row.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .wire-row.sidebar-main {
+        grid-template-columns: 0.72fr 1.28fr;
+      }
+
+      .wire-stack {
+        display: grid;
+        gap: 6px;
+      }
+
+      .wire-block.wire-content {
+        min-height: 68px;
+      }
+
+      .wire-block.wire-sidebar {
+        min-height: 86px;
+      }
+
+      .wire-block.wire-cta {
+        min-height: 24px;
+        width: 58%;
+      }
+
+      .wire-block.wire-strong {
+        background: rgba(31, 28, 23, 0.12);
+      }
+
+      .ux-compare {
+        display: grid;
+        gap: 10px;
+      }
+
+      .ux-flow {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .ux-node {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fffdf8;
+        font-weight: 800;
+      }
+
+      .ux-arrow {
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .pkg-demo.bootstrap {
+        border-radius: 12px;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .pkg-demo.bootstrap button {
+        border-radius: 8px;
+      }
+
+      .pkg-demo.tailwind {
+        border-radius: 20px;
+        border-color: rgba(14, 116, 144, 0.16);
+      }
+
+      .pkg-demo.tailwind button {
+        border-radius: 999px;
+      }
+
+      .pkg-demo.mui {
+        border-radius: 18px;
+        border-color: rgba(25, 118, 210, 0.16);
+      }
+
+      .pkg-demo.mui button {
+        border-radius: 999px;
+      }
+
+      .kbd {
+        padding: 5px 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf8;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes shimmer {
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      @media (max-width: 1100px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+        }
+
+        .summary-strip,
+        .grid,
+        .stat-grid,
+        .tool-grid,
+        .mini-grid,
+        .mini-grid.three,
+        .wire-grid,
+        .phone-row.two,
+        .ux-compare,
+        .package-compare {
+          grid-template-columns: 1fr;
+        }
+
+        .card.span-2 {
+          grid-column: auto;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          padding: 16px;
+        }
+
+        .hero,
+        .panel,
+        .card,
+        .summary-card {
+          border-radius: 24px;
+        }
+
+        .hero {
+          padding: 24px;
+        }
+
+        .hero h2 {
+          font-size: 2.5rem;
+        }
+      }
+    </style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+<div class="panel">
+<div class="brand">
+<div class="brand-mark">UI</div>
+<div class="brand-copy">
+<h1>UI Catalog</h1>
+<p>整理過順序的 UI 學習與溝通字典</p>
+</div>
+</div>
+<div class="side-note" style="margin-top: 18px;">
+<strong>這份檔案怎麼排</strong>
+<p>先看基礎元件，再看手機 UI、頁面骨架、溝通詞彙，最後才是 UI 注意事項、UX、套件與下一步學習。</p>
+</div>
+</div>
+<div class="panel">
+<nav class="nav-list">
+<a class="nav-link" href="#start"><strong>開始前先看</strong><span>Start</span></a>
+<a class="nav-link" href="#forms"><strong>表單元件</strong><span>Forms</span></a>
+<a class="nav-link" href="#actions"><strong>操作與導覽</strong><span>Action</span></a>
+<a class="nav-link" href="#feedback"><strong>提示與狀態</strong><span>Feedback</span></a>
+<a class="nav-link" href="#data"><strong>資料展示</strong><span>Data</span></a>
+<a class="nav-link" href="#overlay"><strong>浮層與進階</strong><span>Overlay</span></a>
+<a class="nav-link" href="#mobile"><strong>手機 UI</strong><span>Mobile</span></a>
+<a class="nav-link" href="#pages"><strong>頁面類型</strong><span>Page Types</span></a>
+<a class="nav-link" href="#layouts"><strong>版面結構詞</strong><span>Layout</span></a>
+<a class="nav-link" href="#vocab"><strong>溝通詞彙</strong><span>Vocab</span></a>
+<a class="nav-link" href="#params"><strong>常見參數</strong><span>Params</span></a>
+<a class="nav-link" href="#guide"><strong>UI 注意事項</strong><span>Guide</span></a>
+<a class="nav-link" href="#ux"><strong>UX 展示</strong><span>UX</span></a>
+<a class="nav-link" href="#packages"><strong>套件差異</strong><span>Packages</span></a>
+<a class="nav-link" href="#next"><strong>下一步學習</strong><span>Next</span></a>
+</nav>
+</div>
+<div class="panel">
+<div class="mini-card">
+<h2>快速提示</h2>
+<div class="tiny-list">
+<p><span class="kbd">/</span> 聚焦搜尋</p>
+<p><span class="kbd">Mobile</span> 找手機元件</p>
+<p><span class="kbd">Layout</span> 找版型骨架</p>
+<p><span class="kbd">Package</span> 看套件差異</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="content">
+<section class="hero">
+<div class="hero-top">
+<span class="eyebrow">UI Component Library</span>
+<span class="eyebrow">Visual + Naming Cheat Sheet</span>
+</div>
+<h2>一次看懂 UI 名稱、常見長相、頁面骨架、手機介面與溝通方式。</h2>
+<p>這份重新整理過的 UI Catalog 把內容改成更順的學習順序。你可以先理解「怎麼描述需求」，再往下看表單、導覽、狀態、資料展示、浮層、手機 UI、頁面類型、版面結構、UX 與套件差異。</p>
+<div class="hero-controls">
+<label aria-label="搜尋 UI 元件" class="search">
+<svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18">
+<path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+<input id="searchInput" placeholder="搜尋名稱，例如 input、mobile、layout、toast、dashboard..." type="search"/>
+</label>
+<div class="chip-row" id="chipRow">
+<button class="chip active" data-filter="all" type="button">全部 All</button>
+<button class="chip" data-filter="start" type="button">開始 Start</button>
+<button class="chip" data-filter="form" type="button">表單 Form</button>
+<button class="chip" data-filter="action" type="button">操作 Action</button>
+<button class="chip" data-filter="feedback" type="button">狀態 Feedback</button>
+<button class="chip" data-filter="data" type="button">資料 Data</button>
+<button class="chip" data-filter="overlay" type="button">浮層 Overlay</button>
+<button class="chip" data-filter="mobile" type="button">手機 Mobile</button>
+<button class="chip" data-filter="page" type="button">頁面 Page</button>
+<button class="chip" data-filter="layout" type="button">版面 Layout</button>
+<button class="chip" data-filter="vocab" type="button">詞彙 Vocab</button>
+<button class="chip" data-filter="params" type="button">參數 Params</button>
+<button class="chip" data-filter="guide" type="button">注意事項 Guide</button>
+<button class="chip" data-filter="ux" type="button">UX</button>
+<button class="chip" data-filter="package" type="button">套件 Package</button>
+<button class="chip" data-filter="next" type="button">下一步 Next</button>
+</div>
+</div>
+</section>
+<section class="summary-strip">
+<div class="summary-card">
+<div class="kpi" id="cardCount">0</div>
+<p>卡片總數</p>
+</div>
+<div class="summary-card">
+<div class="kpi" id="categoryCount">0</div>
+<p>主分類數量</p>
+</div>
+<div class="summary-card">
+<div class="kpi" id="sectionCount">0</div>
+<p>學習區塊數量</p>
+</div>
+<div class="summary-card">
+<div class="kpi">可搜</div>
+<p>搜尋與篩選都可直接用</p>
+</div>
+</section>
+<div class="no-results" id="noResults">找不到符合的項目，試試看輸入 <code>input</code>、<code>mobile</code>、<code>layout</code>、<code>toast</code> 或 <code>dashboard</code>。</div>
+<section class="section" id="start">
+<div class="section-head">
+<div>
+<h3>開始前先看</h3>
+<p>先把這幾張卡理解好，再往下看元件時會比較知道自己在看什麼，也更知道該怎麼描述需求。</p>
+</div>
+</div>
+<div class="grid">
+<article class="card" data-category="start" data-search="ui vs ux difference 使用者介面 使用者體驗">
+<div class="card-head">
+<div class="title-wrap">
+<h4>UI vs UX</h4>
+<p>UI 是畫面本身，UX 是使用過程與感受。</p>
+</div>
+<span class="meta-pill">Start</span>
+</div>
+<div class="preview">
+<span class="label">Difference / 差異</span>
+<div class="ux-compare">
+<div class="ux-box"><strong>UI</strong><p>按鈕、輸入框、字體、顏色、間距、卡片外觀。</p></div>
+<div class="ux-panel"><strong>UX</strong><p>流程順不順、錯誤是否清楚、任務能不能快速完成。</p></div>
+</div>
+</div>
+</article>
+<article class="card" data-category="start" data-search="formula page type layout components state ux style 溝通公式">
+<div class="card-head">
+<div class="title-wrap">
+<h4>描述需求公式</h4>
+<p>最實用的講法：頁面類型 + 版面 + 元件 + 狀態 + UX 目的 + 風格。</p>
+</div>
+<span class="meta-pill">Start</span>
+</div>
+<div class="preview">
+<span class="label">Formula / 公式</span>
+<div class="list-group">
+<div class="list-item"><span>Page Type</span><span>頁面類型</span></div>
+<div class="list-item"><span>Layout</span><span>版面結構</span></div>
+<div class="list-item"><span>Components</span><span>元件</span></div>
+<div class="list-item"><span>State</span><span>狀態</span></div>
+<div class="list-item"><span>UX Goal</span><span>使用目的</span></div>
+<div class="list-item"><span>Style Direction</span><span>風格方向</span></div>
+</div>
+</div>
+</article>
+<article class="card" data-category="start" data-search="component anatomy label helper error input control 元件結構">
+<div class="card-head">
+<div class="title-wrap">
+<h4>Component Anatomy</h4>
+<p>元件不只是一個方塊，通常有名稱、控制區、說明和錯誤訊息。</p>
+</div>
+<span class="meta-pill">Start</span>
+</div>
+<div class="preview">
+<span class="label">Anatomy / 元件結構</span>
+<div class="anatomy">
+<div class="anatomy-part"><span>Label</span><span>欄位名稱</span></div>
+<div class="anatomy-part"><span>Input Control</span><span>主要互動區</span></div>
+<div class="anatomy-part"><span>Helper Text</span><span>補充說明</span></div>
+<div class="anatomy-part"><span>Error Message</span><span>錯誤提示</span></div>
+</div>
+</div>
+</article>
+<article class="card" data-category="start" data-search="prompt template communication ai 設計師 工程師 範例句子">
+<div class="card-head">
+<div class="title-wrap">
+<h4>溝通句子模板</h4>
+<p>如果你不知道怎麼開口，直接照這類句子講就可以。</p>
+</div>
+<span class="meta-pill">Start</span>
+</div>
+<div class="preview prompt-stack">
+<span class="label">Prompt / 範例句子</span>
+<div class="prompt-block">做一個 dashboard，左側 sidebar、上方 navbar，中間放 stat cards、filter bar、data table、pagination。</div>
+<div class="prompt-block">這是一個 settings page，表單要有 input、select、helper text、error state，主按鈕要是 primary CTA。</div>
+</div>
+</article>
+</div>
+</section>
+<section class="section" id="forms">
+<div class="section-head">
+<div>
+<h3>表單元件</h3>
+<p>輸入、選取、上傳、開關、日期等都在這裡。這是產品最常碰到的一組 UI。</p>
+</div>
+</div>
+<div class="grid">
+<article class="card" data-category="form" data-search="input field text box 輸入框 表單">
+<div class="card-head"><div class="title-wrap"><h4>Input Field</h4><p>單行文字輸入框</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Input / 輸入框</span><div class="field-group"><label>Email address</label><input class="ui-input" readonly="" value="name@example.com"/></div></div>
+</article>
+<article class="card" data-category="form" data-search="textarea 多行輸入 text area 表單">
+<div class="card-head"><div class="title-wrap"><h4>Text Area</h4><p>多行文字輸入區</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Long Text / 多行輸入</span><div class="field-group"><label>Project note</label><textarea class="ui-textarea" readonly="">Document the edge cases and validation rules for this form.</textarea></div></div>
+</article>
+<article class="card" data-category="form" data-search="select dropdown 表單 下拉選單">
+<div class="card-head"><div class="title-wrap"><h4>Select</h4><p>固定選項的下拉欄位</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Select / 下拉欄位</span><div class="field-group"><label>Team size</label><select class="ui-select"><option>11-20 people</option></select></div></div>
+</article>
+<article class="card" data-category="form" data-search="combobox searchable select 可搜尋下拉">
+<div class="card-head"><div class="title-wrap"><h4>Combobox</h4><p>可輸入、可搜尋的選單欄位</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Searchable Select / 可搜尋</span><div class="field-group"><label>Assign owner</label><input class="ui-input" readonly="" value="Search or select a teammate"/><div class="helper">適合選項很多的情境。</div></div></div>
+</article>
+<article class="card" data-category="form" data-search="checkbox multi select 多選框">
+<div class="card-head"><div class="title-wrap"><h4>Checkbox</h4><p>可多選的勾選控制項</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Multi-select / 多選</span><div class="check-grid"><div class="check-line"><span class="box checked"></span><span>Email notifications</span></div><div class="check-line"><span class="box"></span><span>Weekly digest</span></div></div></div>
+</article>
+<article class="card" data-category="form" data-search="radio button single choice 單選">
+<div class="card-head"><div class="title-wrap"><h4>Radio Button</h4><p>同組選項中一次只能選一個</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Single Choice / 單選</span><div class="check-grid"><div class="check-line"><span class="radio checked"></span><span>Monthly billing</span></div><div class="check-line"><span class="radio"></span><span>Yearly billing</span></div></div></div>
+</article>
+<article class="card" data-category="form" data-search="switch toggle 開關">
+<div class="card-head"><div class="title-wrap"><h4>Switch</h4><p>用來表示開啟 / 關閉狀態</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">On / Off / 開關</span><div class="list-item"><span>Auto-save draft</span><span class="switch"><span></span></span></div></div>
+</article>
+<article class="card" data-category="form" data-search="date picker 日期選擇器">
+<div class="card-head"><div class="title-wrap"><h4>Date Picker</h4><p>日期輸入與選擇</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Date / 日期</span><div class="field-group"><label>Launch date</label><input class="ui-date" readonly="" value="2026-04-07"/></div></div>
+</article>
+<article class="card" data-category="form" data-search="file upload 上傳拖拉區">
+<div class="card-head"><div class="title-wrap"><h4>File Upload</h4><p>上傳圖片、文件、附件</p></div><span class="meta-pill">Form</span></div>
+<div class="preview"><span class="label">Upload / 上傳</span><div class="upload-box">Drop files here<br/>or click to browse</div></div>
+</article>
+</div>
+</section>
+<section class="section" id="actions">
+<div class="section-head"><div><h3>操作與導覽</h3><p>使用者在頁面上移動、切換、搜尋、送出與完成任務時，最常碰到的控制項。</p></div></div>
+<div class="grid">
+<article class="card" data-category="action" data-search="button primary secondary cta 按鈕">
+<div class="card-head"><div class="title-wrap"><h4>Button</h4><p>最基本的主要與次要操作</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">CTA / 按鈕</span><div class="btn-row"><button class="btn btn-primary">Save changes</button><button class="btn btn-secondary">Cancel</button></div></div>
+</article>
+<article class="card" data-category="action" data-search="icon button 圖示按鈕">
+<div class="card-head"><div class="title-wrap"><h4>Icon Button</h4><p>單純圖示的精簡操作按鈕</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">Icon Action / 圖示操作</span><div class="btn-row"><button class="icon-btn">⌂</button><button class="icon-btn">✎</button><button class="icon-btn">⋯</button></div></div>
+</article>
+<article class="card" data-category="action" data-search="tabs 分頁切換 tabs navigation">
+<div class="card-head"><div class="title-wrap"><h4>Tabs</h4><p>在同頁切換不同內容區</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">Tabs / 分頁</span><div class="tabs"><span class="tab active">Overview</span><span class="tab">Files</span><span class="tab">Members</span></div></div>
+</article>
+<article class="card" data-category="action" data-search="breadcrumb 麵包屑 navigation">
+<div class="card-head"><div class="title-wrap"><h4>Breadcrumb</h4><p>顯示你目前位在哪個層級</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">Path / 路徑</span><div class="breadcrumb"><span class="crumb">Home</span><span class="crumb">Projects</span><span class="crumb">UI Catalog</span></div></div>
+</article>
+<article class="card" data-category="action" data-search="pagination 分頁器">
+<div class="card-head"><div class="title-wrap"><h4>Pagination</h4><p>跨頁瀏覽大量資料</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">Pages / 分頁</span><div class="pagination"><span class="page-link">Prev</span><span class="page-link active">1</span><span class="page-link">2</span><span class="page-link">3</span><span class="page-link">Next</span></div></div>
+</article>
+<article class="card" data-category="action" data-search="search bar 搜尋列">
+<div class="card-head"><div class="title-wrap"><h4>Search Bar</h4><p>輸入關鍵字快速找資料</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">Search / 搜尋</span><label class="search"><svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg><input readonly="" value="Search component names"/></label></div>
+</article>
+<article class="card" data-category="action" data-search="stepper 步驟條 checkout onboarding">
+<div class="card-head"><div class="title-wrap"><h4>Stepper</h4><p>多步驟流程的進度表示</p></div><span class="meta-pill">Action</span></div>
+<div class="preview"><span class="label">Progress Flow / 步驟</span><div class="stepper"><span class="step active">1. Info</span><span class="line"></span><span class="step active">2. Payment</span><span class="line"></span><span class="step">3. Confirm</span></div></div>
+</article>
+</div>
+</section>
+<section class="section" id="feedback">
+<div class="section-head"><div><h3>提示與狀態</h3><p>這些元件負責告訴使用者現在發生了什麼。沒有它們，畫面通常會很安靜但也很難用。</p></div></div>
+<div class="grid">
+<article class="card" data-category="feedback" data-search="alert 狀態提示 success warning error">
+<div class="card-head"><div class="title-wrap"><h4>Alert</h4><p>頁面中的區塊型訊息提示</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Alert / 提示區塊</span><div class="alert success"><strong>Workspace created</strong><p>Your team space is ready. Invite teammates when you're ready.</p></div></div>
+</article>
+<article class="card" data-category="feedback" data-search="toast 短通知">
+<div class="card-head"><div class="title-wrap"><h4>Toast</h4><p>短暫浮出的操作結果通知</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Toast / 短通知</span><div class="toast"><p>Draft saved at 14:32</p><span class="tag tag-green">Success</span></div></div>
+</article>
+<article class="card" data-category="feedback" data-search="tag badge chip 標籤 徽章">
+<div class="card-head"><div class="title-wrap"><h4>Tag / Badge / Chip</h4><p>狀態、分類、標記的常見小元件</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Tags / 標記</span><div class="tag-row"><span class="tag tag-brand">UI</span><span class="tag tag-green">Success</span><span class="tag tag-neutral">Beta</span></div></div>
+</article>
+<article class="card" data-category="feedback" data-search="progress bar 進度條">
+<div class="card-head"><div class="title-wrap"><h4>Progress Bar</h4><p>顯示任務或流程完成程度</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Progress / 進度</span><div class="progress"><span></span></div><div class="helper">58% completed</div></div>
+</article>
+<article class="card" data-category="feedback" data-search="spinner loading 轉圈">
+<div class="card-head"><div class="title-wrap"><h4>Spinner</h4><p>簡單表示系統正在處理</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Loading / 載入中</span><div class="spinner"></div></div>
+</article>
+<article class="card" data-category="feedback" data-search="skeleton 骨架屏">
+<div class="card-head"><div class="title-wrap"><h4>Skeleton</h4><p>資料尚未載入時的佔位畫面</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Placeholder / 骨架屏</span><div class="skeleton short"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+</article>
+<article class="card" data-category="feedback" data-search="empty state 空狀態">
+<div class="card-head"><div class="title-wrap"><h4>Empty State</h4><p>沒有資料時的引導畫面</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Empty / 空狀態</span><div class="empty-state"><div class="empty-icon">◎</div><strong>No files yet</strong><p>Upload your first file to start building the design library.</p><button class="btn btn-primary">Upload file</button></div></div>
+</article>
+<article class="card" data-category="feedback" data-search="error state field validation 錯誤狀態">
+<div class="card-head"><div class="title-wrap"><h4>Field Error State</h4><p>表單輸入錯誤時的提示與視覺狀態</p></div><span class="meta-pill">Feedback</span></div>
+<div class="preview"><span class="label">Validation / 驗證錯誤</span><div class="field-group"><label>Password</label><input class="ui-input" readonly="" value="short"/><div class="error-line">Password must be at least 8 characters.</div></div></div>
+</article>
+</div>
+</section>
+<section class="section" id="data">
+<div class="section-head"><div><h3>資料展示</h3><p>當 UI 開始承載真實資料時，卡片、表格、行事曆、列表和統計模組就會變得重要。</p></div></div>
+<div class="grid">
+<article class="card" data-category="data" data-search="card 卡片">
+<div class="card-head"><div class="title-wrap"><h4>Card</h4><p>最常用來裝內容的基本容器</p></div><span class="meta-pill">Data</span></div>
+<div class="preview"><span class="label">Content Block / 內容卡片</span><div class="tool-item"><strong>Learning Card</strong><p>Combine title, description, status, and actions in one contained block.</p></div></div>
+</article>
+<article class="card" data-category="data" data-search="stat card analytics 數字卡">
+<div class="card-head"><div class="title-wrap"><h4>Stat Card</h4><p>摘要數字、趨勢與 KPI</p></div><span class="meta-pill">Data</span></div>
+<div class="preview"><span class="label">Metrics / 統計</span><div class="stat-grid"><div class="stat-card"><strong>1,240</strong><span>Monthly active users</span></div><div class="stat-card"><strong>+18%</strong><span>Growth rate</span></div></div></div>
+</article>
+<article class="card" data-category="data" data-search="table 表格 data grid">
+<div class="card-head"><div class="title-wrap"><h4>Table</h4><p>呈現多筆資料與欄位關係</p></div><span class="meta-pill">Data</span></div>
+<div class="preview"><span class="label">Table / 表格</span><table class="table"><thead><tr><th>Name</th><th>Status</th><th>Owner</th></tr></thead><tbody><tr><td>UI Catalog</td><td>In review</td><td>Amy</td></tr><tr><td>Mobile App</td><td>Draft</td><td>Ken</td></tr></tbody></table></div>
+</article>
+<article class="card" data-category="data" data-search="calendar 月曆">
+<div class="card-head"><div class="title-wrap"><h4>Calendar</h4><p>月曆型日期檢視</p></div><span class="meta-pill">Data</span></div>
+<div class="preview"><span class="label">Month View / 月檢視</span><div class="calendar"><div class="calendar-head"><strong>April 2026</strong><span class="tag tag-neutral">Month</span></div><div class="calendar-grid"><div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div><div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div><div class="day-cell muted">29</div><div class="day-cell muted">30</div><div class="day-cell muted">31</div><div class="day-cell">1</div><div class="day-cell">2</div><div class="day-cell">3</div><div class="day-cell active">5</div></div></div></div>
+</article>
+<article class="card" data-category="data" data-search="list item 列表項">
+<div class="card-head"><div class="title-wrap"><h4>List Item</h4><p>資料列與設定列常見樣式</p></div><span class="meta-pill">Data</span></div>
+<div class="preview"><span class="label">List / 列表</span><div class="list-group"><div class="list-item"><span>Profile settings</span><span class="tag tag-brand">New</span></div><div class="list-item"><span>Notification rules</span><span>›</span></div><div class="list-item"><span>Billing history</span><span>›</span></div></div></div>
+</article>
+<article class="card" data-category="data" data-search="kanban card 任務卡">
+<div class="card-head"><div class="title-wrap"><h4>Kanban Card</h4><p>任務看板中的單一項目</p></div><span class="meta-pill">Data</span></div>
+<div class="preview"><span class="label">Task Card / 任務卡</span><div class="kanban-card"><div class="tag-row"><span class="tag tag-brand">In Progress</span><span class="tag tag-neutral">UI</span></div><strong>Refine onboarding components</strong><p>Update spacing, states, and helper text for the signup flow.</p></div></div>
+</article>
+</div>
+</section>
+<section class="section" id="overlay">
+<div class="section-head"><div><h3>浮層與進階</h3><p>用來暫時打斷流程、補充說明、展開額外選項的元件，桌面和手機都很常見。</p></div></div>
+<div class="grid">
+<article class="card" data-category="overlay" data-search="modal 對話框"><div class="card-head"><div class="title-wrap"><h4>Modal</h4><p>中央對話視窗</p></div><span class="meta-pill">Overlay</span></div><div class="preview"><span class="label">Dialog / 對話框</span><div class="modal"><strong>Delete this project?</strong><p style="margin: 8px 0 14px;">This action cannot be undone.</p><div class="btn-row"><button class="btn btn-secondary">Cancel</button><button class="btn btn-primary">Delete</button></div></div></div></article>
+<article class="card" data-category="overlay" data-search="drawer side panel 側邊抽屜"><div class="card-head"><div class="title-wrap"><h4>Drawer</h4><p>從側邊滑出的面板</p></div><span class="meta-pill">Overlay</span></div><div class="preview"><span class="label">Side Panel / 側欄</span><div class="drawer"><strong>Filters</strong><p style="margin: 8px 0 0;">Status, tags, owners, and date range live here.</p></div></div></article>
+<article class="card" data-category="overlay" data-search="tooltip 提示框"><div class="card-head"><div class="title-wrap"><h4>Tooltip</h4><p>滑過或聚焦時的補充文字</p></div><span class="meta-pill">Overlay</span></div><div class="preview"><span class="label">Tooltip / 提示</span><div class="tooltip">Only admins can edit billing details.</div></div></article>
+<article class="card" data-category="overlay" data-search="dropdown menu 下拉選單"><div class="card-head"><div class="title-wrap"><h4>Dropdown Menu</h4><p>彈出式功能選單</p></div><span class="meta-pill">Overlay</span></div><div class="preview"><span class="label">Menu / 選單</span><div class="dropdown-menu"><button type="button"><span>Edit</span><span>⌘E</span></button><button type="button"><span>Duplicate</span><span>⌘D</span></button><button type="button"><span>Archive</span><span>⌫</span></button></div></div></article>
+<article class="card" data-category="overlay" data-search="popover 氣泡卡"><div class="card-head"><div class="title-wrap"><h4>Popover</h4><p>附著在按鈕旁的小型資訊卡</p></div><span class="meta-pill">Overlay</span></div><div class="preview"><span class="label">Quick Info / 快速資訊</span><div class="popover-card"><strong>Share link created</strong><p style="margin: 8px 0 12px;">Anyone with this link can view the prototype for 7 days.</p><button class="btn btn-secondary">Copy link</button></div></div></article>
+<article class="card" data-category="overlay" data-search="accordion 摺疊面板"><div class="card-head"><div class="title-wrap"><h4>Accordion</h4><p>可展開收合的區塊</p></div><span class="meta-pill">Overlay</span></div><div class="preview"><span class="label">Expandable / 展開內容</span><details class="accordion" open=""><summary>What is an accordion?</summary><p>It reveals more detail only when the user wants it, which keeps layouts compact.</p></details></div></article>
+</div>
+</section>
+<section class="section" id="mobile">
+<div class="section-head"><div><h3>手機 UI</h3><p>行動端有自己很常見的一組命名與互動模式。很多元件在手機上會換位置、換手勢、換呈現方式。</p></div></div>
+<div class="grid">
+<article class="card" data-category="mobile" data-search="status bar 狀態列 mobile ios android"><div class="card-head"><div class="title-wrap"><h4>Status Bar</h4><p>最上方顯示時間、訊號、電量的系統列</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">System Chrome / 系統列</span><div class="phone-shell"><div class="phone-notch"></div><div class="phone-screen"><div class="phone-bar"></div><div class="phone-block hero"></div></div></div></div></article>
+<article class="card" data-category="mobile" data-search="top app bar 手機 導覽列"><div class="card-head"><div class="title-wrap"><h4>Top App Bar</h4><p>手機頁面上方的標題列與操作區</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Header / 頂部列</span><div class="phone-shell"><div class="phone-notch"></div><div class="phone-screen"><div class="phone-row two"><div class="phone-block small"></div><div class="phone-block small accent"></div></div><div class="phone-block list"></div><div class="phone-block hero"></div></div></div></div></article>
+<article class="card" data-category="mobile" data-search="bottom tab bar 底部導覽列 bottom navigation"><div class="card-head"><div class="title-wrap"><h4>Bottom Tab Bar</h4><p>App 最常見的底部主導航</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Bottom Navigation / 底部導覽</span><div class="phone-shell"><div class="phone-notch"></div><div class="phone-screen"><div class="phone-block hero"></div><div class="phone-block card"></div><div class="phone-tabbar"><span class="active"></span><span></span><span></span><span></span></div></div></div></div></article>
+<article class="card" data-category="mobile" data-search="fab floating action button 浮動按鈕"><div class="card-head"><div class="title-wrap"><h4>Floating Action Button</h4><p>浮在畫面上的主要快速操作按鈕</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">FAB / 浮動主按鈕</span><div class="phone-shell"><div class="phone-notch"></div><div class="phone-screen"><div class="phone-block hero"></div><div class="phone-block card"></div><div class="fab-wrap"><button class="fab-btn" type="button">+</button></div></div></div></div></article>
+<article class="card" data-category="mobile" data-search="bottom sheet 底部抽屜 panel"><div class="card-head"><div class="title-wrap"><h4>Bottom Sheet</h4><p>從底部滑出的面板，常用來補充選項</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Bottom Panel / 底部面板</span><div class="phone-sheet"><div class="phone-sheet-handle"></div><div class="phone-block list"></div><div class="phone-block list"></div><div class="phone-block list accent"></div></div></div></article>
+<article class="card" data-category="mobile" data-search="swipe list item 滑動列表 gesture"><div class="card-head"><div class="title-wrap"><h4>Swipe List Item</h4><p>左右滑出刪除、封存、標記等操作</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Gesture / 滑動手勢</span><div class="swipe-cell"><div><strong>Invoice #2841</strong><p style="margin: 6px 0 0;">Swipe left to archive</p></div><span class="tag tag-brand">Archive</span></div></div></article>
+<article class="card" data-category="mobile" data-search="search view 搜尋頁 搜尋列 mobile"><div class="card-head"><div class="title-wrap"><h4>Search View</h4><p>手機搜尋常會獨立成頂部搜尋頁</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Search / 搜尋</span><label class="search"><svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg><input readonly="" value="Search products"/></label><div class="list-group"><div class="list-item"><span>Recent searches</span><span>3</span></div><div class="list-item"><span>Suggested keyword</span><span>›</span></div></div></div></article>
+<article class="card" data-category="mobile" data-search="segmented control 分段控制"><div class="card-head"><div class="title-wrap"><h4>Segmented Control</h4><p>在手機上切換內容分類的常見做法</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Segment Switch / 分段切換</span><div class="segmented-mini"><span class="active">All</span><span>Unread</span><span>Saved</span></div></div></article>
+<article class="card" data-category="mobile" data-search="list cell 手機 列表列"><div class="card-head"><div class="title-wrap"><h4>List Cell</h4><p>手機設定頁與清單頁最常見的列樣式</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Cell / 列表列</span><div class="list-group"><div class="list-item"><span>Notifications</span><span>›</span></div><div class="list-item"><span>Privacy</span><span>›</span></div><div class="list-item"><span>Appearance</span><span>›</span></div></div></div></article>
+<article class="card" data-category="mobile" data-search="pull to refresh 下拉更新"><div class="card-head"><div class="title-wrap"><h4>Pull to Refresh</h4><p>下拉重新整理是手機列表常見互動</p></div><span class="meta-pill">Mobile</span></div><div class="preview pull-stack"><span class="label">Refresh Pattern / 下拉更新</span><div class="pull-indicator"></div><div class="phone-block list"></div><div class="phone-block list"></div><div class="phone-block list"></div></div></article>
+<article class="card" data-category="mobile" data-search="snackbar 手機 底部提示"><div class="card-head"><div class="title-wrap"><h4>Snackbar</h4><p>手機版常見的底部短提示訊息</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Transient Feedback / 短提示</span><div class="mobile-snack"><span>Draft saved</span><strong>Undo</strong></div></div></article>
+<article class="card" data-category="mobile" data-search="sticky bottom cta 固定底部按鈕"><div class="card-head"><div class="title-wrap"><h4>Sticky Bottom CTA</h4><p>購物、預約、結帳流程常見的固定底部主按鈕</p></div><span class="meta-pill">Mobile</span></div><div class="preview"><span class="label">Primary Action / 固定主操作</span><div class="sticky-cta"><div class="list-item"><span>Total</span><strong>NT$ 1,280</strong></div><button class="btn btn-primary">Continue</button></div></div></article>
+</div>
+</section>
+<section class="section" id="pages">
+<div class="section-head"><div><h3>頁面類型</h3><p>頁面類型是在回答「這頁的主要任務是什麼」。同樣都有按鈕和卡片，但目的不同，版面安排就會完全不同。</p></div></div>
+<div class="grid">
+<article class="card span-2" data-category="page" data-search="landing dashboard settings detail checkout auth onboarding profile page types 頁面類型">
+<div class="card-head"><div class="title-wrap"><h4>常見頁面類型</h4><p>先說清楚是哪一種頁面，對方才知道你想做的是說服型、工具型、交易型，還是身份型畫面。</p></div><span class="meta-pill">Page</span></div>
+<div class="preview"><span class="label">Page Type / 頁面類型</span><div class="wire-grid">
+<div class="wire-card"><strong>Landing Page</strong><p>介紹產品、活動或品牌，重點是吸引注意力與轉換。</p><div class="wire-shell"><div class="wire-block wire-bar wire-strong"></div><div class="wire-block wire-hero wire-accent"></div><div class="wire-row three"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div></div><div class="wire-block wire-cta wire-accent"></div></div></div>
+<div class="wire-card"><strong>Dashboard</strong><p>快速看整體狀態、篩資料、做管理，重點是效率和掃描速度。</p><div class="wire-shell"><div class="wire-block wire-bar wire-strong"></div><div class="wire-row sidebar-main"><div class="wire-block wire-sidebar"></div><div class="wire-stack"><div class="wire-row three"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div></div><div class="wire-block wire-content"></div></div></div></div></div>
+<div class="wire-card"><strong>Settings Page</strong><p>修改帳號、偏好或系統參數，重點是分類清楚與表單穩定。</p><div class="wire-shell"><div class="wire-block wire-bar"></div><div class="wire-row sidebar-main"><div class="wire-stack"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div></div><div class="wire-stack"><div class="wire-block wire-content"></div><div class="wire-block wire-cta wire-accent"></div></div></div></div></div>
+<div class="wire-card"><strong>Detail Page</strong><p>聚焦單一項目，像商品、文章、案件或任務，重點是理解內容與做下一步。</p><div class="wire-shell"><div class="wire-block wire-bar"></div><div class="wire-block wire-panel wire-strong"></div><div class="wire-row two"><div class="wire-block wire-content"></div><div class="wire-stack"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-cta"></div></div></div></div></div>
+<div class="wire-card"><strong>Checkout Page</strong><p>交易最後一步，重點是減少分心、清楚顯示步驟與費用。</p><div class="wire-shell"><div class="wire-row three"><div class="wire-block wire-bar"></div><div class="wire-block wire-bar"></div><div class="wire-block wire-bar"></div></div><div class="wire-row two"><div class="wire-block wire-content"></div><div class="wire-stack"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-cta wire-accent"></div></div></div></div></div>
+<div class="wire-card"><strong>Auth Page</strong><p>登入或註冊頁，重點是簡潔、信任感與低阻力。</p><div class="wire-shell"><div class="wire-block wire-panel wire-strong"></div><div class="wire-stack"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div></div><div class="wire-block wire-cta wire-accent"></div></div></div>
+<div class="wire-card"><strong>Onboarding Flow</strong><p>引導新手一步一步完成設定，重點是資訊量控制和節奏。</p><div class="wire-shell"><div class="wire-row three"><div class="wire-block wire-bar wire-accent"></div><div class="wire-block wire-bar"></div><div class="wire-block wire-bar"></div></div><div class="wire-block wire-content"></div><div class="wire-row two"><div class="wire-block wire-cta"></div><div class="wire-block wire-cta wire-accent"></div></div></div></div>
+<div class="wire-card"><strong>Profile Page</strong><p>展示個人資料、作品、活動或偏好，重點是資訊可讀與入口清楚。</p><div class="wire-shell"><div class="wire-block wire-hero"></div><div class="wire-row two"><div class="wire-stack"><div class="wire-block wire-panel wire-strong"></div><div class="wire-block wire-panel"></div></div><div class="wire-block wire-content"></div></div></div></div>
+</div></div>
+</article>
+</div>
+</section>
+<section class="section" id="layouts">
+<div class="section-head"><div><h3>版面結構詞</h3><p>版面結構詞是在描述「內容怎麼排」。你在跟 AI 或設計師溝通時，這組詞非常好用。</p></div></div>
+<div class="grid">
+<article class="card span-2" data-category="layout" data-search="navbar sidebar hero section grid two column cta sticky footer layout 版面結構詞">
+<div class="card-head"><div class="title-wrap"><h4>常見版面結構詞</h4><p>你講出這些骨架名詞，對方通常就能很快理解整體畫面會長什麼樣子。</p></div><span class="meta-pill">Layout</span></div>
+<div class="preview"><span class="label">Layout Terms / 版面骨架</span><div class="wire-grid">
+<div class="wire-card"><strong>Navbar</strong><p>頂部導覽列，常放品牌、搜尋、通知或帳號入口。</p><div class="wire-shell"><div class="wire-block wire-bar wire-strong"></div></div></div>
+<div class="wire-card"><strong>Sidebar</strong><p>側邊欄，常用於 dashboard 或 settings page。</p><div class="wire-shell"><div class="wire-row sidebar-main"><div class="wire-block wire-sidebar wire-strong"></div><div class="wire-block wire-content"></div></div></div></div>
+<div class="wire-card"><strong>Hero Section</strong><p>一進頁面最先看到的大區塊，通常放主標題和主按鈕。</p><div class="wire-shell"><div class="wire-block wire-hero wire-accent"></div></div></div>
+<div class="wire-card"><strong>Section</strong><p>把同一主題內容包成一段，讓閱讀順序更清楚。</p><div class="wire-shell"><div class="wire-block wire-panel"></div><div class="wire-block wire-content"></div></div></div>
+<div class="wire-card"><strong>Grid Layout</strong><p>多個卡片或資料平鋪在同一層級，方便比較。</p><div class="wire-shell"><div class="wire-row three"><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div><div class="wire-block wire-panel"></div></div></div></div>
+<div class="wire-card"><strong>Two-column Layout</strong><p>左右兩欄並列，常見於內容加摘要、圖文並排。</p><div class="wire-shell"><div class="wire-row two"><div class="wire-block wire-content"></div><div class="wire-block wire-panel"></div></div></div></div>
+<div class="wire-card"><strong>CTA Block</strong><p>把最重要的行動呼籲集中放大，例如註冊、預約、開始使用。</p><div class="wire-shell"><div class="wire-block wire-panel"></div><div class="wire-block wire-cta wire-accent"></div></div></div>
+<div class="wire-card"><strong>Sticky Header / Footer</strong><p>捲動時仍然留在畫面上的固定區塊，常用於搜尋、導航或主操作。</p><div class="wire-shell"><div class="wire-block wire-bar wire-strong"></div><div class="wire-block wire-content"></div><div class="wire-block wire-bar"></div></div></div>
+</div></div>
+</article>
+</div>
+</section>
+<section class="section" id="vocab">
+<div class="section-head"><div><h3>溝通詞彙</h3><p>這一區是拿來幫你跟 AI、設計師、工程師對話。會講對名字，需求就會清楚很多。</p></div></div>
+<div class="grid">
+<article class="card" data-category="vocab" data-search="核心元件詞 button input card modal table tabs"><div class="card-head"><div class="title-wrap"><h4>核心元件詞</h4><p>畫面上看得到的元件名稱，通常是 UI 溝通第一層。</p></div><span class="meta-pill">Vocab</span></div><div class="preview"><span class="label">Components / 元件</span><div class="term-cloud"><span class="term-pill">Button</span><span class="term-pill">Card</span><span class="term-pill">Input Field</span><span class="term-pill">Select</span><span class="term-pill">Table</span><span class="term-pill">Tabs</span><span class="term-pill">Modal</span><span class="term-pill">Drawer</span><span class="term-pill">Dropdown</span><span class="term-pill">Tooltip</span></div></div></article>
+<article class="card" data-category="vocab" data-search="states hover focus disabled loading success error empty 狀態與互動詞"><div class="card-head"><div class="title-wrap"><h4>狀態與互動詞</h4><p>很多需求不是多一個元件，而是同元件在不同狀態下怎麼表現。</p></div><span class="meta-pill">Vocab</span></div><div class="preview"><span class="label">States / 狀態</span><div class="term-cloud"><span class="term-pill">Default</span><span class="term-pill">Hover</span><span class="term-pill">Focus</span><span class="term-pill">Active</span><span class="term-pill">Selected</span><span class="term-pill">Disabled</span><span class="term-pill">Loading</span><span class="term-pill">Success</span><span class="term-pill">Error</span><span class="term-pill">Empty</span></div></div></article>
+<article class="card" data-category="vocab" data-search="style direction minimal premium playful clean bold 風格描述詞"><div class="card-head"><div class="title-wrap"><h4>風格描述詞</h4><p>同樣一組元件，風格描述詞會直接影響長相與氣質。</p></div><span class="meta-pill">Vocab</span></div><div class="preview"><span class="label">Style Words / 風格</span><div class="term-cloud"><span class="term-pill">Minimal</span><span class="term-pill">Clean</span><span class="term-pill">Premium</span><span class="term-pill">Editorial</span><span class="term-pill">Bold</span><span class="term-pill">Playful</span><span class="term-pill">Dense</span><span class="term-pill">Comfortable</span></div></div></article>
+<article class="card" data-category="vocab" data-search="navigation data words navbar sidebar filter sort pagination tabs"><div class="card-head"><div class="title-wrap"><h4>導覽與資料詞</h4><p>做後台或工具型產品時，這組詞會很常用到。</p></div><span class="meta-pill">Vocab</span></div><div class="preview"><span class="label">Data + Nav / 導覽與資料</span><div class="term-cloud"><span class="term-pill">Navbar</span><span class="term-pill">Sidebar</span><span class="term-pill">Filter Bar</span><span class="term-pill">Sort</span><span class="term-pill">Pagination</span><span class="term-pill">Table</span><span class="term-pill">Empty State</span><span class="term-pill">Detail Panel</span></div></div></article>
+</div>
+</section>
+<section class="section" id="params">
+<div class="section-head"><div><h3>常見參數</h3><p>當你說「我要改 UI 外型」時，實際上改的通常不是元件名字，而是參數。這一區把最常改的參數名稱、用途和講法整理出來。</p></div></div>
+<div class="grid">
+<article class="card span-2" data-category="params" data-search="ui parameters color typography spacing radius shadow layout responsive 常見參數">
+<div class="card-head"><div class="title-wrap"><h4>改 UI 時，最常改的是這些層</h4><p>你可以把參數分成幾層來想：顏色、字體、間距、尺寸、邊框、陰影、位置、動效、響應式。這樣溝通時不會只說「幫我改漂亮一點」。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Parameter Map / 參數地圖</span><div class="term-cloud"><span class="term-pill">Color</span><span class="term-pill">Typography</span><span class="term-pill">Spacing</span><span class="term-pill">Size</span><span class="term-pill">Radius</span><span class="term-pill">Border</span><span class="term-pill">Shadow</span><span class="term-pill">Position</span><span class="term-pill">Opacity</span><span class="term-pill">Motion</span><span class="term-pill">Breakpoint</span><span class="term-pill">Z-index</span></div><div class="helper">你之後可以直接講：`把 card 的 radius 變大、陰影變輕、padding 加大、字級下修一點`。</div></div>
+</article>
+<article class="card" data-category="params" data-search="color background text border color 顏色 背景 文字色 狀態色">
+<div class="card-head"><div class="title-wrap"><h4>Color Parameters</h4><p>顏色系參數決定整體氣質與資訊層級。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Color / 顏色</span><div class="term-cloud"><span class="term-pill">background-color</span><span class="term-pill">color</span><span class="term-pill">border-color</span><span class="term-pill">accent-color</span><span class="term-pill">opacity</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>背景再淺一點、主色更穩重、內文字色加深、成功和錯誤狀態色再明確一點。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="font typography font-size font-weight line-height letter-spacing 字級 字重">
+<div class="card-head"><div class="title-wrap"><h4>Typography Parameters</h4><p>字體參數影響閱讀感、節奏與品牌感。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Typography / 字體</span><div class="term-cloud"><span class="term-pill">font-family</span><span class="term-pill">font-size</span><span class="term-pill">font-weight</span><span class="term-pill">line-height</span><span class="term-pill">letter-spacing</span><span class="term-pill">text-transform</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>標題字級大一點、內文字重降一階、行高拉開、按鈕字稍微更緊一點。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="spacing padding margin gap 間距 內距 外距 間隔">
+<div class="card-head"><div class="title-wrap"><h4>Spacing Parameters</h4><p>間距參數決定畫面呼吸感和群組關係。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Spacing / 間距</span><div class="term-cloud"><span class="term-pill">padding</span><span class="term-pill">padding-inline</span><span class="term-pill">padding-block</span><span class="term-pill">margin</span><span class="term-pill">gap</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>卡片內距加大、區塊之間留白再多一點、表單欄位間距統一用 12 或 16。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="width height min max size aspect ratio 尺寸 寬高">
+<div class="card-head"><div class="title-wrap"><h4>Size Parameters</h4><p>尺寸參數影響元件存在感和版面密度。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Size / 尺寸</span><div class="term-cloud"><span class="term-pill">width</span><span class="term-pill">height</span><span class="term-pill">min-width</span><span class="term-pill">max-width</span><span class="term-pill">min-height</span><span class="term-pill">aspect-ratio</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>按鈕高度高一點、卡片最大寬度收窄、表單欄位不要拉太滿、圖片比例固定。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="layout display flex grid columns align justify position 版面參數">
+<div class="card-head"><div class="title-wrap"><h4>Layout Parameters</h4><p>版面參數控制元素怎麼排、怎麼對齊。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Layout / 排版</span><div class="term-cloud"><span class="term-pill">display</span><span class="term-pill">flex-direction</span><span class="term-pill">justify-content</span><span class="term-pill">align-items</span><span class="term-pill">grid-template-columns</span><span class="term-pill">place-items</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>這區改雙欄、卡片改成 3 欄 grid、按鈕右對齊、標題和操作列垂直置中。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="radius border stroke 圓角 邊框 border width style">
+<div class="card-head"><div class="title-wrap"><h4>Radius &amp; Border</h4><p>圓角和邊框直接影響元件氣質。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Surface / 外框</span><div class="term-cloud"><span class="term-pill">border-radius</span><span class="term-pill">border-width</span><span class="term-pill">border-style</span><span class="term-pill">border-color</span><span class="term-pill">outline</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>整頁圓角再大一點、按鈕更圓、輸入框邊線再淡一點、focus outline 更明確。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="shadow blur elevation 陰影 模糊 box shadow filter">
+<div class="card-head"><div class="title-wrap"><h4>Shadow &amp; Elevation</h4><p>陰影參數用來表達層級，不是越重越好。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Depth / 層級</span><div class="term-cloud"><span class="term-pill">box-shadow</span><span class="term-pill">filter: blur()</span><span class="term-pill">backdrop-filter</span><span class="term-pill">opacity</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>卡片陰影再輕一點、浮層比卡片再高一階、glass effect 模糊強一點但透明度不要太低。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="position top right bottom left z-index overflow 固定 定位 層級">
+<div class="card-head"><div class="title-wrap"><h4>Position &amp; Layering</h4><p>定位參數控制元件貼哪裡、浮在哪一層。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Position / 定位</span><div class="term-cloud"><span class="term-pill">position</span><span class="term-pill">top</span><span class="term-pill">right</span><span class="term-pill">bottom</span><span class="term-pill">left</span><span class="term-pill">z-index</span><span class="term-pill">overflow</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>navbar 改 sticky、toast 固定右上、modal 層級拉高、內容區超出時 hidden 或 scroll。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="transition duration easing transform scale translate animation 動效 速度">
+<div class="card-head"><div class="title-wrap"><h4>Motion Parameters</h4><p>動效參數用來表達狀態改變和空間感。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Motion / 動效</span><div class="term-cloud"><span class="term-pill">transition</span><span class="term-pill">transition-duration</span><span class="term-pill">transition-timing-function</span><span class="term-pill">transform</span><span class="term-pill">scale</span><span class="term-pill">translateY</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>hover 動畫短一點、卡片滑過只微微上移、modal 進場更柔和，不要太跳。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="responsive breakpoint media query 手機 平板 桌面 斷點">
+<div class="card-head"><div class="title-wrap"><h4>Responsive Parameters</h4><p>響應式參數決定不同裝置下怎麼調整版面。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">Responsive / 響應式</span><div class="term-cloud"><span class="term-pill">breakpoint</span><span class="term-pill">@media</span><span class="term-pill">grid-template-columns</span><span class="term-pill">font-size</span><span class="term-pill">padding</span><span class="term-pill">display: none</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>桌面 3 欄、平板 2 欄、手機 1 欄；手機字級略降、padding 收斂，次要資訊可先隱藏。</p></div></div>
+</article>
+<article class="card" data-category="params" data-search="state parameters hover focus active disabled selected loading error 狀態參數">
+<div class="card-head"><div class="title-wrap"><h4>State Parameters</h4><p>同一個元件在不同狀態下通常會改不同參數。</p></div><span class="meta-pill">Params</span></div>
+<div class="preview"><span class="label">State Mapping / 狀態對應</span><div class="term-cloud"><span class="term-pill">hover</span><span class="term-pill">focus</span><span class="term-pill">active</span><span class="term-pill">disabled</span><span class="term-pill">selected</span><span class="term-pill">loading</span><span class="term-pill">error</span></div><div class="tool-item"><strong>你可以這樣講</strong><p>hover 改背景和陰影，focus 補 outline，disabled 降 opacity，loading 換成 spinner 或文字提示。</p></div></div>
+</article>
+</div>
+</section>
+<section class="section" id="guide">
+<div class="section-head"><div><h3>UI 注意事項</h3><p>這些不是元件名稱，而是做 UI 時最常踩到的實戰重點。你越早理解，畫面會越穩。</p></div></div>
+<div class="grid">
+<article class="card" data-category="guide" data-search="visual hierarchy 視覺層級 cta"><div class="card-head"><div class="title-wrap"><h4>Visual Hierarchy</h4><p>先讓人看到最重要的東西，再看到次要資訊。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">Priority / 視覺層級</span><div class="guide-box"><strong>為什麼重要</strong><p>主標、主按鈕、關鍵數字不能跟次要資訊一樣重，不然使用者會失去焦點。</p></div></div></article>
+<article class="card" data-category="guide" data-search="spacing scale 間距"><div class="card-head"><div class="title-wrap"><h4>Spacing Scale</h4><p>間距要有規則，不要每個地方都亂跳。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">Spacing / 間距</span><div class="guide-box"><strong>你可以這樣講</strong><p>請統一用 8 / 12 / 16 / 24 這種 spacing scale，不要每張卡都用不同內距。</p></div></div></article>
+<article class="card" data-category="guide" data-search="alignment grid 對齊"><div class="card-head"><div class="title-wrap"><h4>Alignment &amp; Grid</h4><p>元素要有共同對齊基準，畫面才不會散。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">Alignment / 對齊</span><div class="guide-box"><strong>為什麼重要</strong><p>標題、按鈕、卡片、欄位如果沒有對齊，即使顏色很好看，畫面也會顯得亂。</p></div></div></article>
+<article class="card" data-category="guide" data-search="consistency 一致性 variant"><div class="card-head"><div class="title-wrap"><h4>Consistency</h4><p>同一種功能要用同一種樣式和互動邏輯。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">Consistency / 一致性</span><div class="guide-box"><strong>你可以這樣講</strong><p>主操作都用 primary button，危險操作都用 danger style，不要每頁都重新發明一次。</p></div></div></article>
+<article class="card" data-category="guide" data-search="contrast readability 對比 可讀性"><div class="card-head"><div class="title-wrap"><h4>Contrast &amp; Readability</h4><p>再好看的 UI，如果看不清楚，就不好用。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">Readability / 可讀性</span><div class="guide-box"><strong>為什麼重要</strong><p>文字太淡、字太小、背景太花，都會讓資訊讀取成本變高。</p></div></div></article>
+<article class="card" data-category="guide" data-search="interactive states hover focus disabled loading 狀態"><div class="card-head"><div class="title-wrap"><h4>Interactive States</h4><p>元件不是只做 default，還要補齊互動狀態。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">States / 狀態</span><div class="guide-box"><strong>你可以這樣講</strong><p>這組元件請補完整 state：default、hover、focus、disabled、loading、error。</p></div></div></article>
+<article class="card" data-category="guide" data-search="responsive design 響應式 手機"><div class="card-head"><div class="title-wrap"><h4>Responsive Design</h4><p>桌面版能用，不代表手機版自然就好用。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">Responsive / 響應式</span><div class="guide-box"><strong>為什麼重要</strong><p>多欄桌面版到手機常要改成單欄，固定區塊、表格和點擊區都要重新想。</p></div></div></article>
+<article class="card" data-category="guide" data-search="accessibility a11y 無障礙 focus keyboard"><div class="card-head"><div class="title-wrap"><h4>Accessibility Basics</h4><p>不能只讓看得到、用滑鼠的人能操作。</p></div><span class="meta-pill">Guide</span></div><div class="preview"><span class="label">A11y / 無障礙</span><div class="guide-box"><strong>你可以這樣講</strong><p>保留 focus ring、不要只靠顏色表達狀態、互動元件要能鍵盤操作。</p></div></div></article>
+</div>
+</section>
+<section class="section" id="ux">
+<div class="section-head"><div><h3>UX 展示</h3><p>UX 比較偏流程與感受，通常不是單一元件，而是多個元件怎麼被安排在一起。</p></div></div>
+<div class="grid">
+<article class="card" data-category="ux" data-search="user flow 使用流程 ux"><div class="card-head"><div class="title-wrap"><h4>User Flow</h4><p>把使用者從進入到完成任務的路徑串起來。</p></div><span class="meta-pill">UX</span></div><div class="preview"><span class="label">Flow / 流程</span><div class="ux-flow"><span class="ux-node">Landing</span><span class="ux-arrow">→</span><span class="ux-node">Sign up</span><span class="ux-arrow">→</span><span class="ux-node">Onboarding</span><span class="ux-arrow">→</span><span class="ux-node">Dashboard</span></div></div></article>
+<article class="card" data-category="ux" data-search="information hierarchy 資訊層級"><div class="card-head"><div class="title-wrap"><h4>Information Hierarchy</h4><p>資訊層級決定使用者先看到什麼。</p></div><span class="meta-pill">UX</span></div><div class="preview"><span class="label">Hierarchy / 層級</span><div class="stack"><div class="guide-box"><strong>Primary</strong><p>Page title + main KPI + main CTA</p></div><div class="guide-box"><strong>Secondary</strong><p>Supporting metrics + filters</p></div><div class="guide-box"><strong>Tertiary</strong><p>Footnotes + metadata</p></div></div></div></article>
+<article class="card" data-category="ux" data-search="progressive disclosure 漸進揭露"><div class="card-head"><div class="title-wrap"><h4>Progressive Disclosure</h4><p>先顯示最重要的內容，需要時再展開細節。</p></div><span class="meta-pill">UX</span></div><div class="preview"><span class="label">Disclosure / 漸進揭露</span><details class="accordion" open=""><summary>Advanced filter options</summary><p>Hide secondary controls until the user asks for them, so the default interface stays lighter.</p></details></div></article>
+<article class="card" data-category="ux" data-search="confirmation risk prevention 刪除確認"><div class="card-head"><div class="title-wrap"><h4>Confirmation &amp; Risk Prevention</h4><p>高風險操作要讓人清楚知道後果。</p></div><span class="meta-pill">UX</span></div><div class="preview"><span class="label">Risk Control / 風險控制</span><div class="modal"><strong>Delete this workspace?</strong><p style="margin: 8px 0 14px;">All files and comments will be removed. This action cannot be undone.</p><div class="btn-row"><button class="btn btn-secondary">Cancel</button><button class="btn btn-primary">Type DELETE</button></div></div></div></article>
+<article class="card" data-category="ux" data-search="feedback loop loading success failure 系統回饋"><div class="card-head"><div class="title-wrap"><h4>Feedback Loop</h4><p>使用者做完事後，要知道系統正在處理、成功了，還是失敗了。</p></div><span class="meta-pill">UX</span></div><div class="preview"><span class="label">System Feedback / 回饋</span><div class="progress"><span></span></div><div class="toast"><p>Changes synced</p><span class="tag tag-green">Done</span></div><div class="ux-helper">如果沒有這些回饋，使用者常會懷疑「剛剛到底有沒有成功」。</div></div></article>
+</div>
+</section>
+<section class="section" id="packages">
+<div class="section-head"><div><h3>套件差異</h3><p>不是所有 UI 調整都要安裝套件。這一區把常見前端 UI 套件類型與它們的定位排在一起，方便你比較。</p></div></div>
+<div class="grid">
+<article class="card span-2" data-category="package" data-search="vanilla bootstrap tailwind mui look comparison 套件長相比較">
+<div class="card-head"><div class="title-wrap"><h4>Look Comparison</h4><p>同一種資訊卡，換不同 UI 路線後，視覺語氣會很不一樣。</p></div><span class="meta-pill">Package</span></div>
+<div class="preview"><span class="label">Package Mood / 套件感覺</span><div class="package-compare">
+<div class="pkg-demo"><strong>Vanilla CSS</strong><p>自由度最高，全部自己定義。</p><div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary">Primary</button><button class="btn btn-secondary">Secondary</button></div></div>
+<div class="pkg-demo bootstrap"><strong>Bootstrap</strong><p>標準、商業、上手快。</p><div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary">Primary</button><button class="btn btn-secondary">Secondary</button></div></div>
+<div class="pkg-demo tailwind"><strong>Tailwind CSS</strong><p>不是固定外觀，是組裝式風格。</p><div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary">Primary</button><button class="btn btn-secondary">Secondary</button></div></div>
+<div class="pkg-demo mui"><strong>MUI</strong><p>完整元件庫，預設質感一致。</p><div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary">Contained</button><button class="btn btn-secondary">Outlined</button></div></div>
+</div></div>
+</article>
+<article class="card" data-category="package" data-search="pure css design tokens css variables 套件差異"><div class="card-head"><div class="title-wrap"><h4>Pure CSS / Design Tokens</h4><p>只改外型時，通常先不用加套件。</p></div><span class="meta-pill">Package</span></div><div class="preview"><span class="label">What It Gives / 提供內容</span><div class="package-box"><strong>內容</strong><p>CSS variables、色彩、字體、圓角、陰影、間距、排版規則。</p></div><div class="package-box"><strong>適合情境</strong><p>只是改外型、頁面不多、想完全自訂風格。</p></div></div></article>
+<article class="card" data-category="package" data-search="tailwind css utility first 套件差異"><div class="card-head"><div class="title-wrap"><h4>Tailwind CSS</h4><p>Utility-first 樣式工具，不是完整元件庫。</p></div><span class="meta-pill">Package</span></div><div class="preview"><span class="label">Utility / 原子化樣式</span><div class="package-box"><strong>內容</strong><p>大量 class 組合間距、顏色、字級、grid、breakpoints、hover/focus。</p></div><div class="package-box"><strong>適合情境</strong><p>想快速切版又不想被固定外觀綁住。</p></div></div></article>
+<article class="card" data-category="package" data-search="bootstrap css framework 套件差異"><div class="card-head"><div class="title-wrap"><h4>Bootstrap</h4><p>傳統完整型 CSS Framework。</p></div><span class="meta-pill">Package</span></div><div class="preview"><span class="label">Framework / 完整框架</span><div class="package-box"><strong>內容</strong><p>Grid、按鈕、表單、Navbar、Modal、表格等很多都能直接用。</p></div><div class="package-box"><strong>注意</strong><p>外觀辨識度高，追求強品牌感通常要再蓋很多樣式。</p></div></div></article>
+<article class="card" data-category="package" data-search="headless ui radix ui accessibility 套件差異"><div class="card-head"><div class="title-wrap"><h4>Headless UI / Radix UI</h4><p>提供互動邏輯和 accessibility，但幾乎不帶固定外觀。</p></div><span class="meta-pill">Package</span></div><div class="preview"><span class="label">Behavior Layer / 行為底座</span><div class="package-box"><strong>內容</strong><p>Dialog、Menu、Popover、Tabs、Select 的鍵盤操作、焦點管理與 aria 行為。</p></div><div class="package-box"><strong>適合情境</strong><p>想保有自訂視覺，但不想自己重做複雜互動。</p></div></div></article>
+<article class="card" data-category="package" data-search="mui ant chakra component library 套件差異"><div class="card-head"><div class="title-wrap"><h4>MUI / Ant / Chakra</h4><p>完整 React 元件庫，開發速度快。</p></div><span class="meta-pill">Package</span></div><div class="preview"><span class="label">Component Library / 元件庫</span><div class="package-box"><strong>內容</strong><p>大量現成元件 + theme system，適合 dashboard、後台、商業產品。</p></div><div class="package-box"><strong>注意</strong><p>客製自由度比自己寫 CSS 低，但速度通常更快。</p></div></div></article>
+<article class="card" data-category="package" data-search="icons motion lucide framer motion 套件差異"><div class="card-head"><div class="title-wrap"><h4>Icons / Motion Packages</h4><p>這類是補強型套件，不是完整 UI 架構。</p></div><span class="meta-pill">Package</span></div><div class="preview"><span class="label">Add-ons / 補強套件</span><div class="package-box"><strong>內容</strong><p>像 Lucide、Font Awesome、Framer Motion，分別補圖示與動效。</p></div><div class="package-box"><strong>適合情境</strong><p>你只缺圖示或動畫，不缺主要 UI 系統。</p></div></div></article>
+</div>
+</section>
+<section class="section" id="next">
+<div class="section-head"><div><h3>下一步學習</h3><p>如果前面這些你都已經懂了，接下來應該學的是「讓 UI 真正能落地、能維護、能交接」的東西。</p></div></div>
+<div class="grid">
+<article class="card" data-category="next" data-search="design tokens system theme semantic colors radius spacing"><div class="card-head"><div class="title-wrap"><h4>Design Tokens</h4><p>把顏色、字級、圓角、陰影和間距變成一套規則。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">System / 系統化</span><div class="tool-item"><strong>這是在學什麼</strong><p>不要每次都直接填色碼和像素，而是定義 `brand / surface / text / spacing / radius` 這些 token。</p></div></div></article>
+<article class="card" data-category="next" data-search="variants component api tone size props"><div class="card-head"><div class="title-wrap"><h4>Variants &amp; Component API</h4><p>一個元件通常不只一種長相，要先定義 variant。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">Component API / 元件規格</span><div class="tool-item"><strong>你可以這樣講</strong><p>請整理成 variant system，至少定義 tone、size、icon、disabled、loading。</p></div></div></article>
+<article class="card" data-category="next" data-search="real content edge cases 真實內容 長標題 空資料"><div class="card-head"><div class="title-wrap"><h4>Real Content &amp; Edge Cases</h4><p>不要只用漂亮假資料，要考慮真實內容會怎麼把版面撐壞。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">Edge Cases / 邊界情況</span><div class="tool-item"><strong>這是在學什麼</strong><p>長標題、超短名稱、沒有頭像、沒有資料、數值異常，都會影響 UI 是否穩定。</p></div></div></article>
+<article class="card" data-category="next" data-search="localization i18n 多語 設計"><div class="card-head"><div class="title-wrap"><h4>Localization &amp; i18n</h4><p>換語言後，長度、格式與閱讀順序都可能改變。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">Localization / 在地化</span><div class="tool-item"><strong>這是在學什麼</strong><p>按鈕長度、日期格式、貨幣、姓名順序都要依 locale 思考。</p></div></div></article>
+<article class="card" data-category="next" data-search="data formatting number date time currency"><div class="card-head"><div class="title-wrap"><h4>Data Formatting</h4><p>數字、日期、金額和單位的顯示方式很重要。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">Formatting / 資料格式</span><div class="tool-item"><strong>你可以這樣講</strong><p>這區的數字請統一格式，金額顯示幣別，時間要決定用相對時間還是絕對時間。</p></div></div></article>
+<article class="card" data-category="next" data-search="density scanability dashboard table 資訊密度"><div class="card-head"><div class="title-wrap"><h4>Density &amp; Scanability</h4><p>資訊多的畫面，不是越塞越好，要讓人掃得動。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">Density / 資訊密度</span><div class="tool-item"><strong>這是在學什麼</strong><p>後台、表格、資料卡很多時，要決定是 compact 還是 comfortable。</p></div></div></article>
+<article class="card" data-category="next" data-search="handoff specs annotation 設計交接"><div class="card-head"><div class="title-wrap"><h4>Handoff &amp; Specs</h4><p>畫面好看不夠，還要能被工程正確做出來。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">Handoff / 交接</span><div class="tool-item"><strong>你要補什麼</strong><p>尺寸、間距、state、responsive 行為、空資料與錯誤情境都要寫清楚。</p></div></div></article>
+<article class="card" data-category="next" data-search="design qa final pass review 檢查"><div class="card-head"><div class="title-wrap"><h4>Design QA</h4><p>最後一關不是再改風格，而是檢查有沒有偏掉、漏掉、對不起來。</p></div><span class="meta-pill">Next</span></div><div class="preview"><span class="label">QA / 設計檢查</span><div class="tool-item"><strong>檢查方向</strong><p>Spacing、字級、對齊、hover / focus、手機版、空狀態與資料溢出情況。</p></div></div></article>
+</div>
+</section>
+</main>
+</div>
+<script>
+      const cards = Array.from(document.querySelectorAll('.card[data-category]'));
+      const sections = Array.from(document.querySelectorAll('.section'));
+      const chips = Array.from(document.querySelectorAll('.chip'));
+      const searchInput = document.getElementById('searchInput');
+      const noResults = document.getElementById('noResults');
+      const cardCountEl = document.getElementById('cardCount');
+      const categoryCountEl = document.getElementById('categoryCount');
+      const sectionCountEl = document.getElementById('sectionCount');
+
+      let activeFilter = 'all';
+
+      const uniqueCategories = new Set(cards.map((card) => card.dataset.category));
+      cardCountEl.textContent = String(cards.length);
+      categoryCountEl.textContent = String(uniqueCategories.size);
+      sectionCountEl.textContent = String(sections.length);
+
+      function applyFilters() {
+        const query = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+        const sectionMap = new Map(sections.map((section) => [section, 0]));
+
+        cards.forEach((card) => {
+          const haystack = `${card.dataset.search || ''} ${card.textContent}`.toLowerCase();
+          const matchesFilter = activeFilter === 'all' || card.dataset.category === activeFilter;
+          const matchesQuery = !query || haystack.includes(query);
+          const visible = matchesFilter && matchesQuery;
+
+          card.classList.toggle('hidden', !visible);
+
+          if (visible) {
+            visibleCount += 1;
+            const section = card.closest('.section');
+            sectionMap.set(section, (sectionMap.get(section) || 0) + 1);
+          }
+        });
+
+        sections.forEach((section) => {
+          const visibleInSection = sectionMap.get(section) || 0;
+          section.classList.toggle('section-hidden', visibleInSection === 0);
+        });
+
+        noResults.style.display = visibleCount > 0 ? 'none' : 'block';
+      }
+
+      chips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+          activeFilter = chip.dataset.filter;
+          chips.forEach((item) => item.classList.toggle('active', item === chip));
+          applyFilters();
+        });
+      });
+
+      searchInput.addEventListener('input', applyFilters);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === '/' && document.activeElement !== searchInput) {
+          event.preventDefault();
+          searchInput.focus();
+        }
+      });
+
+      applyFilters();
+    </script>
+<footer class="footer" style="margin:32px auto 0;max-width:1320px;padding:24px;border-radius:24px;border:1px solid rgba(97,77,177,0.14);background:rgba(255,255,255,0.82);box-shadow:0 24px 60px rgba(63,43,138,0.12);">
+<p>這份頁面是 UI 元件與設計語言目錄，現在也被納入 Job Radar 文件站的導覽結構中。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer></body>
+</html>

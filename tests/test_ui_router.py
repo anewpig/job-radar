@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -10,11 +11,19 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+if "streamlit" not in sys.modules:
+    streamlit_stub = types.ModuleType("streamlit")
+    streamlit_stub.session_state = {}
+    sys.modules["streamlit"] = streamlit_stub
 
-from job_spy_tw.ui.router import build_drawer_items, build_drawer_sections  # noqa: E402
+from job_spy_tw.ui.router import build_drawer_items, build_drawer_sections, build_main_tab_items  # noqa: E402
 
 
 class RouterTests(unittest.TestCase):
+    def test_build_main_tab_items_includes_fine_tuning(self) -> None:
+        tab_ids = [tab_id for tab_id, _label in build_main_tab_items(unread_notification_count=0)]
+        self.assertIn("fine_tuning", tab_ids)
+
     def test_build_drawer_items_hides_backend_console_when_disabled(self) -> None:
         drawer_ids = [
             tab_id
@@ -54,7 +63,7 @@ class RouterTests(unittest.TestCase):
         )
         self.assertEqual(
             [item["tab_id"] for item in sections[1]["items"]],
-            ["sources", "notifications", "database", "export"],
+            ["sources", "fine_tuning", "notifications", "database", "export"],
         )
 
     def test_build_drawer_sections_only_show_system_group_when_enabled(self) -> None:

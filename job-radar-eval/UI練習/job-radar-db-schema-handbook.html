@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Job Radar DB Schema Handbook</title>
+<style>
+    :root {
+      --surface: rgba(255,255,255,0.9);
+      --line: rgba(100,78,170,0.15);
+      --text: #21193b;
+      --muted: #675f82;
+      --accent: #674fd8;
+      --accent-2: #4c31c7;
+      --shadow: 0 22px 64px rgba(93,69,175,0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --content-width: 1460px;
+      --toc-width: 290px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "SF Pro TC", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(168,146,255,0.22), transparent 34%),
+        radial-gradient(circle at top right, rgba(255,220,239,0.26), transparent 30%),
+        linear-gradient(180deg, #faf7ff 0%, #f3efff 100%);
+    }
+    a { color: inherit; }
+    .shell { max-width: var(--content-width); margin: 0 auto; padding: 28px 20px 120px; }
+    .hero,.section,.toc,.table-wrap,.footer,.hero-card,.card,.summary-card,details.card-detail {
+      border: 1px solid var(--line); background: var(--surface); backdrop-filter: blur(16px); border-radius: var(--radius-xl); box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 34px; margin-bottom: 22px; position: relative; overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(170,149,255,0.26), transparent 24%),
+        radial-gradient(circle at 88% 12%, rgba(255,226,244,0.48), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(244,239,255,0.98));
+    }
+    .eyebrow {
+      display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius:999px; border:1px solid var(--line);
+      background:rgba(255,255,255,0.8); color:var(--accent-2); font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase;
+    }
+    .hero h1 { margin:18px 0 12px; font-size:clamp(34px,5vw,54px); line-height:1.05; letter-spacing:-.03em; max-width:980px; }
+    .hero p { margin:0; max-width:1080px; color:var(--muted); font-size:17px; line-height:1.82; }
+    .hero-grid { display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-top:28px; }
+    .hero-card,.summary-card,.card { padding:22px; }
+    .hero-card h2,.section-header h2 { margin:0 0 10px; font-size:26px; letter-spacing:-.02em; }
+    .hero-card p,.summary-card p,.section-header p,.card p,.table-wrap td,.table-wrap th,.metric small,.list li,.footer p { color:var(--muted); line-height:1.78; }
+    .hero-list { margin:16px 0 0; padding-left:18px; display:grid; gap:8px; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) var(--toc-width); gap:22px; align-items:start; }
+    .main { display:flex; flex-direction:column; gap:20px; }
+    .toc { position:sticky; top:18px; padding:18px; background:rgba(255,255,255,0.86); }
+    .toc h2 { margin:0 0 12px; font-size:16px; }
+    .toc ol { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:10px; color:var(--muted); }
+    .toc a { text-decoration:none; }
+    .section { padding:28px; }
+    .section-header { margin-bottom:18px; }
+    .kicker {
+      display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border-radius:999px; border:1px solid var(--line);
+      background:rgba(103,79,216,0.08); color:var(--accent-2); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:12px;
+    }
+    .metric-grid,.card-grid,.db-grid,.flow-grid,.guide-grid { display:grid; gap:16px; }
+    .metric-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .card-grid,.db-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .guide-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .metric { padding:18px; border-radius:20px; border:1px solid var(--line); background:rgba(255,255,255,0.84); }
+    .metric span { display:block; color:var(--muted); font-size:12px; letter-spacing:.07em; text-transform:uppercase; font-weight:700; margin-bottom:8px; }
+    .metric strong { display:block; font-size:24px; margin-bottom:8px; letter-spacing:-.03em; }
+    .card,.summary-card { border-radius:24px; border:1px solid var(--line); background:rgba(255,255,255,0.88); }
+    .card header,.summary-card header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    .icon {
+      display:inline-flex; align-items:center; justify-content:center; min-width:58px; min-height:58px; padding:0 12px; border-radius:18px;
+      border:1px solid var(--line); background:linear-gradient(135deg, rgba(103,79,216,0.12), rgba(255,255,255,0.92)); color:var(--accent-2); font-weight:800;
+    }
+    .tag-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .tag { padding:7px 11px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.82); font-size:13px; line-height:1.4; }
+    .list { margin:0; padding-left:18px; display:grid; gap:8px; }
+    details.card-detail { overflow:hidden; }
+    details.card-detail + details.card-detail { margin-top:14px; }
+    details.card-detail summary { list-style:none; cursor:pointer; padding:18px 20px; display:grid; grid-template-columns:86px minmax(0,1fr) 40px; gap:16px; align-items:center; background:rgba(255,255,255,0.94); }
+    details.card-detail summary::-webkit-details-marker { display:none; }
+    .summary-icon {
+      min-height:72px; border-radius:18px; display:grid; place-items:center; border:1px solid var(--line);
+      background:linear-gradient(135deg, rgba(103,79,216,0.12), rgba(255,255,255,0.95)); color:var(--accent-2); font-weight:800; font-size:26px;
+    }
+    .summary-copy h3 { margin:0 0 8px; font-size:22px; letter-spacing:-.02em; }
+    .summary-copy p { margin:0; color:var(--muted); line-height:1.72; }
+    .summary-arrow { width:40px; height:40px; border-radius:999px; border:1px solid var(--line); display:grid; place-items:center; background:#fff; color:var(--accent-2); font-weight:800; }
+    details[open] .summary-arrow { transform:rotate(45deg); }
+    .detail-content { border-top:1px solid var(--line); padding:0 20px 20px; background:linear-gradient(180deg, rgba(255,255,255,0.72), rgba(244,239,255,0.74)); }
+    .detail-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:18px; padding-top:18px; }
+    .detail-box { padding:16px 18px; border-radius:18px; border:1px solid var(--line); background:rgba(255,255,255,0.84); }
+    .detail-box h4 { margin:0 0 10px; font-size:15px; color:var(--accent-2); letter-spacing:.02em; }
+    .flow-step { padding:14px 16px; border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,0.84); color:var(--muted); line-height:1.78; }
+    .table-wrap { padding:18px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; min-width:920px; }
+    caption { text-align:left; margin-bottom:12px; font-weight:700; font-size:16px; }
+    th,td { text-align:left; vertical-align:top; padding:14px 12px; border-bottom:1px solid var(--line); }
+    th { color:var(--accent-2); background:rgba(103,79,216,0.06); font-size:13px; letter-spacing:.06em; text-transform:uppercase; }
+    .footer { margin-top:24px; padding:24px; }
+    @media (max-width:1180px){ .layout{grid-template-columns:1fr}.toc{position:static;order:-1}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+    @media (max-width:960px){ .hero-grid,.metric-grid,.card-grid,.db-grid,.guide-grid,.detail-grid{grid-template-columns:1fr} details.card-detail summary{grid-template-columns:1fr}.summary-arrow{display:none;} }
+    @media (max-width:640px){ .shell{padding:14px 12px 96px}.hero,.section,.footer{padding:20px}.hero h1{font-size:34px} }
+  </style>
+</head>
+<body>
+<div class="shell">
+<header class="hero" id="top">
+<div class="eyebrow">Job Radar DB Handbook</div>
+<h1>Job Radar 資料庫與 Schema 深度手冊</h1>
+<p>
+        這頁專門講資料層，不重複整個系統架構，而是直接回答幾個更實際的問題：目前有哪些資料庫、每份資料庫各自扛什麼責任、
+        每張核心表大概在存什麼、為什麼要這樣分層、哪些是執行期資料、哪些是產品主資料、哪些帶敏感資訊、哪些適合日後搬到更正式的儲存層。
+      </p>
+<div class="hero-grid">
+<section class="hero-card">
+<h2>一句話總結</h2>
+<p>
+            目前資料層不是「一個 SQLite 打天下」，而是刻意拆成四種責任：<strong>產品主資料</strong>、<strong>抓取執行期 runtime</strong>、<strong>使用者提交/履歷資料</strong>、<strong>市場歷史 archive</strong>。
+            另外再加上 JSON snapshot / HTTP cache 承接 payload 本體。這種切法的最大價值，是未來每一層都可以獨立搬家，而不是一次性大重構。
+          </p>
+<ul class="hero-list">
+<li><strong>product_state.sqlite3</strong>：產品主資料、通知、收藏、saved search、AI monitoring。</li>
+<li><strong>query_runtime.sqlite3</strong>：query snapshots、crawl queue、runtime heartbeat。</li>
+<li><strong>user_submissions.sqlite3</strong>：履歷與使用者提交內容的遮罩後留存。</li>
+<li><strong>market_history.sqlite3</strong>：crawl run archive 與歷史職缺。</li>
+<li><strong>JSON / Cache</strong>：完整快照 payload 與來源抓取快取。</li>
+</ul>
+</section>
+<aside class="summary-card">
+<header>
+<div>
+<h3>這份頁面特別補什麼</h3>
+<p>不是只有表名，而是把責任、關聯、索引、讀寫模式、生命週期與升級時機一起講清楚。</p>
+</div>
+<div class="icon">DB</div>
+</header>
+<div class="tag-row">
+<span class="tag">Table Groups</span>
+<span class="tag">Schema Roles</span>
+<span class="tag">Read/Write Paths</span>
+<span class="tag">Indexes</span>
+<span class="tag">Retention</span>
+<span class="tag">Migration Roadmap</span>
+</div>
+</aside>
+</div>
+</header>
+<div class="layout">
+<main class="main">
+<section class="section" id="overview">
+<div class="section-header">
+<div class="kicker">Overview</div>
+<h2>目前資料策略的核心判斷</h2>
+<p>
+              這套系統最值得肯定的資料層決策，不是用了哪個資料庫，而是很早就知道不同資料不該混在一起。
+              一般產品在早期常見的錯誤是，把帳號、背景 queue、AI 監控、履歷原文、歷史 archive 全塞同一份 DB。你的系統沒有這樣做，所以後續升級時可以一層一層搬，不用整台機器一起拆。
+            </p>
+</div>
+<div class="metric-grid">
+<article class="metric"><span>主資料</span><strong>product_state</strong><small>保存會直接影響產品體驗與使用者狀態的資料。</small></article>
+<article class="metric"><span>執行期</span><strong>query_runtime</strong><small>只關心 queue、snapshot registry 與系統心跳。</small></article>
+<article class="metric"><span>敏感提交</span><strong>user_submissions</strong><small>把履歷等較敏感內容與一般產品資料分開。</small></article>
+<article class="metric"><span>歷史分析</span><strong>market_history</strong><small>保存長期市場資料，不污染 live product flows。</small></article>
+</div>
+</section>
+<section class="section" id="strategy">
+<div class="section-header">
+<div class="kicker">Strategy</div>
+<h2>為什麼資料要這樣拆</h2>
+<p>資料拆分的關鍵不是技術偏好，而是生命週期、寫入頻率、敏感程度、查詢模式、未來搬遷方向都不同。</p>
+</div>
+<div class="card-grid">
+<article class="card"><header><div><h3>產品主資料不應與 queue 混在一起</h3><p>因為產品主資料追求一致性與長期保存；queue 追求高頻短生命週期與執行期可觀察性。</p></div><div class="icon">S1</div></header><p>如果把 saved search、收藏與 crawl_jobs 放在一起，你很快就會遇到 retention、索引、鎖競爭與備份邊界都互相衝突的問題。</p></article>
+<article class="card"><header><div><h3>敏感資料不應與一般產品資料混在一起</h3><p>履歷內容的治理方式與一般產品資料不同。</p></div><div class="icon">S2</div></header><p>只要一開始就分檔，未來要加 retention、刪除流程、加密、匯出與審計都會容易很多。</p></article>
+<article class="card"><header><div><h3>歷史資料不應拖慢 live 查詢</h3><p>長期 archive 的成長模式，和工作台當前互動需要的低延遲讀取完全不同。</p></div><div class="icon">S3</div></header><p>歷史市場資料適合慢慢累積並拿來做趨勢；工作台則需要「現在這次查詢的結果」。把兩者分開，是正確的產品數據架構思路。</p></article>
+<article class="card"><header><div><h3>Payload 本體與 metadata 不該混在一起</h3><p>完整快照內容和 registry/queue metadata 的最佳儲存方式不同。</p></div><div class="icon">S4</div></header><p>因此現在用 DB 存 metadata，用 JSON / cache 存 payload，本質上是對的。只是未來量大後要把檔案層升級成 object storage。</p></article>
+</div>
+</section>
+<section class="section" id="storage-map">
+<div class="section-header"><div class="kicker">Storage Map</div><h2>資料層總覽圖</h2><p>從資料流角度看，UI 和 service 寫進的其實不是同一種資料，而是分流到五個儲存槽位。</p></div>
+<div class="flow-grid">
+<div class="flow-step"><strong>使用者操作</strong> → `product_state.sqlite3`：帳號、saved search、favorites、通知偏好、AI monitoring、履歷 profile。</div>
+<div class="flow-step"><strong>抓取執行期</strong> → `query_runtime.sqlite3`：query snapshot registry、crawl jobs、runtime signals。</div>
+<div class="flow-step"><strong>履歷原文 / 提交內容</strong> → `user_submissions.sqlite3`：遮罩後提交記錄與分析上下文。</div>
+<div class="flow-step"><strong>每輪市場快照 archive</strong> → `market_history.sqlite3`：crawl runs、job posts、crawl_run_jobs。</div>
+<div class="flow-step"><strong>完整 payload / cache</strong> → JSON snapshots 與 cache 目錄：快照本體與抓取快取。</div>
+</div>
+</section>
+<section class="section" id="product-db">
+<div class="section-header"><div class="kicker">Product DB</div><h2>product_state.sqlite3</h2><p>這份資料庫是產品主資料層。它承載的是使用者在工作台上的狀態與行為痕跡，而不是背景 queue 或大體積 payload。</p></div>
+<details class="card-detail" open="">
+<summary><div class="summary-icon">AUTH</div><div class="summary-copy"><h3>帳號與身份關聯群組</h3><p>`users`、`user_identities`、`password_reset_tokens` 是登入與身份映射核心。</p></div><div class="summary-arrow">+</div></summary>
+<div class="detail-content">
+<div class="detail-grid">
+<div>
+<div class="detail-box"><h4>users</h4><p>主帳號表。保存 email、display_name、password_salt、password_hash、is_guest、created_at、updated_at、last_login_at。</p><ul class="list"><li>主鍵：`id`</li><li>唯一鍵：`email`</li><li>特例：會自動建立 guest user</li></ul></div>
+<div class="detail-box"><h4>user_identities</h4><p>第三方身份映射表。用 `(provider, subject)` 作主鍵，把 OAuth/OIDC provider 身份連回本地 user。</p><ul class="list"><li>主鍵：`(provider, subject)`</li><li>索引：`idx_user_identities_user_provider`, `idx_user_identities_email`</li></ul></div>
+<div class="detail-box"><h4>password_reset_tokens</h4><p>密碼重設流程的臨時令牌 / reset code。保存使用者、建立時間、過期時間、消耗時間。</p></div>
+</div>
+<div>
+<div class="detail-box"><h4>為什麼這樣分</h4><ul class="list"><li>`users` 只負責本地帳號主體，不把第三方 provider 細節塞進去。</li><li>`user_identities` 讓多 provider 綁定變得自然，也避免後續 provider 擴充時破壞 `users`。</li><li>`password_reset_tokens` 獨立出來，讓重設流程有清楚的過期與消耗語義。</li></ul></div>
+<div class="detail-box"><h4>未來風險與建議</h4><ul class="list"><li>若 provider 增多，要補更明確的 unique / lifecycle policy。</li><li>password reset token 需要 retention / cleanup，避免歷史垃圾累積。</li><li>若要企業化，需再加權限模型與 audit trail。</li></ul></div>
+</div>
+</div>
+</div>
+</details>
+<details class="card-detail" open="">
+<summary><div class="summary-icon">SEARCH</div><div class="summary-copy"><h3>搜尋與追蹤群組</h3><p>`saved_searches`、`saved_search_seen_jobs`、`favorite_jobs` 是工作台長期追蹤核心。</p></div><div class="summary-arrow">+</div></summary>
+<div class="detail-content">
+<div class="detail-grid">
+<div>
+<div class="detail-box"><h4>saved_searches</h4><p>保存使用者查詢條件，包含 rows_json、custom_queries_text、crawl_preset_label、signature、last_run_at、last_job_count 等。</p><ul class="list"><li>主鍵：`id`</li><li>唯一鍵：`(user_id, name)`</li><li>索引：`idx_saved_searches_user_signature`, `idx_saved_searches_user_updated_at`</li></ul></div>
+<div class="detail-box"><h4>saved_search_seen_jobs</h4><p>記錄某個 saved search 已經看過哪些 job_url，以及第一次 / 最後一次看到時間。</p><ul class="list"><li>主鍵：`(search_id, job_url)`</li><li>外鍵：`search_id -&gt; saved_searches.id`</li><li>索引：`idx_saved_search_seen_jobs_search_ordinal`</li></ul></div>
+<div class="detail-box"><h4>favorite_jobs</h4><p>使用者收藏的職缺，同時保存投遞狀態、投遞日期、面試日期、面試筆記。</p><ul class="list"><li>主鍵：`id`</li><li>唯一鍵：`(user_id, job_url)`</li><li>索引：`idx_favorite_jobs_user_saved_search`, `idx_favorite_jobs_user_application_status`</li></ul></div>
+</div>
+<div>
+<div class="detail-box"><h4>設計動機</h4><ul class="list"><li>`saved_searches` 解的是「條件保存」；`saved_search_seen_jobs` 解的是「去重與新舊判斷」。這兩件事不該混成一欄大 JSON。</li><li>`favorite_jobs` 不只是收藏表，實際上已經兼具簡化版投遞看板資料來源。</li><li>這個群組代表產品的黏著度來源，也是通知與自動刷新最常回寫的區域。</li></ul></div>
+<div class="detail-box"><h4>常見讀寫模式</h4><ul class="list"><li>搜尋完成後更新 `saved_searches` 的統計與 last_run_at。</li><li>自動刷新後對照 `saved_search_seen_jobs` 判斷哪些是新職缺。</li><li>收藏與投遞狀態編輯走 `favorite_jobs`。</li></ul></div>
+<div class="detail-box"><h4>未來擴充</h4><ul class="list"><li>若投遞看板變複雜，`favorite_jobs` 可能要拆成 application pipeline tables。</li><li>若 saved search 很多，可考慮把 rows_json 正規化或至少補 migration/version。</li></ul></div>
+</div>
+</div>
+</div>
+</details>
+<details class="card-detail" open="">
+<summary><div class="summary-icon">NOTI</div><div class="summary-copy"><h3>通知與偏好群組</h3><p>`job_notifications`、`notification_preferences` 承接站內與站外提醒能力。</p></div><div class="summary-arrow">+</div></summary>
+<div class="detail-content">
+<div class="detail-grid">
+<div>
+<div class="detail-box"><h4>job_notifications</h4><p>記錄某次 saved search 產生的新職缺通知，包含 new_jobs_json、已讀狀態、Email / LINE 是否送出與 delivery_notes。</p><ul class="list"><li>主鍵：`id`</li><li>索引：`idx_job_notifications_user_read_created`</li></ul></div>
+<div class="detail-box"><h4>notification_preferences</h4><p>每位使用者的通知偏好：site / email / line 開關、收件者、LINE 綁定資訊、relevance threshold、frequency。</p><ul class="list"><li>主鍵：`user_id`</li><li>一使用者一筆偏好</li></ul></div>
+</div>
+<div>
+<div class="detail-box"><h4>為什麼不是只存發送結果</h4><ul class="list"><li>通知本身是一個產品事件，不只是傳輸行為，所以需要留下站內記錄。</li><li>偏好設定與發送記錄必須分開，否則很難重送、分析或回顧。</li></ul></div>
+<div class="detail-box"><h4>未來建議</h4><ul class="list"><li>若通道增多，將 provider 細節抽成 provider registry 或 delivery attempt table。</li><li>若通知可靠性很重要，發送結果應獨立 attempt log，而不只是一組布林欄位。</li></ul></div>
+</div>
+</div>
+</div>
+</details>
+<details class="card-detail" open="">
+<summary><div class="summary-icon">META</div><div class="summary-copy"><h3>產品運營與 AI 監控群組</h3><p>`app_metrics`、`ai_monitoring_events`、`user_resume_profiles` 提供輕量營運與個人化基底。</p></div><div class="summary-arrow">+</div></summary>
+<div class="detail-content">
+<div class="detail-grid">
+<div>
+<div class="detail-box"><h4>app_metrics</h4><p>目前是簡單 key-value metrics 表，例如 total_visits。是最輕量的營運數值承載點。</p></div>
+<div class="detail-box"><h4>ai_monitoring_events</h4><p>保存 AI 相關事件，包含 event_type、status、latency_ms、model_name、query_signature、metadata_json、created_at。</p><ul class="list"><li>索引：按 event_type / user_id / status + created_at</li><li>用途：AI 成本、延遲、失敗率與回退策略觀察</li></ul></div>
+<div class="detail-box"><h4>user_resume_profiles</h4><p>保存使用者目前最新的結構化履歷 profile，讓履歷頁與 AI 助理能重用個人化輪廓。</p></div>
+</div>
+<div>
+<div class="detail-box"><h4>為什麼放在 product_state</h4><ul class="list"><li>這些資料會直接影響產品體驗或個人化，而不是單純背景維運。</li><li>`user_resume_profiles` 雖然和履歷有關，但它是衍生後的產品可用 profile，不等於原始提交內容。</li></ul></div>
+<div class="detail-box"><h4>何時該搬</h4><ul class="list"><li>`ai_monitoring_events` 變大時，應搬去 analytics / observability store。</li><li>`app_metrics` 如果從 key-value 演變成正式儀表板，就該進 metrics pipeline。</li></ul></div>
+</div>
+</div>
+</div>
+</details>
+</section>
+<section class="section" id="runtime-db">
+<div class="section-header"><div class="kicker">Runtime DB</div><h2>query_runtime.sqlite3</h2><p>這份 DB 不承載產品主資料，而是承載抓取執行期 metadata。它的核心價值不是資料豐富，而是讓 queue、snapshot freshness 與 heartbeat 都有可觀察狀態。</p></div>
+<div class="db-grid">
+<article class="card"><header><div><h3>query_snapshots</h3><p>以 `query_signature` 為主鍵的 snapshot registry。</p></div><div class="icon">QS</div></header><p>欄位包含：`status`, `generated_at`, `fresh_until`, `storage_key`, `last_accessed_at`, `updated_at`, `error_message`, `is_partial`。它不直接保存完整 payload，而是保存快照 metadata 與檔案 key。</p><div class="tag-row"><span class="tag">主鍵：query_signature</span><span class="tag">角色：registry</span><span class="tag">搭配：JSON snapshots</span></div></article>
+<article class="card"><header><div><h3>crawl_jobs</h3><p>抓取 queue。保存 priority、status、lease_owner、lease_expires_at、attempt_count、snapshot_ref 等。</p></div><div class="icon">CJ</div></header><p>這張表的設計目標是「足夠支援 dedupe、lease、retry、priority」，而不是做通用訊息佇列。它目前很務實，但也清楚知道自己不是終局 queue。</p><div class="tag-row"><span class="tag">索引：signature_status</span><span class="tag">索引：pending_order</span><span class="tag">角色：queue</span></div></article>
+<article class="card"><header><div><h3>runtime_signals</h3><p>scheduler / worker / cleanup 等背景元件的 heartbeat 表。</p></div><div class="icon">RS</div></header><p>主鍵是 `(component_kind, component_id)`，搭配 `updated_at` 索引。它不是完整事件流，而是最近狀態的 upsert 式快照。</p><div class="tag-row"><span class="tag">主鍵：component_kind + component_id</span><span class="tag">索引：updated_at DESC</span></div></article>
+<article class="card"><header><div><h3>這層資料最重要的特性</h3><p>短生命週期、寫入頻繁、可觀察性優先。</p></div><div class="icon">WHY</div></header><p>runtime 資料本質上不是為了永久保存，而是為了讓背景流程能協作並被觀察。因此它的 retention 與升級方向，應和產品主資料完全不同。</p></article>
+</div>
+<div class="table-wrap" style="margin-top:18px;">
+<table>
+<caption>runtime 層的典型狀態變化</caption>
+<thead><tr><th>表</th><th>典型寫入</th><th>典型讀取</th><th>為什麼重要</th></tr></thead>
+<tbody>
+<tr><td>query_snapshots</td><td>生成 partial / ready snapshot 時 upsert</td><td>查詢是否命中 cache、是否仍 fresh</td><td>讓同一個 query 不必每次都重抓</td></tr>
+<tr><td>crawl_jobs</td><td>enqueue、lease、retry、complete、fail</td><td>worker 挑下一個 job；營運看 backlog</td><td>自動刷新與背景抓取的執行核心</td></tr>
+<tr><td>runtime_signals</td><td>scheduler / worker 定期 upsert heartbeat</td><td>後端控制台查看是否還活著</td><td>沒有它就不知道背景組件是否靜默失效</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="submissions-db">
+<div class="section-header"><div class="kicker">User Submission DB</div><h2>user_submissions.sqlite3</h2><p>這份 DB 現在非常單純，只有 `user_submissions` 一張主表，但它的重要性很高，因為它承接的是較高敏感度的使用者輸入內容。</p></div>
+<div class="card-grid">
+<article class="card"><header><div><h3>user_submissions</h3><p>保存建立時間、來源型別、遮罩後原文、summary、target_roles、core_skills、tool_skills、preferred_tasks、generated_prompts、extraction_method、llm_model、notes。</p></div><div class="icon">SUB</div></header><p>它的角色不是產品主狀態，而是留下一份「履歷/提交內容的開發與分析可用影子」。因此它應保留最小必要資訊，並更重視遮罩、刪除與 retention，而不是長期持有大量原文。</p></article>
+<article class="card"><header><div><h3>為什麼獨立成一份 DB</h3><p>因為這層資料的敏感度與治理要求明顯不同。</p></div><div class="icon">PII</div></header><p>只要這些資料和 product_state 混在一起，未來刪除流程、權限隔離、備份策略都會一起複雜化。現在先分檔，是非常合理的前置治理。</p></article>
+</div>
+</section>
+<section class="section" id="history-db">
+<div class="section-header"><div class="kicker">History DB</div><h2>market_history.sqlite3</h2><p>這層代表的不是「現在這次查詢」，而是「過去所有查詢累積下來的市場歷史」。它讓系統未來有能力做趨勢、角色變化、技能變化與來源比較。</p></div>
+<div class="db-grid">
+<article class="card"><header><div><h3>crawl_runs</h3><p>每一次 crawl 的總結記錄，保存 generated_at、query_fingerprint、queries_json、role_targets_json、job/skill/task/error 計數與摘要 JSON。</p></div><div class="icon">RUN</div></header><p>這張表的角色是「批次層級的歷史檔案」，不是單筆職缺表。</p></article>
+<article class="card"><header><div><h3>job_posts</h3><p>以 `job_url` 為主鍵的職缺主表，記錄 first_seen / last_seen 與 latest_payload_json。</p></div><div class="icon">POST</div></header><p>它相當於歷史維度中的職缺主實體表，讓同一個職缺可跨多個 crawl_run 被追蹤。</p></article>
+<article class="card"><header><div><h3>crawl_run_jobs</h3><p>把某次 crawl_run 與當次抓到的 job_url 關聯起來，並保存當時快照、排序與 relevance_score。</p></div><div class="icon">MAP</div></header><p>它扮演 run 與 job 之間的橋接表，讓「某次跑到什麼」與「某個 job 在不同 run 如何變化」都能回答。</p></article>
+<article class="card"><header><div><h3>這層資料為什麼值錢</h3><p>因為沒有 archive，你就永遠只能回答「現在」，不能回答「變化」。</p></div><div class="icon">WHY</div></header><p>歷史層真正的價值不是備份，而是讓市場分析從即時檢視升級成時間序列洞察。當你要談技能熱度趨勢、JD 變化、角色漂移，這層才是關鍵。</p></article>
+</div>
+<div class="table-wrap" style="margin-top:18px;">
+<table>
+<caption>history 層關聯視角</caption>
+<thead><tr><th>表</th><th>主鍵</th><th>關聯</th><th>查詢價值</th></tr></thead>
+<tbody>
+<tr><td>crawl_runs</td><td>id</td><td>被 crawl_run_jobs 參照</td><td>看某次整體輸出、摘要、錯誤與 query fingerprint</td></tr>
+<tr><td>job_posts</td><td>job_url</td><td>被 crawl_run_jobs 參照</td><td>看某職缺第一次/最後一次出現與最新 payload</td></tr>
+<tr><td>crawl_run_jobs</td><td>(crawl_run_id, job_url)</td><td>橋接 crawl_runs 與 job_posts</td><td>看某次 run 含哪些職缺、排序與當時快照</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="snapshot-layer">
+<div class="section-header"><div class="kicker">Snapshot Layer</div><h2>JSON Snapshot 與 Cache 層</h2><p>除了四份 SQLite，還有一個常被低估但非常重要的層：JSON snapshot 與抓取快取。這層不是備而不用，而是當前系統可觀察性與 payload 保存策略的重要部分。</p></div>
+<div class="card-grid">
+<article class="card"><header><div><h3>jobs_latest.json</h3><p>最新一份市場快照的 materialized view。</p></div><div class="icon">LST</div></header><p>適合 UI cold start 與最近結果展示，但不應被當成長期唯一資料來源。</p></article>
+<article class="card"><header><div><h3>snapshot store</h3><p>按 query signature digest 生成的 `.json` 或 `.partial.json` 檔。</p></div><div class="icon">SNP</div></header><p>搭配 `query_snapshots.storage_key` 使用，DB 存 registry，檔案存完整 payload。</p></article>
+<article class="card"><header><div><h3>HTTP / HTML Cache</h3><p>來源抓取快取，提升重跑效率與 debug 能力。</p></div><div class="icon">HT</div></header><p>這層尤其適合 parser debug、比對來源改版與降低重複請求成本。</p></article>
+<article class="card"><header><div><h3>未來替代方案</h3><p>當檔案數量與多機需求上升時，這層應最先遷移到 object storage。</p></div><div class="icon">OBJ</div></header><p>DB 仍留 metadata；payload 與 cache 搬到更適合共享與版本治理的儲存層。</p></article>
+</div>
+</section>
+<section class="section" id="access-patterns">
+<div class="section-header"><div class="kicker">Access Patterns</div><h2>誰在讀、誰在寫</h2><p>了解 schema 不能只看欄位，還要看讀寫路徑。下面這張表說明每個儲存層主要由哪一類模組操作。</p></div>
+<div class="table-wrap">
+<table>
+<caption>主要讀寫路徑</caption>
+<thead><tr><th>儲存層 / 表群</th><th>主要寫入者</th><th>主要讀取者</th><th>典型操作</th></tr></thead>
+<tbody>
+<tr><td>users / identities / reset tokens</td><td>auth store / auth views / OIDC callback</td><td>登入流程、使用者解析、權限上下文</td><td>註冊、登入、綁定、重設密碼</td></tr>
+<tr><td>saved_searches / seen_jobs</td><td>crawl application service、tracking actions</td><td>搜尋工作台、scheduler、tracking 頁</td><td>保存查詢、刷新、新舊職缺判斷</td></tr>
+<tr><td>favorite_jobs</td><td>市場頁收藏動作、看板 actions</td><td>追蹤中心、投遞看板</td><td>收藏、投遞狀態更新、筆記編輯</td></tr>
+<tr><td>job_notifications / preferences</td><td>notification service、settings page</td><td>追蹤中心、AI launcher 通知 tab、通知設定頁</td><td>建立通知、標記已讀、測試通知、綁定設定</td></tr>
+<tr><td>ai_monitoring_events</td><td>assistant actions、resume actions、AI service</td><td>後端控制台、後續報表</td><td>記錄 latency、status、model、metadata</td></tr>
+<tr><td>query_snapshots / crawl_jobs / runtime_signals</td><td>crawl runtime、scheduler、worker</td><td>UI polling、後端控制台、worker 本身</td><td>cache 命中、enqueue、lease、heartbeat</td></tr>
+<tr><td>user_submissions</td><td>resume upload / parse flow</td><td>履歷分析與開發觀察</td><td>遮罩保存、後續 profile 生成輔助</td></tr>
+<tr><td>crawl_runs / job_posts / crawl_run_jobs</td><td>market_history_store</td><td>市場歷史與後續趨勢頁</td><td>每輪 crawl archive、職缺歷史追蹤</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="lifecycle">
+<div class="section-header"><div class="kicker">Lifecycle</div><h2>資料生命週期與搬遷時機</h2><p>真正成熟的資料層，不只知道「怎麼存」，還知道「要留多久、什麼時候該搬」。</p></div>
+<div class="table-wrap">
+<table>
+<caption>生命週期建議</caption>
+<thead><tr><th>資料群</th><th>建議保留期間</th><th>為什麼</th><th>何時該搬或拆</th></tr></thead>
+<tbody>
+<tr><td>產品主資料</td><td>長期</td><td>屬於產品核心狀態</td><td>當多使用者寫入與 migration 需求增加時搬到 Postgres</td></tr>
+<tr><td>runtime queue / signals</td><td>短到中期</td><td>多數只對最近執行期有價值</td><td>當 worker 數量、queue throughput、跨機需求上升時換 broker</td></tr>
+<tr><td>AI monitoring</td><td>中期</td><td>適合做近階段監控與成本分析</td><td>當事件量大時拆到 analytics / observability store</td></tr>
+<tr><td>履歷遮罩資料</td><td>盡量短到中期</td><td>敏感度高，不宜無限期保存</td><td>需要刪除流程、TTL 或加密策略時</td></tr>
+<tr><td>歷史市場 archive</td><td>長期</td><td>要支持趨勢分析</td><td>歷史量變大時轉倉儲 / DuckDB / Parquet</td></tr>
+<tr><td>JSON snapshot / cache</td><td>視 freshness 與 debug 需求</td><td>可用性與 debug 價值高，但不宜無限制堆積</td><td>檔案數與多機需求升高時改 object storage + manifest</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="live-notes">
+<div class="section-header"><div class="kicker">Live Notes</div><h2>目前環境盤點備註</h2><p>這裡補充本次整理時對目前環境的實際觀察。這不是 schema 定義本身，但對理解「哪些資料層已經 materialize」有幫助。</p></div>
+<div class="card-grid">
+<article class="card"><header><div><h3>目前設定中的資料路徑</h3><p>這些路徑是本次在當前環境實際讀到的設定值。</p></div><div class="icon">PATH</div></header><ul class="list"><li>`/Users/zhuangcaizhen/.job-radar-data/product_state.sqlite3`</li><li>`/Users/zhuangcaizhen/.job-radar-data/query_runtime.sqlite3`</li><li>`/Users/zhuangcaizhen/.job-radar-data/user_submissions.sqlite3`</li><li>`/Users/zhuangcaizhen/.job-radar-data/market_history.sqlite3`</li></ul></article>
+<article class="card"><header><div><h3>本次觀察到的 live table 狀態</h3><p>當前環境盤點時，已 materialize 的表主要出現在 history DB。</p></div><div class="icon">LIVE</div></header><p>本次直接盤點時，明確看到 `market_history.sqlite3` 內已有 `crawl_runs`、`job_posts`、`crawl_run_jobs`。其餘 DB 的 schema 已由程式碼定義，但實際檔案與表是否建立，仍取決於當前環境是否已經跑過對應初始化或寫入流程。</p></article>
+</div>
+</section>
+<section class="section" id="roadmap">
+<div class="section-header"><div class="kicker">Roadmap</div><h2>資料層下一步最合理的升級順序</h2><p>如果未來要升級，不要同時重構所有資料層。比較合理的順序如下。</p></div>
+<div class="guide-grid">
+<article class="card"><header><div><h3>1. 先搬 product_state</h3><p>因為它最接近正式產品主資料。</p></div><div class="icon">R1</div></header><p>一旦使用者數量與 migration 需求提升，Postgres 會比 SQLite 更適合這一層。</p></article>
+<article class="card"><header><div><h3>2. 再換 runtime queue</h3><p>因為 scheduler / worker 壓力會先打到這裡。</p></div><div class="icon">R2</div></header><p>把 `crawl_jobs` 與 lease/retry 能力移到 Redis / Postgres queue，是最自然的第二步。</p></article>
+<article class="card"><header><div><h3>3. 最後整理 archive / analytics</h3><p>歷史與 AI 監控層再往分析型儲存走。</p></div><div class="icon">R3</div></header><p>當要做趨勢、BI 或 AI quality dashboard 時，再把 history 與 monitoring 拆到更適合的分析層。</p></article>
+</div>
+</section>
+</main>
+<aside class="toc">
+<h2>章節索引</h2>
+<ol>
+<li><a href="#overview">目前資料策略</a></li>
+<li><a href="#strategy">為什麼要這樣拆</a></li>
+<li><a href="#storage-map">資料層總覽圖</a></li>
+<li><a href="#product-db">product_state.sqlite3</a></li>
+<li><a href="#runtime-db">query_runtime.sqlite3</a></li>
+<li><a href="#submissions-db">user_submissions.sqlite3</a></li>
+<li><a href="#history-db">market_history.sqlite3</a></li>
+<li><a href="#snapshot-layer">JSON / Cache 層</a></li>
+<li><a href="#access-patterns">誰在讀誰在寫</a></li>
+<li><a href="#lifecycle">資料生命週期</a></li>
+<li><a href="#live-notes">目前環境盤點</a></li>
+<li><a href="#roadmap">資料層升級順序</a></li>
+<li><a href="#top">回到頂部</a></li>
+</ol>
+</aside>
+</div>
+<footer class="footer">
+<p>這份頁面聚焦資料落地策略，說明 product_state、query_runtime、user_submissions、market_history 與 cache 的邊界。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</div>
+</body>
+</html>

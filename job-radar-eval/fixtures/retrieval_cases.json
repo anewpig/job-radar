@@ -1,0 +1,37 @@
+[
+  {
+    "id": "ai_skills",
+    "question": "如果我要找 AI 應用工程師，最核心的技能是哪些？",
+    "top_k": 3,
+    "expected_top_chunk_id": "ai-skills",
+    "expected_relevant_chunk_ids": ["ai-skills", "ai-summary", "market-skill-llm"]
+  },
+  {
+    "id": "salary_band",
+    "question": "AI 類職缺的薪資大概落在哪裡？",
+    "top_k": 3,
+    "expected_top_chunk_id": "ai-summary",
+    "expected_relevant_chunk_ids": ["ai-summary", "salary-overview"]
+  },
+  {
+    "id": "pm_scope",
+    "question": "產品經理類的工作內容通常包含什麼？",
+    "top_k": 3,
+    "expected_top_chunk_id": "pm-work",
+    "expected_relevant_chunk_ids": ["pm-work", "pm-summary", "pm-skills"]
+  },
+  {
+    "id": "firmware_skills",
+    "question": "韌體工程師最核心的能力通常有哪些？",
+    "top_k": 3,
+    "expected_top_chunk_id": "firmware-skills",
+    "expected_relevant_chunk_ids": ["firmware-skills", "firmware-summary"]
+  },
+  {
+    "id": "rag_scope",
+    "question": "RAG AI Engineer 的工作內容通常包含哪些模組？",
+    "top_k": 3,
+    "expected_top_chunk_id": "rag-work",
+    "expected_relevant_chunk_ids": ["rag-work", "rag-summary"]
+  }
+]

@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Legacy System Design Course Archive</title>
+    <style>
+      :root {
+        --bg: #f5f1e8;
+        --bg-deep: #e7dfcf;
+        --paper: rgba(255, 251, 245, 0.78);
+        --paper-strong: #fffaf0;
+        --ink: #181511;
+        --muted: #62594c;
+        --line: rgba(24, 21, 17, 0.12);
+        --line-strong: rgba(24, 21, 17, 0.2);
+        --brand: #b8552c;
+        --brand-strong: #7f3215;
+        --olive: #375847;
+        --gold: #b88626;
+        --blue: #285874;
+        --red: #8b3d31;
+        --shadow: 0 24px 60px rgba(73, 48, 20, 0.12);
+        --radius-xl: 32px;
+        --radius-lg: 24px;
+        --radius-md: 18px;
+        --radius-sm: 14px;
+        --font-display: "Iowan Old Style", "Palatino Linotype", "Noto Serif TC", serif;
+        --font-ui: "Avenir Next", "PingFang TC", "Noto Sans TC", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-ui);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 30%),
+          radial-gradient(circle at 85% 10%, rgba(184, 85, 44, 0.18), transparent 22%),
+          linear-gradient(135deg, var(--bg) 0%, #efe7d8 52%, #f8f3ea 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(24, 21, 17, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(24, 21, 17, 0.03) 1px, transparent 1px);
+        background-size: 30px 30px;
+        mask-image: radial-gradient(circle at center, black 40%, transparent 84%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: 28px;
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 28px;
+      }
+
+      .sidebar,
+      .content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 20px;
+        align-self: start;
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--paper);
+        backdrop-filter: blur(14px);
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .brand-mark {
+        width: 50px;
+        height: 50px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: linear-gradient(145deg, #1f1b17 0%, #5c5044 100%);
+        color: #fbf5ea;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .brand-copy h1 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.55rem;
+        line-height: 1;
+      }
+
+      .brand-copy p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .side-note {
+        margin: 18px 0 0;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.54);
+      }
+
+      .side-note strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .side-note p {
+        margin: 0;
+        line-height: 1.6;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .nav-list,
+      .tiny-list,
+      .lesson-grid,
+      .stack,
+      .bullet-list,
+      .prompt-grid,
+      .roadmap,
+      .metric-grid,
+      .decision-grid,
+      .entity-grid,
+      .warning-grid,
+      .deliverable-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.34);
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      .nav-link:hover,
+      .nav-link:focus-visible {
+        transform: translateX(4px);
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .nav-link strong {
+        display: block;
+        font-size: 0.94rem;
+      }
+
+      .nav-link span {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .mini-card {
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: var(--paper-strong);
+      }
+
+      .mini-card h2,
+      .mini-card h3 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+      }
+
+      .mini-card p,
+      .mini-card li {
+        margin: 0;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .tiny-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .content {
+        display: grid;
+        gap: 22px;
+      }
+
+      .hero {
+        overflow: hidden;
+        padding: 34px;
+        border: 1px solid var(--line);
+        border-radius: 36px;
+        background:
+          linear-gradient(145deg, rgba(255, 249, 239, 0.92), rgba(255, 255, 255, 0.58)),
+          radial-gradient(circle at top right, rgba(184, 85, 44, 0.2), transparent 30%);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow);
+      }
+
+      .eyebrow,
+      .pill,
+      .lesson-no,
+      .status,
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        border-radius: 999px;
+      }
+
+      .eyebrow {
+        margin-bottom: 16px;
+        padding: 8px 14px;
+        background: rgba(24, 21, 17, 0.08);
+        color: var(--muted);
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr);
+        gap: 24px;
+      }
+
+      .hero-copy h2 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(2.8rem, 5vw, 4.9rem);
+        line-height: 0.94;
+        letter-spacing: -0.03em;
+      }
+
+      .hero-copy p {
+        max-width: 780px;
+        margin: 18px 0 0;
+        font-size: 1.06rem;
+        line-height: 1.8;
+        color: var(--muted);
+      }
+
+      .hero-points {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .pill {
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.66);
+        font-size: 0.9rem;
+      }
+
+      .hero-card {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: rgba(24, 21, 17, 0.92);
+        color: #f8f2e6;
+      }
+
+      .hero-card h3,
+      .section-head h3,
+      .subhead {
+        margin: 0;
+      }
+
+      .hero-card p,
+      .hero-card li {
+        margin: 0;
+        color: rgba(248, 242, 230, 0.8);
+        line-height: 1.65;
+      }
+
+      .hero-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .hero-stat {
+        padding: 14px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .hero-stat strong {
+        display: block;
+        font-size: 1.6rem;
+        line-height: 1;
+      }
+
+      .hero-stat span {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.86rem;
+        color: rgba(248, 242, 230, 0.68);
+      }
+
+      .section {
+        padding: 30px;
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        background: var(--paper);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow);
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+
+      .section-head p {
+        margin: 10px 0 0;
+        max-width: 780px;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .lesson-no {
+        padding: 10px 16px;
+        border: 1px solid rgba(184, 85, 44, 0.2);
+        background: rgba(184, 85, 44, 0.1);
+        color: var(--brand-strong);
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      .lesson-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        padding: 20px;
+        border-radius: 24px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.56);
+      }
+
+      .card h4 {
+        margin: 0 0 10px;
+        font-size: 1.02rem;
+      }
+
+      .card p,
+      .card li {
+        margin: 0;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .stack {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .quote-box,
+      .architecture,
+      .schema-board,
+      .decision-board,
+      .warning-box,
+      .roadmap-item,
+      .deliverable,
+      .metric {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.58);
+      }
+
+      .quote-box {
+        padding: 24px;
+        background:
+          linear-gradient(145deg, rgba(55, 88, 71, 0.12), rgba(255, 255, 255, 0.76)),
+          rgba(255, 255, 255, 0.62);
+      }
+
+      .quote-box strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 1rem;
+      }
+
+      .quote-box p {
+        margin: 0;
+        font-size: 1.02rem;
+        line-height: 1.8;
+        color: var(--ink);
+      }
+
+      .prompt-grid,
+      .decision-grid,
+      .warning-grid,
+      .metric-grid,
+      .deliverable-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .prompt {
+        padding: 18px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.46);
+      }
+
+      .prompt strong,
+      .metric strong,
+      .deliverable strong,
+      .roadmap-item strong,
+      .warning-box strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.98rem;
+      }
+
+      .prompt p,
+      .metric p,
+      .deliverable p,
+      .roadmap-item p,
+      .warning-box p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .decision-board,
+      .schema-board,
+      .architecture {
+        padding: 22px;
+      }
+
+      .decision-board::after,
+      .schema-board::after,
+      .architecture::after,
+      .warning-box::after,
+      .roadmap-item::after,
+      .metric::after,
+      .deliverable::after {
+        content: "";
+        position: absolute;
+        inset: auto auto -30px -30px;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(184, 85, 44, 0.08);
+      }
+
+      .decision-row {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px dashed var(--line);
+      }
+
+      .decision-row:last-child,
+      .entity:last-child,
+      .flow-row:last-child {
+        border-bottom: 0;
+      }
+
+      .decision-row strong,
+      .entity strong,
+      .flow-label strong {
+        font-size: 0.92rem;
+      }
+
+      .decision-row p,
+      .entity p,
+      .flow-label p {
+        margin: 0;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      .entity-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .entity {
+        padding: 16px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .entity span {
+        display: inline-flex;
+        margin-top: 10px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(40, 88, 116, 0.1);
+        color: var(--blue);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .flow-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .flow-row {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px dashed var(--line);
+      }
+
+      .flow-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .flow-node {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: white;
+      }
+
+      .node-1 {
+        background: var(--brand);
+      }
+
+      .node-2 {
+        background: var(--blue);
+      }
+
+      .node-3 {
+        background: var(--olive);
+      }
+
+      .node-4 {
+        background: var(--gold);
+      }
+
+      .node-5 {
+        background: var(--red);
+      }
+
+      .status {
+        padding: 7px 12px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .status.brand {
+        color: var(--brand-strong);
+        background: rgba(184, 85, 44, 0.11);
+      }
+
+      .status.olive {
+        color: var(--olive);
+        background: rgba(55, 88, 71, 0.12);
+      }
+
+      .status.blue {
+        color: var(--blue);
+        background: rgba(40, 88, 116, 0.12);
+      }
+
+      .status.gold {
+        color: #7c5a14;
+        background: rgba(184, 134, 38, 0.15);
+      }
+
+      .warning-box,
+      .roadmap-item,
+      .metric,
+      .deliverable {
+        padding: 20px;
+      }
+
+      .bullet-list {
+        margin: 14px 0 0;
+        padding-left: 18px;
+      }
+
+      .bullet-list li {
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .roadmap {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .roadmap-item em {
+        display: inline-block;
+        margin-bottom: 10px;
+        font-style: normal;
+        color: var(--brand-strong);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .metric {
+        background:
+          linear-gradient(145deg, rgba(40, 88, 116, 0.1), rgba(255, 255, 255, 0.78)),
+          rgba(255, 255, 255, 0.64);
+      }
+
+      .deliverable {
+        background:
+          linear-gradient(145deg, rgba(184, 134, 38, 0.11), rgba(255, 255, 255, 0.78)),
+          rgba(255, 255, 255, 0.66);
+      }
+
+      .footer {
+        padding: 24px 30px 38px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 0.92rem;
+      }
+
+      .footer-links {
+        margin-top: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .footer-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(40, 88, 116, 0.14);
+        background: rgba(255, 255, 255, 0.74);
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      }
+
+      .footer-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(40, 88, 116, 0.12);
+        border-color: rgba(184, 134, 38, 0.34);
+      }
+
+      .footer-note {
+        margin-top: 8px;
+        font-size: 0.82rem;
+        color: rgba(75, 97, 111, 0.86);
+      }
+
+      @media (max-width: 1180px) {
+        .shell,
+        .hero-grid,
+        .lesson-grid,
+        .prompt-grid,
+        .decision-grid,
+        .entity-grid,
+        .warning-grid,
+        .roadmap,
+        .metric-grid,
+        .deliverable-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+        }
+
+        .decision-row,
+        .flow-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .shell {
+          grid-template-columns: 1fr;
+          padding: 18px;
+        }
+
+        .hero,
+        .section,
+        .panel {
+          padding: 22px;
+        }
+
+        .hero-copy h2 {
+          font-size: clamp(2.2rem, 12vw, 3.3rem);
+        }
+
+        .section-head {
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .hero,
+        .section,
+        .panel,
+        .nav-link,
+        .card,
+        .prompt,
+        .roadmap-item,
+        .metric,
+        .deliverable {
+          animation: float-up 520ms ease both;
+        }
+
+        .section:nth-of-type(2) {
+          animation-delay: 80ms;
+        }
+
+        .section:nth-of-type(3) {
+          animation-delay: 140ms;
+        }
+
+        .section:nth-of-type(4) {
+          animation-delay: 180ms;
+        }
+
+        .section:nth-of-type(5) {
+          animation-delay: 220ms;
+        }
+
+        .section:nth-of-type(6) {
+          animation-delay: 260ms;
+        }
+
+        .section:nth-of-type(7) {
+          animation-delay: 300ms;
+        }
+
+        @keyframes float-up {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    
+        <div style="margin:0 auto 18px;max-width:1480px;padding:0 28px;">
+          <div style="padding:14px 16px;border-radius:18px;border:1px solid rgba(24,21,17,0.12);background:rgba(255,250,240,0.86);font-size:0.94rem;line-height:1.7;color:#62594c;">
+            這頁是歷史保留頁。原本的首頁內容已封存於此，新的 Job Radar 文件中心請回
+            <a href="index.html" style="color:inherit;font-weight:700;">index.html</a>。
+          </div>
+        </div>
+        
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="panel">
+          <div class="brand">
+            <div class="brand-mark">SD</div>
+            <div class="brand-copy">
+              <h1>System Design</h1>
+              <p>股票盯盤 Web 教學頁</p>
+            </div>
+          </div>
+          <div class="side-note">
+            <strong>讀法</strong>
+            <p>每一課都不是抽象名詞，而是把產品想法一路壓成可以開發的系統決策。</p>
+          </div>
+        </div>
+
+        <nav class="panel nav-list" aria-label="課程導覽">
+          <a class="nav-link" href="#lesson-1">
+            <div>
+              <strong>第一課</strong>
+              <span>先定義產品與 MVP</span>
+            </div>
+            <span>01</span>
+          </a>
+          <a class="nav-link" href="#lesson-2">
+            <div>
+              <strong>第二課</strong>
+              <span>把需求翻成系統約束</span>
+            </div>
+            <span>02</span>
+          </a>
+          <a class="nav-link" href="#lesson-3">
+            <div>
+              <strong>第三課</strong>
+              <span>畫出領域模型</span>
+            </div>
+            <span>03</span>
+          </a>
+          <a class="nav-link" href="#lesson-4">
+            <div>
+              <strong>第四課</strong>
+              <span>設計資料流與架構</span>
+            </div>
+            <span>04</span>
+          </a>
+          <a class="nav-link" href="#lesson-5">
+            <div>
+              <strong>第五課</strong>
+              <span>先設計失敗場景</span>
+            </div>
+            <span>05</span>
+          </a>
+          <a class="nav-link" href="#lesson-6">
+            <div>
+              <strong>第六課</strong>
+              <span>排開發順序與驗證</span>
+            </div>
+            <span>06</span>
+          </a>
+          <a class="nav-link" href="#lesson-7">
+            <div>
+              <strong>第七課</strong>
+              <span>技術選型與擴充時機</span>
+            </div>
+            <span>07</span>
+          </a>
+        </nav>
+
+        <div class="panel mini-card">
+          <h2>這門課的核心</h2>
+          <ul class="tiny-list">
+            <li>先定義價值鏈，再定義系統。</li>
+            <li>先做可用版本，再談完美架構。</li>
+            <li>正常流程和失敗流程都要設計。</li>
+          </ul>
+        </div>
+
+        <div class="panel mini-card">
+          <h3>你會交付什麼</h3>
+          <ul class="tiny-list">
+            <li>一頁式產品定義</li>
+            <li>領域模型草圖</li>
+            <li>Runtime 架構圖</li>
+            <li>MVP 開發路線圖</li>
+          </ul>
+        </div>
+
+        <div class="panel mini-card">
+          <h3>Job Radar 手冊入口</h3>
+          <ul class="tiny-list">
+            <li><a href="job-radar-system-architecture.html">系統架構總手冊</a></li>
+            <li><a href="job-radar-ai-detailed-flow.html">AI 詳細流程手冊</a></li>
+            <li><a href="job-radar-db-schema-handbook.html">DB Schema 手冊</a></li>
+            <li><a href="job-radar-complete-structure-diagram.html">完整結構圖</a></li>
+            <li><a href="job-radar-product-system-playbook.html">產品與系統設計手冊</a></li>
+            <li><a href="job-radar-learning-curriculum.html">這個專案可以教你什麼</a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="hero">
+          <div class="eyebrow">從 Idea 到可部署的系統</div>
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <h2>股票盯盤 Web<br />系統設計課</h2>
+              <p>
+                你不是先選框架，而是先回答一個問題：這個產品究竟要替誰做出什麼價值。以下我用「盯盤看股票的
+                Web」當案例，帶你從第一課開始，一步一步把產品想法壓成需求、資料、架構、風險和開發順序。
+              </p>
+              <div class="hero-points">
+                <span class="pill">用產品語言開始</span>
+                <span class="pill">用工程語言收斂</span>
+                <span class="pill">用 MVP 控制範圍</span>
+                <span class="pill">用失敗場景驗證架構</span>
+              </div>
+            </div>
+
+            <div class="hero-card">
+              <h3>開場時我先想的 4 件事</h3>
+              <div class="hero-stat-grid">
+                <div class="hero-stat">
+                  <strong>1</strong>
+                  <span>誰會每天打開這個產品</span>
+                </div>
+                <div class="hero-stat">
+                  <strong>2</strong>
+                  <span>他最在意哪個畫面延遲</span>
+                </div>
+                <div class="hero-stat">
+                  <strong>3</strong>
+                  <span>第一版一定不能缺什麼</span>
+                </div>
+                <div class="hero-stat">
+                  <strong>4</strong>
+                  <span>哪裡最容易壞、最傷信任</span>
+                </div>
+              </div>
+              <p>盯盤工具最怕的不是畫面不好看，而是數據延遲、提醒失準、狀態不透明。這些會直接傷到產品可信度。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="job-radar-links">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">Bonus</span>
+              <h3>Job Radar 架構與產品手冊入口</h3>
+              <p>你剛剛整理的幾份靜態頁我都集中掛在這裡了。這組頁面比較偏你目前的職缺產品專案，不是上面這份股票系統設計課本體。</p>
+            </div>
+          </div>
+          <div class="deliverable-grid">
+            <a class="deliverable" href="job-radar-system-architecture.html">
+              <strong>系統架構總手冊</strong>
+              <p>完整拆解前端、後端、AI、DB、資料流、部署、監控與治理。</p>
+            </a>
+            <a class="deliverable" href="job-radar-ai-detailed-flow.html">
+              <strong>AI 詳細流程手冊</strong>
+              <p>履歷分析、RAG 問答、監控與 fallback 的完整流程圖與設計取捨。</p>
+            </a>
+            <a class="deliverable" href="job-radar-db-schema-handbook.html">
+              <strong>DB Schema 手冊</strong>
+              <p>拆解多個 SQLite 邊界、資料用途、生命週期與後續升級方式。</p>
+            </a>
+            <a class="deliverable" href="job-radar-complete-structure-diagram.html">
+              <strong>完整結構圖</strong>
+              <p>用圖面快速看整個系統、前端、抓取、AI、資料層的結構。</p>
+            </a>
+            <a class="deliverable" href="job-radar-product-system-playbook.html">
+              <strong>產品與系統設計手冊</strong>
+              <p>從使用者價值、JTBD、旅程、KPI、系統邊界到擴充路線的完整產品化思考。</p>
+            </a>
+            <a class="deliverable" href="job-radar-learning-curriculum.html">
+              <strong>這個專案可以教你什麼</strong>
+              <p>把 Job Radar 當成教材，拆成產品、系統、AI、DB、前端、重構與營運的完整學習地圖。</p>
+            </a>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-1">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第一課</span>
+              <h3>先定義產品與 MVP</h3>
+              <p>
+                系統設計不是從資料庫開始，而是先收斂產品的「核心價值鏈」。盯盤 Web 的價值，不是做一個大而全的金融入口，而是讓特定用戶在需要的時候看到關鍵訊號並快速反應。
+              </p>
+            </div>
+          </div>
+
+          <div class="lesson-grid">
+            <article class="card">
+              <h4>先問清楚這 4 題</h4>
+              <ul class="stack">
+                <li>目標使用者是短線交易者、波段投資者，還是一般投資人？</li>
+                <li>核心價值是即時報價、條件提醒、新聞整合，還是策略訊號？</li>
+                <li>使用者一天會打開幾次，通常在什麼時間點打開？</li>
+                <li>產品成功指標是日活、提醒送達率、留存，還是付費轉換？</li>
+              </ul>
+            </article>
+
+            <article class="card">
+              <h4>如果是我，第一版只做這些</h4>
+              <ul class="stack">
+                <li>登入與基本帳號管理</li>
+                <li>自選股清單</li>
+                <li>即時或準即時報價</li>
+                <li>價格 / 漲跌幅提醒</li>
+                <li>Web Push 或 Email 通知</li>
+                <li>最基本的走勢圖與行情摘要</li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="quote-box" style="margin-top: 18px;">
+            <strong>這一課的結論</strong>
+            <p>先設計一條完整價值鏈：使用者登入、加入自選股、看到行情、設定提醒、收到通知。這條鏈要先跑通，其他都晚一點。</p>
+          </div>
+
+          <div class="prompt-grid" style="margin-top: 18px;">
+            <div class="prompt">
+              <strong>產品範圍</strong>
+              <p>第一版不要做下單、社群、回測、多券商串接。那些都會讓系統邊界暴增，並模糊你最初的產品驗證。</p>
+            </div>
+            <div class="prompt">
+              <strong>你現在就該寫下來</strong>
+              <p>一句產品定位、三個主要使用情境、五個 MVP 功能、五個明確不做的功能。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-2">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第二課</span>
+              <h3>把需求翻成系統約束</h3>
+              <p>
+                產品語言要再壓一層，變成可估算、可驗證的工程條件。你不是只說「要即時」，而是要講清楚允許幾秒延遲、尖峰在哪、提醒多久內要送到。
+              </p>
+            </div>
+          </div>
+
+          <div class="decision-board">
+            <div class="decision-row">
+              <strong>即時報價</strong>
+              <p>到底是 1 秒內、5 秒內，還是可接受 15 分鐘延遲？不同答案決定你要買什麼數據源、能不能便宜地做。</p>
+            </div>
+            <div class="decision-row">
+              <strong>提醒 SLA</strong>
+              <p>價格觸發後 5 秒內要通知，還是 30 秒內可接受？這會直接改變 alert engine 的掃描頻率與設計方式。</p>
+            </div>
+            <div class="decision-row">
+              <strong>尖峰流量</strong>
+              <p>開盤前 5 分鐘、開盤後 30 分鐘、重大消息時會不會瞬間暴增？容量預估必須先有假設，不然架構只是假精確。</p>
+            </div>
+            <div class="decision-row">
+              <strong>資料保留</strong>
+              <p>只存最新報價、存日線 K、還是要分時歷史？這決定你的儲存成本、索引與查詢策略。</p>
+            </div>
+          </div>
+
+          <div class="prompt-grid" style="margin-top: 18px;">
+            <div class="prompt">
+              <strong>從需求變成數字</strong>
+              <p>例如「目標同時在線 5,000 人，自選股平均 20 檔，每 3 秒更新一次」，這種句子才足以推導頻寬與 fan-out 壓力。</p>
+            </div>
+            <div class="prompt">
+              <strong>從數字變成設計</strong>
+              <p>當你知道提醒延遲要小於 5 秒，就能反推要不要用事件驅動，而不是每分鐘批次掃描一次。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-3">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第三課</span>
+              <h3>畫出領域模型</h3>
+              <p>
+                很多系統一開始就亂，是因為名詞沒有定義好。資料模型不是表格細節，而是你對系統世界的切割方式。先把主要實體講清楚，API 和資料庫才會穩。
+              </p>
+            </div>
+          </div>
+
+          <div class="schema-board">
+            <div class="entity-grid">
+              <div class="entity">
+                <strong>User</strong>
+                <p>帳號、偏好設定、通知通道。</p>
+                <span>identity</span>
+              </div>
+              <div class="entity">
+                <strong>Watchlist</strong>
+                <p>使用者的自選股集合與排序。</p>
+                <span>portfolio view</span>
+              </div>
+              <div class="entity">
+                <strong>Symbol</strong>
+                <p>交易標的基本資訊，例如市場、代碼、名稱。</p>
+                <span>market catalog</span>
+              </div>
+              <div class="entity">
+                <strong>Quote</strong>
+                <p>最新成交價、買賣盤、漲跌幅等即時狀態。</p>
+                <span>realtime</span>
+              </div>
+              <div class="entity">
+                <strong>Candle</strong>
+                <p>K 線資料，決定圖表能回看多長時間。</p>
+                <span>history</span>
+              </div>
+              <div class="entity">
+                <strong>AlertRule</strong>
+                <p>提醒條件，例如大於某價格、漲跌幅超過多少。</p>
+                <span>rule</span>
+              </div>
+              <div class="entity">
+                <strong>AlertEvent</strong>
+                <p>規則被觸發的事實，通常要可追蹤、可稽核。</p>
+                <span>event</span>
+              </div>
+              <div class="entity">
+                <strong>NotificationDelivery</strong>
+                <p>提醒是否成功送達、失敗原因、重試次數。</p>
+                <span>delivery</span>
+              </div>
+              <div class="entity">
+                <strong>MarketSource</strong>
+                <p>外部行情來源的連線狀態、版本與延遲資訊。</p>
+                <span>source health</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="prompt-grid" style="margin-top: 18px;">
+            <div class="prompt">
+              <strong>這一課真正的目的</strong>
+              <p>避免把「提醒規則」和「提醒事件」混在一起。規則是設定，事件是系統觀測到的觸發事實，兩者不能混。</p>
+            </div>
+            <div class="prompt">
+              <strong>最常見錯誤</strong>
+              <p>一開始只想 UI，不先定義實體，結果後面出現命名混亂、API 歪掉、資料欄位無限制地長。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-4">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第四課</span>
+              <h3>設計資料流與系統架構</h3>
+              <p>
+                到這一步才開始畫服務。對第一版來說，我不會急著拆微服務，而是用一個穩的後端搭配背景工作，把資料流先設計清楚。你真正需要的是邊界，而不是服務數量。
+              </p>
+            </div>
+          </div>
+
+          <div class="architecture">
+            <div class="flow-grid">
+              <div class="flow-row">
+                <div class="flow-label">
+                  <span class="flow-node node-1">1</span>
+                  <div>
+                    <strong>Market Data Ingestion</strong>
+                    <p>連外部行情源，做標準化與更新頻率控制。</p>
+                  </div>
+                </div>
+                <span class="status brand">外部資料入口</span>
+              </div>
+              <div class="flow-row">
+                <div class="flow-label">
+                  <span class="flow-node node-2">2</span>
+                  <div>
+                    <strong>Quote Cache / Stream</strong>
+                    <p>把最新報價放進 Redis 或其他快取層，供即時扇出使用。</p>
+                  </div>
+                </div>
+                <span class="status blue">即時層</span>
+              </div>
+              <div class="flow-row">
+                <div class="flow-label">
+                  <span class="flow-node node-3">3</span>
+                  <div>
+                    <strong>API Backend</strong>
+                    <p>處理登入、自選股、提醒設定、歷史查詢與權限控制。</p>
+                  </div>
+                </div>
+                <span class="status olive">核心應用</span>
+              </div>
+              <div class="flow-row">
+                <div class="flow-label">
+                  <span class="flow-node node-4">4</span>
+                  <div>
+                    <strong>Alert Engine</strong>
+                    <p>比對即時價格與使用者規則，產生可追蹤的 AlertEvent。</p>
+                  </div>
+                </div>
+                <span class="status gold">規則引擎</span>
+              </div>
+              <div class="flow-row">
+                <div class="flow-label">
+                  <span class="flow-node node-5">5</span>
+                  <div>
+                    <strong>Notification Worker</strong>
+                    <p>根據事件送 Web Push、Email，並做重試與去重。</p>
+                  </div>
+                </div>
+                <span class="status brand">通知輸出</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="decision-grid" style="margin-top: 18px;">
+            <div class="prompt">
+              <strong>第一版推薦結構</strong>
+              <p>Frontend + 單體 API Backend + Worker + Postgres + Redis + Queue。這樣已經足夠撐起很多中小型產品的第一階段。</p>
+            </div>
+            <div class="prompt">
+              <strong>為什麼先不要微服務</strong>
+              <p>你現在最大的風險不是服務耦合，而是需求還沒穩。太早拆服務，會先把團隊速度拆掉。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-5">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第五課</span>
+              <h3>先設計失敗場景</h3>
+              <p>
+                金融資訊類產品不能只設計 happy path。使用者不會因為你畫面好看就原諒錯價、重複通知、斷線後沒有提示。這些壞掉的地方，才是系統信任度真正的基礎。
+              </p>
+            </div>
+          </div>
+
+          <div class="warning-grid">
+            <div class="warning-box">
+              <strong>外部行情源斷線</strong>
+              <p>前端要標示 stale data，後端要記錄最後更新時間，告警系統要知道目前資料不可信。</p>
+            </div>
+            <div class="warning-box">
+              <strong>WebSocket 重連</strong>
+              <p>重連後要補一次最新快照，不然使用者看到的可能是空白或舊資料。</p>
+            </div>
+            <div class="warning-box">
+              <strong>提醒重複發送</strong>
+              <p>同一條規則在震盪區間可能連續觸發，要做去重、冷卻時間和事件 idempotency。</p>
+            </div>
+            <div class="warning-box">
+              <strong>單一用戶規則過多</strong>
+              <p>如果有人設 1,000 條提醒，你要限制配額，或重新設計 rule evaluation 的索引方式。</p>
+            </div>
+          </div>
+
+          <div class="quote-box" style="margin-top: 18px;">
+            <strong>這一課的判斷標準</strong>
+            <p>當系統壞掉時，使用者是否看得懂現在發生什麼事；當資料不可信時，畫面是否有能力誠實地說明狀態。</p>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-6">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第六課</span>
+              <h3>排開發順序與驗證方式</h3>
+              <p>
+                系統設計最後一定要落到開發順序。好的順序不是照技術層切，而是照價值鏈切。你要讓團隊每一階段都能交出一個更接近真實產品的版本。
+              </p>
+            </div>
+          </div>
+
+          <div class="roadmap">
+            <div class="roadmap-item">
+              <em>Phase 1</em>
+              <strong>帳號、自選股、Symbol 基本資料</strong>
+              <p>先把使用者可以進入系統並建立自己的市場視圖。</p>
+            </div>
+            <div class="roadmap-item">
+              <em>Phase 2</em>
+              <strong>行情導入與即時畫面</strong>
+              <p>把最新報價流進系統，讓前端可穩定更新，不求華麗先求正確。</p>
+            </div>
+            <div class="roadmap-item">
+              <em>Phase 3</em>
+              <strong>提醒規則與通知送達</strong>
+              <p>完成產品真正的主價值，並開始量測提醒延遲和成功率。</p>
+            </div>
+            <div class="roadmap-item">
+              <em>Phase 4</em>
+              <strong>歷史圖表、監控、營運儀表</strong>
+              <p>補足觀測能力與使用體驗，讓產品進入可優化狀態。</p>
+            </div>
+          </div>
+
+          <div class="metric-grid" style="margin-top: 18px;">
+            <div class="metric">
+              <strong>你應該追的指標</strong>
+              <p>報價更新延遲、提醒觸發延遲、通知成功率、WebSocket 連線穩定度、使用者日活與自選股數量。</p>
+            </div>
+            <div class="metric">
+              <strong>你應該先驗證的事</strong>
+              <p>使用者到底在意畫面更新速度，還是提醒的準確率。這兩者都重要，但優先級不能靠猜。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="lesson-7">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">第七課</span>
+              <h3>技術選型與擴充時機</h3>
+              <p>
+                技術不是先選，而是最後為需求服務。你要的不是最潮架構，而是在當前產品階段最可控、最容易維運、最容易交付的組合。
+              </p>
+            </div>
+          </div>
+
+          <div class="decision-board">
+            <div class="decision-row">
+              <strong>Frontend</strong>
+              <p>可用 Next.js 或其他熟悉的 React 架構，重點是處理即時訂閱畫面、狀態同步與通知設定流程。</p>
+            </div>
+            <div class="decision-row">
+              <strong>Backend</strong>
+              <p>Node.js / NestJS 或 Go 都合理。選擇標準是團隊熟悉度、I/O 模式、維運成本，不是社群熱度。</p>
+            </div>
+            <div class="decision-row">
+              <strong>資料與快取</strong>
+              <p>Postgres 管使用者與規則，Redis 管最新報價與即時 fan-out，Queue 解耦提醒與通知。</p>
+            </div>
+            <div class="decision-row">
+              <strong>何時再拆服務</strong>
+              <p>當行情處理、提醒引擎、通知通道的負載或開發節奏明顯分離，再拆。不是因為「大家都這樣做」。</p>
+            </div>
+          </div>
+
+          <div class="deliverable-grid" style="margin-top: 18px;">
+            <div class="deliverable">
+              <strong>如果你現在要開專案</strong>
+              <p>先交出一頁產品定義、一份 schema 草圖、一張資料流圖、一個 4 週 roadmap。這四份比先建 repo 還重要。</p>
+            </div>
+            <div class="deliverable">
+              <strong>如果你要繼續下一步</strong>
+              <p>就可以開始做 DB schema、API spec、事件流與監控設計。那時候你才是真的在做 implementation planning。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="next-step">
+          <div class="section-head">
+            <div>
+              <span class="lesson-no">課後延伸</span>
+              <h3>如果是我，下一輪會繼續想什麼</h3>
+              <p>
+                當以上七課都定下來，我下一步就不再談抽象概念，而是把這些內容壓成文件與介面。這也是系統設計真正開始影響實作速度的地方。
+              </p>
+            </div>
+          </div>
+
+          <div class="deliverable-grid">
+            <div class="deliverable">
+              <strong>API Spec</strong>
+              <p>例如 `/watchlists`、`/alerts`、`/quotes/snapshot`、`/notifications/preferences`，定義入參、回傳與錯誤碼。</p>
+            </div>
+            <div class="deliverable">
+              <strong>DB Schema</strong>
+              <p>把 `users`、`watchlists`、`alert_rules`、`alert_events`、`notification_deliveries` 真的畫成表。</p>
+            </div>
+            <div class="deliverable">
+              <strong>Observability</strong>
+              <p>定義哪些 log、metric、alert 要先上，不然系統壞了你只會看到使用者抱怨。</p>
+            </div>
+            <div class="deliverable">
+              <strong>Cost Model</strong>
+              <p>行情源成本、通知成本、即時連線成本。金融資料產品很容易不是技術先死，而是成本先失控。</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="footer">
+          <div>這頁是「系統設計課」的第一版教學展示。現在已經把 Job Radar 的延伸手冊也串到主頁 footer，從頁尾就能一路看完整套內容。</div>
+          <div class="footer-links">
+            <a class="footer-link" href="job-radar-system-architecture.html">總架構手冊</a>
+            <a class="footer-link" href="job-radar-ai-detailed-flow.html">AI 詳細流程</a>
+            <a class="footer-link" href="job-radar-db-schema-handbook.html">DB Schema 手冊</a>
+            <a class="footer-link" href="job-radar-complete-structure-diagram.html">完整結構圖</a>
+            <a class="footer-link" href="job-radar-product-system-playbook.html">產品與系統 Playbook</a>
+            <a class="footer-link" href="job-radar-learning-curriculum.html">這個專案可以教你什麼</a>
+          </div>
+          <div class="footer-note">建議閱讀順序：總架構 → 完整結構圖 → AI / DB 專章 → 產品與學習地圖。</div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

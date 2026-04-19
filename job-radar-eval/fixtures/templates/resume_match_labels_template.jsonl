@@ -1,0 +1,3 @@
+{"case_id":"match_001","resume_id":"resume_001","job_id":"job_104_123","job_title":"AI應用工程師","fit_label":"high","fit_score":0.9,"fit_reason":["skill_overlap","matched_role","location_fit"],"critical_gaps":["AWS"],"notes":"應列入前 3 名推薦"}
+{"case_id":"match_002","resume_id":"resume_001","job_id":"job_1111_456","job_title":"Data Engineer","fit_label":"medium","fit_score":0.58,"fit_reason":["python_overlap"],"critical_gaps":["SQL","ETL","資料倉儲"],"notes":"可配對但不應高於 AI 應用工程師"}
+{"case_id":"match_003","resume_id":"resume_002","job_id":"job_cake_789","job_title":"Product Manager","fit_label":"high","fit_score":0.88,"fit_reason":["matched_role","skill_overlap"],"critical_gaps":["SQL"],"notes":"PM 類職缺應明顯高於工程職"}

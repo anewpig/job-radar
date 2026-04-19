@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Job Radar Testing Handbook</title>
+<style>
+    :root {
+      --bg: #f7f4ee;
+      --panel: rgba(255,255,255,0.9);
+      --panel-soft: rgba(255,255,255,0.74);
+      --ink: #1a2734;
+      --muted: #5c6575;
+      --line: rgba(40, 88, 116, 0.14);
+      --line-strong: rgba(185, 145, 67, 0.38);
+      --accent: #285874;
+      --accent-soft: #e1ebf2;
+      --gold-soft: #f3ecdc;
+      --green-soft: #e2f1ea;
+      --red-soft: #f5e4e0;
+      --shadow: 0 18px 40px rgba(18, 38, 54, 0.09);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(185,145,67,0.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(40,88,116,0.09), transparent 24%),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    a { color: var(--accent); }
+
+    .page {
+      width: min(1380px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 28px 0 54px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.82));
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      padding: 34px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      margin-bottom: 26px;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(40, 88, 116, 0.18);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 18px 0 14px;
+      font-size: clamp(2.2rem, 4vw, 3.6rem);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 1.02rem;
+    }
+
+    .hero-grid, .card-grid, .lesson-grid, .check-grid, .matrix-grid, .footer-links {
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 20px;
+    }
+
+    .mini-card, .card, .lesson, .check, .matrix, .section, .toc, .command, .quote, .footer {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .mini-card {
+      padding: 18px 18px 16px;
+    }
+
+    .mini-card h3, .card h3, .lesson h3, .section h2, .matrix h3, .toc h2 {
+      margin: 0 0 10px;
+    }
+
+    .mini-card p, .card p, .lesson p, .section p, .matrix p, .check p, li {
+      color: var(--muted);
+      line-height: 1.82;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .content {
+      display: grid;
+      gap: 20px;
+    }
+
+    .section {
+      padding: 28px;
+    }
+
+    .section-header {
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 1.65rem;
+      margin-bottom: 10px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 24px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .toc a {
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .card-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 20px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(255,255,255,0.78));
+    }
+
+    .card ul, .lesson ul, .section ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .lesson-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .lesson {
+      padding: 20px;
+    }
+
+    .lesson-no {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--gold-soft);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #7a6220;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .flow {
+      display: grid;
+      gap: 12px;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: 1fr 70px 1fr 70px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .node {
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      min-height: 132px;
+    }
+
+    .node h3 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .node p {
+      margin: 0;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .node.blue { background: var(--accent-soft); }
+    .node.gold { background: var(--gold-soft); }
+    .node.green { background: var(--green-soft); }
+    .node.red { background: var(--red-soft); }
+    .node.white { background: var(--panel-soft); }
+
+    .arrow {
+      text-align: center;
+      font-size: 1.5rem;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .command {
+      padding: 18px 20px;
+      background: rgba(26,39,52,0.96);
+      color: #eff6fb;
+      border-radius: 24px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.75;
+    }
+
+    .matrix-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .matrix {
+      padding: 20px;
+    }
+
+    .matrix.good { background: var(--green-soft); }
+    .matrix.warn { background: var(--gold-soft); }
+    .matrix.risk { background: var(--red-soft); }
+
+    .check-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .check {
+      padding: 18px;
+    }
+
+    .quote {
+      padding: 20px 22px;
+      background: linear-gradient(135deg, rgba(40,88,116,0.08), rgba(255,255,255,0.84));
+    }
+
+    .quote strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.04rem;
+    }
+
+    .footer {
+      margin-top: 22px;
+      padding: 28px;
+    }
+
+    .footer-links {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 16px;
+    }
+
+    .footer-link {
+      display: block;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid var(--line);
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 1180px) {
+      .hero, .layout, .flow-row, .card-grid, .lesson-grid, .matrix-grid, .check-grid, .footer-links {
+        grid-template-columns: 1fr;
+      }
+
+      .toc {
+        position: static;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page" id="top">
+<section class="hero">
+<div>
+<div class="kicker">Testing Handbook</div>
+<h1>Job Radar 測試手冊</h1>
+<p class="lead">
+          這份頁面不是在講「測試理論」而已，而是直接用你現在這個 Job Radar 專案當教材，拆出前端、後端、抓取、AI、資料層、維運層到底要怎麼測，
+          以及你在面試裡要怎麼講自己的 testing strategy，才不會只停留在「我有寫 unit test」。
+        </p>
+<div class="hero-grid">
+<div class="mini-card">
+<h3>這頁要回答的問題</h3>
+<p>測什麼、為什麼這樣測、哪些要 mock、哪些一定要做整合測試、哪些只能靠手動回歸、AI 又該怎麼驗證。</p>
+</div>
+<div class="mini-card">
+<h3>這頁適合怎麼用</h3>
+<p>一方面拿來學 testing 思維，一方面也能變成你面試時的講稿底稿，說明你如何把 side project 做到可維運。</p>
+</div>
+</div>
+</div>
+<div>
+<div class="card-grid">
+<article class="card">
+<h3>核心原則</h3>
+<p>先保護資料邊界、流程邊界、風險最高的行為，再補畫面細節。</p>
+</article>
+<article class="card">
+<h3>這個專案最該測</h3>
+<p>crawl runtime、product store、query runtime、RAG assistant、connector parsing、resume analysis。</p>
+</article>
+<article class="card">
+<h3>最常見誤區</h3>
+<p>只有 py_compile、只有 happy path、AI 不測 fallback、外部來源全用真網路打。</p>
+</article>
+</div>
+</div>
+</section>
+<div class="layout">
+<main class="content">
+<section class="section" id="why">
+<div class="section-header">
+<div class="kicker">Why</div>
+<h2>1. 為什麼這個專案的 testing 特別重要</h2>
+<p>因為這不是單純 CRUD 網站。這個專案同時有 UI state、背景排程、外部站點、AI 功能、資料庫、通知、備份維運。每一層出問題，表現形式都不一樣。</p>
+</div>
+<div class="card-grid">
+<article class="card">
+<h3>它是多流程系統</h3>
+<p>使用者手動查詢、自動刷新、履歷分析、AI 問答、通知推送都是不同的流程，不可能只靠一兩個 smoke test 蓋住。</p>
+</article>
+<article class="card">
+<h3>它碰外部不確定性</h3>
+<p>104、1111、Cake、LinkedIn 的頁面、節流、403/429、detail API 都會變，所以 parsing 與 retry 策略一定要被測。</p>
+</article>
+<article class="card">
+<h3>它有 AI 不穩定性</h3>
+<p>LLM 的輸出天然不穩，所以必須測 answer mode、context 組裝、fallback、guardrail，而不是只驗 happy path 字串。</p>
+</article>
+</div>
+<div class="quote">
+<strong>一句話講 testing 思維</strong>
+<p>不是為了把 coverage 數字衝高，而是為了讓「資料流、執行流、產品行為」在變動頻繁的情況下仍然可預期。</p>
+</div>
+</section>
+<section class="section" id="strategy">
+<div class="section-header">
+<div class="kicker">Strategy</div>
+<h2>2. 這個專案適合的測試策略</h2>
+<p>最適合的是「以風險為中心」的 testing pyramid，不是教科書式地只背 unit / integration / e2e 三個名詞。</p>
+</div>
+<div class="flow">
+<div class="flow-row">
+<div class="node white">
+<h3>最底層：純邏輯單元測試</h3>
+<p>skill extraction、role scoring、query signature、parsing、runtime helpers、DB helper。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node blue">
+<h3>中層：服務與資料流整合測試</h3>
+<p>crawl application service、query runtime、product store、notification service、rag assistant。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node gold">
+<h3>上層：手動回歸 / UI smoke</h3>
+<p>Streamlit 頁面、launcher、drawer、登入 dialog、複雜排版與互動。</p>
+</div>
+</div>
+</div>
+<div class="matrix-grid" style="margin-top:18px;">
+<article class="matrix good">
+<h3>要大量寫 automated tests 的地方</h3>
+<p>純邏輯、store、runtime、service、parsing、AI prompt builder、resume matcher。</p>
+</article>
+<article class="matrix warn">
+<h3>要混合測的地方</h3>
+<p>通知、爬蟲 pipeline、background flow、snapshot sync，通常需要 mock 外部依賴但保留流程完整性。</p>
+</article>
+<article class="matrix risk">
+<h3>不要只靠 automated tests 的地方</h3>
+<p>Streamlit 的真實視覺與交互、CSS 疊層、浮動按鈕、手機版排版。這些一定要手動回歸。</p>
+</article>
+</div>
+</section>
+<section class="section" id="current-state">
+<div class="section-header">
+<div class="kicker">Repo Reality</div>
+<h2>3. 目前這個 repo 已經有哪些測試</h2>
+<p>這不是空白專案。你現在已經有一批很有價值的 tests，可以直接拿來講，也可以拿來當未來擴充的基準。</p>
+</div>
+<div class="card-grid">
+<article class="card">
+<h3>抓取與解析</h3>
+<ul>
+<li><code>tests/test_connectors.py</code></li>
+<li><code>tests/test_detail_parsing.py</code></li>
+<li><code>tests/test_pipeline_staging.py</code></li>
+</ul>
+</article>
+<article class="card">
+<h3>核心資料與 runtime</h3>
+<ul>
+<li><code>tests/test_product_store.py</code></li>
+<li><code>tests/test_query_runtime.py</code></li>
+<li><code>tests/test_market_history_store.py</code></li>
+</ul>
+</article>
+<article class="card">
+<h3>AI 與分析</h3>
+<ul>
+<li><code>tests/test_rag_assistant.py</code></li>
+<li><code>tests/test_resume_analysis.py</code></li>
+<li><code>tests/test_analysis.py</code></li>
+</ul>
+</article>
+</div>
+<div class="card-grid" style="margin-top:18px;">
+<article class="card">
+<h3>通知與外部整合</h3>
+<ul>
+<li><code>tests/test_notification_service.py</code></li>
+<li><code>tests/test_line_webhook.py</code></li>
+</ul>
+</article>
+<article class="card">
+<h3>維運與備份</h3>
+<ul>
+<li><code>tests/test_sqlite_backup_service.py</code></li>
+<li><code>tests/test_sqlite_restore_drill.py</code></li>
+<li><code>tests/test_backend_status_service.py</code></li>
+</ul>
+</article>
+<article class="card">
+<h3>UI 邏輯層</h3>
+<ul>
+<li><code>tests/test_ui_router.py</code></li>
+<li><code>tests/test_loading_shell.py</code></li>
+<li><code>tests/test_ui_renderers.py</code></li>
+</ul>
+</article>
+</div>
+<div class="quote">
+<strong>面試時可以直接講</strong>
+<p>我的測試不只在演算法或純函式，也覆蓋了 runtime queue、資料庫生命週期、AI 問答、通知與維運流程，代表我把這個專案當成一個可運營系統來做。</p>
+</div>
+</section>
+<section class="section" id="frontend-tests">
+<div class="section-header">
+<div class="kicker">Frontend</div>
+<h2>4. 前端怎麼測</h2>
+<p>這個專案前端是 Streamlit，所以 testing 的重點不是 React component snapshot，而是 state、navigation、render helper 與手動回歸清單。</p>
+</div>
+<div class="lesson-grid">
+<article class="lesson">
+<span class="lesson-no">前端測試一</span>
+<h3>測 UI 邏輯，不先硬測 CSS</h3>
+<ul>
+<li>先測 router 是否正確分組與切頁，例如 <code>tests/test_ui_router.py</code>。</li>
+<li>測 render helper 是否在資料髒掉時仍能輸出合理 fallback，例如 <code>tests/test_ui_renderers.py</code>。</li>
+<li>測 boot loader 這類 session flag 行為，例如 <code>tests/test_loading_shell.py</code>。</li>
+</ul>
+</article>
+<article class="lesson">
+<span class="lesson-no">前端測試二</span>
+<h3>保留手動回歸清單</h3>
+<ul>
+<li>登入 dialog、launcher、drawer、footer links、浮動按鈕。</li>
+<li>桌機 / 手機寬度。</li>
+<li>hard refresh 與一般 rerun。</li>
+<li>z-index、sticky、fixed 元件的疊層問題。</li>
+</ul>
+</article>
+</div>
+<div class="check-grid" style="margin-top:18px;">
+<div class="check"><p><strong>該 automated</strong><br/>router、session helper、render fallback</p></div>
+<div class="check"><p><strong>該 manual</strong><br/>版面、浮動元件、響應式</p></div>
+<div class="check"><p><strong>常犯錯</strong><br/>把 UI 邏輯與樣式耦在一起，結果很難測</p></div>
+<div class="check"><p><strong>改善方向</strong><br/>把 sections / actions / state 拆開，現在你已經在做</p></div>
+</div>
+</section>
+<section class="section" id="backend-tests">
+<div class="section-header">
+<div class="kicker">Backend</div>
+<h2>5. 後端與服務層怎麼測</h2>
+<p>後端最重要的是把「資料流會不會斷、狀態會不會錯、邊界條件會不會壞」測清楚。</p>
+</div>
+<div class="card-grid">
+<article class="card">
+<h3>Product Store</h3>
+<p><code>tests/test_product_store.py</code> 已經示範很好的方向：user-scoped saved searches、favorites、notification preferences、AI monitoring、password reset、legacy backfill。</p>
+</article>
+<article class="card">
+<h3>Query Runtime</h3>
+<p><code>tests/test_query_runtime.py</code> 重點在 queue dedupe、single worker lease、partial → final snapshot、retryable failure、signal store。</p>
+</article>
+<article class="card">
+<h3>Crawl Application Service</h3>
+<p><code>tests/test_crawl_application_service.py</code> 是最值得拿出來講的一支，因為它把 due search、enqueue、finalize、background worker、subscriber sync 串成一條流程。</p>
+</article>
+</div>
+<div class="quote" style="margin-top:18px;">
+<strong>這一層最重要的觀念</strong>
+<p>測服務層時，不是只驗一個 function 回傳值，而是驗狀態轉移是否正確。像 queue 狀態、snapshot 狀態、saved search sync 結果，這些才是系統真正的契約。</p>
+</div>
+</section>
+<section class="section" id="crawler-tests">
+<div class="section-header">
+<div class="kicker">Crawler</div>
+<h2>6. 爬蟲與 pipeline 怎麼測</h2>
+<p>外部來源是最不穩定的部分，所以要把 parsing、retry、fallback、cache 邏輯測得比 UI 更兇。</p>
+</div>
+<div class="lesson-grid">
+<article class="lesson">
+<span class="lesson-no">重點一</span>
+<h3>測 parser，不要只測真網路</h3>
+<ul>
+<li>直接給 104 / LinkedIn / Cake 的 sample payload。</li>
+<li>驗 title、company、location、salary、detail sections 是否正確映射。</li>
+<li>這類測試又快又穩，失敗時也好定位。</li>
+</ul>
+</article>
+<article class="lesson">
+<span class="lesson-no">重點二</span>
+<h3>測 denial 與 fallback</h3>
+<ul>
+<li>403 / 429 要重試嗎？</li>
+<li>沒有 fresh result 時要不要吃 stale cache？</li>
+<li>沒有 cache 時要不要 soft warning？</li>
+</ul>
+</article>
+</div>
+<div class="command" style="margin-top:18px;">source .venv/bin/activate
+python -m unittest tests.test_connectors tests.test_pipeline_staging tests.test_detail_parsing</div>
+<div class="quote" style="margin-top:18px;">
+<strong>面試說法</strong>
+<p>我知道爬蟲最脆弱的是外部來源變動，所以我把高風險的 parsing 與 denial/fallback 行為盡量固定成 deterministic tests，而不是只在真實網站上碰運氣。</p>
+</div>
+</section>
+<section class="section" id="ai-tests">
+<div class="section-header">
+<div class="kicker">AI</div>
+<h2>7. AI 不是不能測，而是要換測法</h2>
+<p>LLM 不適合用「完全一字不差」的方式測，但非常適合測：context 組裝、mode routing、fallback、guardrails、ranking、structured parsing。</p>
+</div>
+<div class="matrix-grid">
+<article class="matrix good">
+<h3>適合測的</h3>
+<ul>
+<li>answer mode 分類</li>
+<li>top-k 選擇</li>
+<li>prompt 是否包含 guardrails</li>
+<li>resume context 是否被裁剪與遮罩</li>
+<li>fallback 是否在缺資料時觸發</li>
+</ul>
+</article>
+<article class="matrix warn">
+<h3>建議半結構測</h3>
+<ul>
+<li>市場摘要段落有沒有標題區塊</li>
+<li>比較報告有沒有 strengths / gaps</li>
+<li>引用是否有回傳</li>
+</ul>
+</article>
+<article class="matrix risk">
+<h3>不建議硬測的</h3>
+<ul>
+<li>完整自然語句逐字比對</li>
+<li>模型風格或修辭</li>
+<li>外部 API 真實延遲與費用行為</li>
+</ul>
+</article>
+</div>
+<div class="card-grid" style="margin-top:18px;">
+<article class="card">
+<h3>RAG Assistant</h3>
+<p><code>tests/test_rag_assistant.py</code> 已經有 mode classification、prompt guardrails、retrieval query、comparison/guidance/market sections parsing。這很值得保留並繼續擴充。</p>
+</article>
+<article class="card">
+<h3>Resume Analysis</h3>
+<p><code>tests/test_resume_analysis.py</code> 示範了規則抽取、masked text、condensed context、matcher ranking、semantic floor 等很好的 AI 測試觀念。</p>
+</article>
+<article class="card">
+<h3>最該補的</h3>
+<p>budget / latency 警戒值、prompt regression snapshots、evaluation dataset、模型切換後的 regression checklist。</p>
+</article>
+</div>
+</section>
+<section class="section" id="db-tests">
+<div class="section-header">
+<div class="kicker">DB</div>
+<h2>8. DB 與資料生命週期怎麼測</h2>
+<p>這個專案的資料層不是一個檔就結束，而是 product state、runtime、history、user submissions 多層邊界，所以 DB testing 要兼顧 schema、索引、資料遷移與維運。</p>
+</div>
+<div class="card-grid">
+<article class="card">
+<h3>Store correctness</h3>
+<p>主鍵、唯一性、user scope、seen jobs backfill、favorite 與 board 關聯，這些都要由 store tests 保護。</p>
+</article>
+<article class="card">
+<h3>Runtime correctness</h3>
+<p>queue lease、retry 次數、partial / final snapshot 替換、signal cleanup，這些要由 runtime tests 保護。</p>
+</article>
+<article class="card">
+<h3>Lifecycle correctness</h3>
+<p>backup、restore drill、retention、prune、manifest、health report，這些是維運層級測試，不做就等於沒準備上線。</p>
+</article>
+</div>
+<div class="command" style="margin-top:18px;">source .venv/bin/activate
+python -m unittest \
+  tests.test_product_store \
+  tests.test_query_runtime \
+  tests.test_market_history_store \
+  tests.test_sqlite_backup_service \
+  tests.test_sqlite_restore_drill</div>
+</section>
+<section class="section" id="mocking">
+<div class="section-header">
+<div class="kicker">Mocking</div>
+<h2>9. 什麼要 mock，什麼不要 mock</h2>
+<p>mock 用錯會讓測試變成自我安慰。原則是：外部不穩定依賴要 mock，自己的核心流程不要 mock 到看不見。</p>
+</div>
+<div class="matrix-grid">
+<article class="matrix good">
+<h3>適合 mock</h3>
+<ul>
+<li>HTTP 回應、403/429、HTML payload</li>
+<li>LLM client 回傳</li>
+<li>通知發送通道</li>
+<li>時間、環境變數、外部 secrets</li>
+</ul>
+</article>
+<article class="matrix warn">
+<h3>適合 fake / temp data</h3>
+<ul>
+<li>SQLite test DB</li>
+<li>snapshot 檔案</li>
+<li>resume 文字樣本</li>
+<li>saved search payload</li>
+</ul>
+</article>
+<article class="matrix risk">
+<h3>不要過度 mock</h3>
+<ul>
+<li>不要把 store 自己 mock 掉還說自己測了 service</li>
+<li>不要把 runtime queue 全 stub 掉，這樣測不到狀態轉移</li>
+<li>不要把整個 RAG flow 全部 patch 成常數字串</li>
+</ul>
+</article>
+</div>
+<div class="quote" style="margin-top:18px;">
+<strong>好測試的判準</strong>
+<p>如果外部依賴換掉，但你的核心流程邏輯不變，測試仍能抓出真問題，這就是好的 mock 邊界。</p>
+</div>
+</section>
+<section class="section" id="commands">
+<div class="section-header">
+<div class="kicker">Commands</div>
+<h2>10. 你現在最實用的測試指令</h2>
+<p>這些都是你可以直接在這個專案裡跑的，而不是理想化的 CI 指令。</p>
+</div>
+<div class="command">source .venv/bin/activate
+python -m py_compile src/job_spy_tw/ui/*.py</div>
+<div class="command" style="margin-top:14px;">source .venv/bin/activate
+python -c "import app; print('import ok')"</div>
+<div class="command" style="margin-top:14px;">source .venv/bin/activate
+python -m unittest tests.test_ui_router tests.test_loading_shell tests.test_ui_renderers</div>
+<div class="command" style="margin-top:14px;">source .venv/bin/activate
+python -m unittest tests.test_crawl_application_service tests.test_query_runtime tests.test_connectors</div>
+<div class="command" style="margin-top:14px;">source .venv/bin/activate
+python -m unittest tests.test_rag_assistant tests.test_resume_analysis tests.test_analysis</div>
+<div class="quote" style="margin-top:18px;">
+<strong>最務實的順序</strong>
+<p>先 <code>py_compile</code> → 再 <code>import app</code> → 再跑你這次碰到的功能鏈測試 → 最後做手動回歸。這比一次把所有測試全跑完更符合開發節奏。</p>
+</div>
+</section>
+<section class="section" id="regression">
+<div class="section-header">
+<div class="kicker">Regression</div>
+<h2>11. 每次改 UI 或流程後，至少要做的回歸清單</h2>
+<p>這一段很重要，因為你這個專案之前就常碰到浮動按鈕、sticky、drawer、launcher、dialog 之類的視覺與互動回歸。</p>
+</div>
+<div class="check-grid">
+<div class="check"><p><strong>首頁</strong><br/>hard refresh、boot loader、hero、footer links、saved search 顯示。</p></div>
+<div class="check"><p><strong>導航</strong><br/>main nav、drawer、mouseleave auto-close、active item。</p></div>
+<div class="check"><p><strong>AI launcher</strong><br/>浮動按鈕、三個 tab 高度、scroll、手機寬度。</p></div>
+<div class="check"><p><strong>Auth</strong><br/>login / register / forgot password dialog、第三方登入卡。</p></div>
+<div class="check"><p><strong>搜尋工作台</strong><br/>多組搜尋條件、標籤換行、開始抓取、saved search 建立。</p></div>
+<div class="check"><p><strong>履歷分析</strong><br/>上傳、分析、報告顯示、空狀態與錯誤狀態。</p></div>
+<div class="check"><p><strong>通知</strong><br/>LINE / Email 偏好、測試通知、Webhook 綁定流程。</p></div>
+<div class="check"><p><strong>後端控制台</strong><br/>架構頁、DB 頁、狀態頁、備份 / restore drill 相關區塊。</p></div>
+</div>
+</section>
+<section class="section" id="interview">
+<div class="section-header">
+<div class="kicker">Interview</div>
+<h2>12. 面試時怎麼講你的 testing strategy</h2>
+<p>你不要只說「我有寫單元測試」。面試官更想知道的是：你怎麼決定先測哪裡、怎麼處理外部依賴、怎麼看待 AI 測試與回歸風險。</p>
+</div>
+<div class="lesson-grid">
+<article class="lesson">
+<span class="lesson-no">講法一</span>
+<h3>先講風險排序</h3>
+<p>這個專案的最高風險不是單一函式，而是資料流與外部依賴，所以我優先測 runtime queue、store、crawl service、AI routing、connector parsing，而不是先追 UI pixel-perfect automation。</p>
+</article>
+<article class="lesson">
+<span class="lesson-no">講法二</span>
+<h3>再講層次化方法</h3>
+<p>我把 testing 分成 pure logic、service/data flow、manual regression 三層。純邏輯多寫 automated tests；UI 視覺重手動回歸；AI 則測 context、routing、fallback，而不是逐字比對。</p>
+</article>
+</div>
+<div class="quote" style="margin-top:18px;">
+<strong>90 秒版本</strong>
+<p>我對 testing 的做法是風險導向，而不是 coverage 導向。像 Job Radar 這種有爬蟲、背景排程、AI、資料庫與 Streamlit UI 的系統，我會先保護 parsing、runtime queue、product store、crawl application service、RAG assistant 這些最容易讓資料流斷掉的地方。外部來源與模型回應我會 mock，但我不會把自己的核心流程整段 mock 掉。最後我會保留一份手動回歸清單，專門處理浮動元件、dialog、sticky 與手機版排版，因為這些不適合只靠自動化測試。</p>
+</div>
+</section>
+<section class="section" id="roadmap">
+<div class="section-header">
+<div class="kicker">Roadmap</div>
+<h2>13. 如果要再把 testing 做得更完整，下一步是什麼</h2>
+<p>現在這個專案已經有不錯的測試底子，但如果你真的要把它再往產品級別推，還有幾件事值得補。</p>
+</div>
+<div class="card-grid">
+<article class="card">
+<h3>測試分組與 test matrix</h3>
+<p>把 UI、crawl、AI、DB、ops 的命令分組，讓每次改動能快速選對測試集合，而不是全跑或全不跑。</p>
+</article>
+<article class="card">
+<h3>AI evaluation dataset</h3>
+<p>建立固定問題集、固定 resume 樣本、固定 snapshot 樣本，讓 prompt 或模型切換後能做 regression。</p>
+</article>
+<article class="card">
+<h3>CI 與 pre-merge 規則</h3>
+<p>至少把 <code>py_compile</code>、<code>import app</code>、核心服務測試與 lint/check 放進 CI。</p>
+</article>
+</div>
+<div class="card-grid" style="margin-top:18px;">
+<article class="card">
+<h3>手動回歸腳本化</h3>
+<p>把目前的人腦清單整理成 release checklist，之後可以再逐步轉成更正式的 UI automation。</p>
+</article>
+<article class="card">
+<h3>測試資料治理</h3>
+<p>為 parser、resume、AI prompt、notification payload 準備專用 fixtures，避免測試資料散落在各檔案。</p>
+</article>
+<article class="card">
+<h3>測試報告化</h3>
+<p>把哪些模組有 automated tests、哪些只能手動回歸整理成文件，面試與交接都很有用。</p>
+</article>
+</div>
+</section>
+</main>
+<aside class="toc">
+<h2>章節索引</h2>
+<ol>
+<li><a href="#why">為什麼 testing 重要</a></li>
+<li><a href="#strategy">測試策略</a></li>
+<li><a href="#current-state">repo 現況</a></li>
+<li><a href="#frontend-tests">前端測試</a></li>
+<li><a href="#backend-tests">後端測試</a></li>
+<li><a href="#crawler-tests">爬蟲與 pipeline</a></li>
+<li><a href="#ai-tests">AI 測試</a></li>
+<li><a href="#db-tests">DB 與生命週期</a></li>
+<li><a href="#mocking">mock 邊界</a></li>
+<li><a href="#commands">常用指令</a></li>
+<li><a href="#regression">回歸清單</a></li>
+<li><a href="#interview">面試講法</a></li>
+<li><a href="#roadmap">下一步</a></li>
+<li><a href="#top">回到頂部</a></li>
+</ol>
+</aside>
+</div>
+<footer class="footer">
+<p>這份頁面聚焦 testing 與 regression 策略，對應這個專案的高風險資料流、背景流程與 AI 模組。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</div>
+</body>
+</html>

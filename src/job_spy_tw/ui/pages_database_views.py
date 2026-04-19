@@ -331,7 +331,7 @@ def _render_risk_chart(frame: pd.DataFrame) -> None:
     if frame.empty:
         st.info("目前沒有風險評估資料。")
         return
-    chart = (
+    bubbles = (
         alt.Chart(frame)
         .mark_circle(opacity=0.86, stroke="#ffffff", strokeWidth=1.5)
         .encode(
@@ -370,17 +370,20 @@ def _render_risk_chart(frame: pd.DataFrame) -> None:
                 alt.Tooltip("priority:N", title="優先級"),
             ],
         )
-        .properties(height=360)
-        .configure_view(strokeWidth=0)
-        .configure_axis(domain=False, labelColor="#0f172a", titleColor="#334155")
-        .configure_legend(labelColor="#0f172a", titleColor="#334155")
     )
     labels = (
         alt.Chart(frame)
         .mark_text(dx=10, dy=-10, align="left", color="#1f1b4d", fontWeight=700)
         .encode(x="likelihood:Q", y="impact:Q", text="risk:N")
     )
-    st.altair_chart(chart + labels, use_container_width=True)
+    chart = (
+        (bubbles + labels)
+        .properties(height=360)
+        .configure_view(strokeWidth=0)
+        .configure_axis(domain=False, labelColor="#0f172a", titleColor="#334155")
+        .configure_legend(labelColor="#0f172a", titleColor="#334155")
+    )
+    st.altair_chart(chart, use_container_width=True)
 
 
 def _render_intro(report: dict[str, object]) -> None:

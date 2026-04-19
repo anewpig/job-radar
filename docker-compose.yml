@@ -13,13 +13,13 @@ services:
       JOB_SPY_ENABLE_BACKEND_CONSOLE: "false"
       JOB_RADAR_BACKEND_CONSOLE_ALLOWED_ROLES: operator,admin
       JOB_RADAR_DEPLOY_ENV: docker
-      JOB_RADAR_RELEASE_CHANNEL: local
+      JOB_RADAR_RELEASE_CHANNEL: ${JOB_RADAR_RELEASE_CHANNEL:-local}
       JOB_SPY_LOG_FORMAT: json
       JOB_SPY_ASSISTANT_GENERAL_CHAT_MODEL: gpt-4.1-mini
       JOB_SPY_ASSISTANT_PROMPT_VARIANT: control
       JOB_SPY_ASSISTANT_ANN_SYNC_INTERVAL_SECONDS: "900"
     volumes:
-      - ./data:/app/data
+      - ${JOB_RADAR_DATA_VOLUME:-./data}:/app/data
     command: ["/app/scripts/start_streamlit.sh"]
 
   job-radar-worker:
@@ -32,12 +32,12 @@ services:
       JOB_SPY_CRAWL_EXECUTION_MODE: worker
       JOB_SPY_ENABLE_BACKEND_CONSOLE: "false"
       JOB_RADAR_DEPLOY_ENV: docker
-      JOB_RADAR_RELEASE_CHANNEL: local
+      JOB_RADAR_RELEASE_CHANNEL: ${JOB_RADAR_RELEASE_CHANNEL:-local}
       JOB_SPY_LOG_FORMAT: json
       JOB_SPY_ASSISTANT_PROMPT_VARIANT: control
       JOB_SPY_ASSISTANT_ANN_SYNC_INTERVAL_SECONDS: "900"
     volumes:
-      - ./data:/app/data
+      - ${JOB_RADAR_DATA_VOLUME:-./data}:/app/data
     command: ["/app/scripts/start_crawl_worker.sh"]
 
   job-radar-scheduler:
@@ -50,9 +50,9 @@ services:
       JOB_SPY_CRAWL_EXECUTION_MODE: worker
       JOB_SPY_ENABLE_BACKEND_CONSOLE: "false"
       JOB_RADAR_DEPLOY_ENV: docker
-      JOB_RADAR_RELEASE_CHANNEL: local
+      JOB_RADAR_RELEASE_CHANNEL: ${JOB_RADAR_RELEASE_CHANNEL:-local}
       JOB_SPY_LOG_FORMAT: json
       JOB_SPY_ASSISTANT_PROMPT_VARIANT: control
     volumes:
-      - ./data:/app/data
+      - ${JOB_RADAR_DATA_VOLUME:-./data}:/app/data
     command: ["/app/scripts/start_crawl_scheduler.sh"]

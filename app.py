@@ -173,7 +173,7 @@ def main() -> None:
 
         hero_placeholder = st.empty()
         search_setup_state = None
-        if selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database"}:
+        if selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database", "fine_tuning"}:
             setup_snapshot = st.session_state.snapshot
             # 搜尋設定只回傳整理過的狀態物件，避免 `main()` 直接持有大量 widget 細節。
             search_setup_state = render_search_setup(
@@ -218,14 +218,19 @@ def main() -> None:
         snapshot: MarketSnapshot | None = st.session_state.snapshot
         current_role_targets = build_role_targets(effective_search_rows)
         # hero 一律反映目前 session 內最新的 snapshot，可能是 partial，也可能是 final。
-        if selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database"}:
+        if selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database", "fine_tuning"}:
             with hero_placeholder.container():
                 render_hero(snapshot, current_role_targets)
         if st.session_state.favorite_feedback:
             st.success(st.session_state.favorite_feedback)
             st.session_state.favorite_feedback = ""
 
-        if snapshot is None and selected_main_tab_preview not in {"backend", "backend_ops", "backend_console", "database"}:
+        crawl_phase = str(st.session_state.get("crawl_phase") or "idle")
+        if (
+            snapshot is None
+            and crawl_phase not in {"awaiting_snapshot", "finalizing"}
+            and selected_main_tab_preview not in {"backend", "backend_ops", "backend_console", "database", "fine_tuning"}
+        ):
             st.info("按下左側的「開始抓取並分析」，系統會建立最新的職缺快照。")
             boot_loader_completed = True
             return
@@ -256,6 +261,16 @@ def main() -> None:
             skill_frame = st.session_state.snapshot_skill_frame
             task_frame = st.session_state.snapshot_task_frame
             jobs_by_url = st.session_state.snapshot_jobs_by_url
+            if selected_main_tab_preview not in {
+                "export",
+                "notifications",
+                "backend",
+                "backend_ops",
+                "backend_console",
+                "database",
+                "fine_tuning",
+            } and crawl_phase in {"awaiting_snapshot", "finalizing"}:
+                st.info("正在建立職缺快照，第一批結果到達後會自動更新到職缺總覽。")
         favorite_jobs = (
             product_store.list_favorites(user_id=current_user_id)
             if not current_user_is_guest
@@ -289,7 +304,7 @@ def main() -> None:
             error for error in snapshot.errors if "低相關職缺" not in str(error)
         ]
 
-        if selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database"} and low_relevance_notes:
+        if selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database", "fine_tuning"} and low_relevance_notes:
             st.markdown(
                 (
                     "<div style='font-size:0.78rem;color:rgba(73,80,87,0.82);"
@@ -300,7 +315,7 @@ def main() -> None:
                 unsafe_allow_html=True,
             )
 
-        if other_snapshot_errors and selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database"}:
+        if other_snapshot_errors and selected_main_tab_preview not in {"export", "notifications", "backend", "backend_ops", "backend_console", "database", "fine_tuning"}:
             for error in other_snapshot_errors:
                 st.warning(error)
 

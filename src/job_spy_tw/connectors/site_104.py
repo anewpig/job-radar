@@ -5,6 +5,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import re
+from urllib.error import HTTPError
 from urllib.parse import quote_plus
 
 from ..detail_parsing import merge_unique_items, select_requirement_like_items, split_structured_items
@@ -18,6 +19,8 @@ class Site104Connector(BaseConnector):
     search_url_template = (
         "https://www.104.com.tw/jobs/search/api/jobs?keyword={query}&page={page}"
     )
+    operation_announcement_url = "https://www.104.com.tw/js/operation-announcement.js"
+    operation_time_pattern = re.compile(r'window\.OPERATION_TIME\s*=\s*"([^"]*)"')
     job_href_pattern = re.compile(r"/job/[A-Za-z0-9]+")
     detail_keywords = ("工作內容", "條件要求", "職務類別", "工作待遇", "技能")
 
@@ -45,16 +48,19 @@ class Site104Connector(BaseConnector):
         url = self.search_url_template.format(
             query=quote_plus(query), page=page, location=""
         )
-        return self.fetcher.fetch(
-            url,
-            force_refresh=self.force_refresh,
-            headers={
-                "Accept": "application/json, text/plain, */*",
-                "Referer": "https://www.104.com.tw/jobs/search/",
-            },
-            delay_seconds=self.search_delay_seconds(),
-            cache_ttl_seconds=self.search_cache_ttl_seconds(),
-        )
+        try:
+            return self.fetcher.fetch(
+                url,
+                force_refresh=self.force_refresh,
+                headers={
+                    "Accept": "application/json, text/plain, */*",
+                    "Referer": "https://www.104.com.tw/jobs/search/",
+                },
+                delay_seconds=self.search_delay_seconds(),
+                cache_ttl_seconds=self.search_cache_ttl_seconds(),
+            )
+        except HTTPError as exc:
+            raise self._translate_http_error(exc, phase="search") from exc
 
     def parse_search_page(self, html: str, query: str) -> list[JobListing]:
         payload = json.loads(html)
@@ -141,18 +147,20 @@ class Site104Connector(BaseConnector):
             return
         detail_url = f"{self.base_url}/job/ajax/content/{job_code}"
         try:
-            payload = json.loads(
-                self.fetcher.fetch(
-                    detail_url,
-                    force_refresh=self.force_refresh,
-                    headers={
-                        "Accept": "application/json, text/plain, */*",
-                        "Referer": job.url or f"{self.base_url}/job/{job_code}",
-                    },
-                    delay_seconds=self.detail_delay_seconds(),
-                    cache_ttl_seconds=self.detail_cache_ttl_seconds(),
-                )
+            detail_payload = self.fetcher.fetch(
+                detail_url,
+                force_refresh=self.force_refresh,
+                headers={
+                    "Accept": "application/json, text/plain, */*",
+                    "Referer": job.url or f"{self.base_url}/job/{job_code}",
+                },
+                delay_seconds=self.detail_delay_seconds(),
+                cache_ttl_seconds=self.detail_cache_ttl_seconds(),
             )
+            payload = json.loads(detail_payload)
+        except HTTPError as exc:
+            job.metadata["detail_error"] = str(self._translate_http_error(exc, phase="detail"))
+            return
         except Exception as exc:  # noqa: BLE001
             job.metadata["detail_error"] = str(exc)
             return
@@ -261,3 +269,34 @@ class Site104Connector(BaseConnector):
             elif language_name:
                 items.append(f"語文條件：{language_name}")
         return items
+
+    def _translate_http_error(self, exc: HTTPError, *, phase: str) -> Exception:
+        if exc.code != 404:
+            return exc
+
+        maintenance_window = self._fetch_operation_time()
+        if maintenance_window:
+            return RuntimeError(
+                f"104 {phase} 目前顯示維護公告，維護時段為 {maintenance_window}"
+            )
+        return RuntimeError(f"104 {phase} 目前回傳公告頁或維護頁，暫時無法抓取")
+
+    def _fetch_operation_time(self) -> str:
+        try:
+            script = self.fetcher.fetch(
+                self.operation_announcement_url,
+                force_refresh=True,
+                headers={
+                    "Accept": "*/*",
+                    "Referer": self.base_url,
+                },
+                delay_seconds=0,
+                cache_ttl_seconds=300,
+            )
+        except Exception:  # noqa: BLE001
+            return ""
+
+        match = self.operation_time_pattern.search(script)
+        if not match:
+            return ""
+        return normalize_text(match.group(1))

@@ -145,6 +145,14 @@ def run_worker_loop(
                     "attempt_count": int(result.attempt_count),
                     "max_attempts": int(result.max_attempts),
                     "next_retry_at": result.next_retry_at,
+                    "error": {
+                        "error_code": result.error_code,
+                        "error_kind": result.error_kind,
+                        "error_retryable": bool(result.is_retryable),
+                        "error_user_message": result.error_user_message,
+                        "error_message": result.error_message,
+                        "error_metadata": result.error_metadata,
+                    },
                 },
             )
             logger.info(
@@ -168,6 +176,14 @@ def run_worker_loop(
                 "once": bool(once),
                 "job_id": int(job.id),
                 "query_signature": job.query_signature,
+                "error": {
+                    "error_code": result.error_code,
+                    "error_kind": result.error_kind,
+                    "error_retryable": bool(result.is_retryable),
+                    "error_user_message": result.error_user_message,
+                    "error_message": result.error_message,
+                    "error_metadata": result.error_metadata,
+                },
             },
         )
         logger.error(

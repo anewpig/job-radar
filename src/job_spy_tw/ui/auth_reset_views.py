@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from ..error_taxonomy import build_error_info
 from ..notification_service import NotificationService
 from ..observability import new_trace_id
 from ..product_store import ProductStore
@@ -59,16 +60,23 @@ def _handle_forgot_request_submit(
         )
     except ValueError:
         user = None
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "password_reset_request",
+                "email": reset_email.lower(),
+            },
+        )
         product_store.record_audit_event(
             event_type="auth.password_reset.request_failed",
             status="error",
             target_type="user_email",
             target_id=reset_email.lower(),
-            details={"reason": "notification_send_failed"},
+            details=error_info.to_dict(),
             trace_id=trace_id,
         )
-        set_auth_feedback(error="目前無法寄送重設碼，請稍後再試。")
+        set_auth_feedback(error=error_info.user_message)
         st.rerun()
 
     del user
@@ -181,16 +189,23 @@ def _handle_forgot_confirm_submit(*, product_store: ProductStore) -> None:
             reset_code=reset_code,
             new_password=new_password,
         )
-    except Exception as exc:  # noqa: BLE001
+    except ValueError as exc:
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "password_reset_confirm",
+                "email": reset_email_confirm.lower(),
+            },
+        )
         product_store.record_audit_event(
             event_type="auth.password_reset.confirm_failed",
             status="error",
             target_type="user_email",
             target_id=reset_email_confirm.lower(),
-            details={"reason": str(exc)},
+            details=error_info.to_dict(),
             trace_id=trace_id,
         )
-        message = str(exc)
+        message = error_info.user_message
         field_key = "reset_code"
         if "密碼至少需要" in message:
             field_key = "reset_new_password"

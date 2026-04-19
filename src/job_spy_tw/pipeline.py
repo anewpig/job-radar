@@ -13,7 +13,6 @@ from urllib.parse import urlsplit
 
 from .analysis import JobAnalyzer
 from .config import Settings, load_settings
-from .connectors import CakeConnector, LinkedInConnector, Site104Connector, Site1111Connector
 from .data_quality import build_snapshot_data_quality_report
 from .job_cleaning import merge_duplicate_jobs
 from .market_history_store import MarketHistoryStore
@@ -43,6 +42,13 @@ class JobMarketPipeline:
         self.force_refresh = bool(force_refresh)
         self._raw_collection_jobs: list[JobListing] = []
         self._last_deduped_jobs: list[JobListing] = []
+        from .connectors import (
+            CakeConnector,
+            LinkedInConnector,
+            Site104Connector,
+            Site1111Connector,
+        )
+
         ensure_directory(self.settings.data_dir)
         self.fetcher = CachedFetcher(
             cache_dir=self.settings.cache_dir,

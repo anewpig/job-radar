@@ -149,3 +149,36 @@ class BackendStatusServiceTests(unittest.TestCase):
         self.assertIn("scheduler heartbeat missing", report.issues)
         self.assertIn("worker heartbeat missing", report.issues)
         self.assertIn("sqlite backup missing", report.issues)
+
+    def test_collect_backend_status_report_surfaces_ai_budget_warnings_and_security_summary(self) -> None:
+        settings = self.build_settings()
+        settings.crawl_execution_mode = "inline"
+        product_store = ProductStore(settings.product_state_db_path)
+        product_store.record_audit_event(
+            event_type="auth.login.failed",
+            status="error",
+            target_type="user_email",
+            target_id="member@example.com",
+            trace_id="auth-trace-1",
+        )
+        for _ in range(3):
+            product_store.record_ai_monitoring_event(
+                event_type="assistant.answer_question",
+                status="success",
+                latency_ms=5_200.0,
+                model_name="gpt-5.4-mini",
+                metadata={"usage_total_tokens": 2_000},
+            )
+
+        report = collect_backend_status_report(
+            settings=settings,
+            product_store=product_store,
+        )
+
+        self.assertEqual(report.ai_health["latency_budgets"]["status"], "WARN")
+        self.assertIn("ai latency budgets warning", report.issues)
+        self.assertEqual(
+            report.security["backend_console_allowed_roles"],
+            list(settings.backend_console_allowed_roles),
+        )
+        self.assertEqual(report.security["recent_audit_events"], 1)

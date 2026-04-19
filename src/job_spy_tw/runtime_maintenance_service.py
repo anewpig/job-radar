@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from .crawl_application_service import build_query_runtime
+from .error_taxonomy import build_application_error, build_error_info
 from .query_runtime import RuntimeSignalStore
 from .settings import Settings
 from .utils import CachedFetcher, purge_nested_cache_files
@@ -21,6 +22,7 @@ class RuntimeCleanupResult:
     trigger: str
     skipped_reason: str = ""
     deleted_jobs: int = 0
+    deleted_dead_letters: int = 0
     deleted_snapshot_rows: int = 0
     deleted_snapshot_files: int = 0
     deleted_orphan_snapshot_files: int = 0
@@ -59,6 +61,9 @@ def run_runtime_cleanup(
         deleted_jobs = queue.prune_jobs(
             retention_days=settings.runtime_job_retention_days
         )
+        deleted_dead_letters = queue.prune_dead_letters(
+            retention_days=settings.runtime_job_retention_days
+        )
         snapshot_result = registry.prune_snapshots(
             ready_retention_days=settings.runtime_snapshot_retention_days,
             partial_retention_hours=settings.runtime_partial_snapshot_retention_hours,
@@ -92,6 +97,7 @@ def run_runtime_cleanup(
             status="completed",
             trigger=trigger,
             deleted_jobs=deleted_jobs,
+            deleted_dead_letters=deleted_dead_letters,
             deleted_snapshot_rows=int(snapshot_result["deleted_rows"]),
             deleted_snapshot_files=int(snapshot_result["deleted_files"]),
             deleted_orphan_snapshot_files=int(snapshot_result["deleted_orphan_files"]),
@@ -111,6 +117,7 @@ def run_runtime_cleanup(
                 "trigger": trigger,
                 "interval_seconds": int(settings.runtime_cleanup_interval_seconds),
                 "deleted_jobs": int(result.deleted_jobs),
+                "deleted_dead_letters": int(result.deleted_dead_letters),
                 "deleted_snapshot_rows": int(result.deleted_snapshot_rows),
                 "deleted_snapshot_files": int(result.deleted_snapshot_files),
                 "deleted_orphan_snapshot_files": int(result.deleted_orphan_snapshot_files),
@@ -123,17 +130,31 @@ def run_runtime_cleanup(
         )
         return result
     except Exception as exc:
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "runtime_cleanup",
+                "trigger": trigger,
+            },
+        )
         signal_store.put_signal(
             component_kind=MAINTENANCE_COMPONENT_KIND,
             component_id=MAINTENANCE_COMPONENT_ID,
             status="failed",
-            message=str(exc),
+            message=f"{error_info.code}: {error_info.user_message}",
             payload={
                 "trigger": trigger,
                 "interval_seconds": int(settings.runtime_cleanup_interval_seconds),
+                "error": error_info.to_dict(),
             },
         )
-        raise
+        raise build_application_error(
+            code=error_info.code,
+            technical_message=error_info.technical_message,
+            metadata=error_info.metadata,
+            retryable=error_info.retryable,
+            user_message=error_info.user_message,
+        ) from exc
 
 
 def _latest_cleanup_signal(signal_store: RuntimeSignalStore):
@@ -150,7 +171,7 @@ def _latest_cleanup_signal(signal_store: RuntimeSignalStore):
 def _cleanup_due(updated_at: str, *, interval_seconds: int) -> bool:
     try:
         previous_run = datetime.fromisoformat(str(updated_at).strip())
-    except Exception:  # noqa: BLE001
+    except ValueError:
         return True
     return (datetime.now() - previous_run).total_seconds() >= max(
         0,
@@ -162,6 +183,7 @@ def _format_cleanup_message(result: RuntimeCleanupResult) -> str:
     return (
         f"Cleanup via {result.trigger}: "
         f"jobs={result.deleted_jobs}, "
+        f"dead_letters={result.deleted_dead_letters}, "
         f"snapshots={result.deleted_snapshot_rows}, "
         f"snapshot_files={result.deleted_snapshot_files}, "
         f"orphans={result.deleted_orphan_snapshot_files}, "

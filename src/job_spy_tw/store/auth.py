@@ -521,7 +521,7 @@ class UserRepository:
                 created_at,
                 updated_at,
                 last_login_at
-            ) VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
             """,
             (
                 email,

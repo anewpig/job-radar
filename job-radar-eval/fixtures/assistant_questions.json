@@ -1,0 +1,802 @@
+[
+  {
+    "id": "skills_priority_ai_apply_01",
+    "category": "skill_gap",
+    "question": "如果我要往 AI 應用工程師發展，現在最值得優先補強哪些技能？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill", "job-skills", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "skills_priority_ai_apply_02",
+    "category": "skill_gap",
+    "question": "想轉往 AI 應用工程師，第一波最值得先學的技能是什麼？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "skills_priority_ai_apply_03",
+    "category": "skill_gap",
+    "question": "以目前市場來看，AI 應用工程師應該先補 Python 還是先補 LLM 能力？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "skills_priority_ai_apply_04",
+    "category": "skill_gap",
+    "question": "如果只能先學三項，AI 類職缺最值得優先補強哪些技能？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "skills_priority_ai_apply_05",
+    "category": "skill_gap",
+    "question": "針對 AI 類工作，現在優先補強的技能排序大概是什麼？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_01",
+    "category": "salary_range",
+    "question": "目前 AI 類職缺的薪資大約落在哪裡？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_02",
+    "category": "salary_range",
+    "question": "如果看 AI 工程師相關工作，常見月薪大概是多少？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_03",
+    "category": "salary_range",
+    "question": "目前市場上 AI 類職缺的薪資區間可以怎麼看？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_04",
+    "category": "salary_range",
+    "question": "AI 類工作的起薪與一般區間大概在哪？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_05",
+    "category": "salary_range",
+    "question": "想知道 AI 應用工程師常見薪資範圍，大概會落在哪裡？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_01",
+    "category": "resume_gap",
+    "question": "以這份履歷來看，還需要補足哪些技能？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_02",
+    "category": "resume_gap",
+    "question": "如果我要投 AI 類職缺，這份履歷目前最大的缺口是什麼？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_03",
+    "category": "resume_gap",
+    "question": "從這份履歷和市場需求相比，還差哪些能力？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_04",
+    "category": "resume_gap",
+    "question": "目前履歷要補哪些技能，才更接近 AI 工程師要求？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_05",
+    "category": "resume_gap",
+    "question": "如果現在就要投，履歷裡最明顯缺少的技術會是哪些？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_01",
+    "category": "market_skill",
+    "question": "目前市場最重視哪些 AI 相關能力？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_02",
+    "category": "market_skill",
+    "question": "如果只看市場方向，現在最重要的核心能力是什麼？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_03",
+    "category": "job_recommendation",
+    "question": "目前市場對 AI 應用人才最看重的能力會偏哪幾項？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_04",
+    "category": "market_report",
+    "question": "幫我快速看一下目前市場重點能力集中在哪裡。",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_05",
+    "category": "market_skill",
+    "question": "如果從市場角度看，現在最值得關注的技能主軸是什麼？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "firmware_priority_01",
+    "category": "skill_gap",
+    "question": "如果我要往韌體工程師發展，現在最值得優先補強哪些能力？",
+    "expected_keywords": ["C/C++", "RTOS", "ARM"],
+    "expected_source_types": ["job-skills", "market-skill"],
+    "min_citations": 1
+  },
+  {
+    "id": "firmware_priority_02",
+    "category": "skill_gap",
+    "question": "韌體類職缺最核心的三項能力通常是什麼？",
+    "expected_keywords": ["C/C++", "RTOS", "ARM"],
+    "expected_source_types": ["job-skills", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "firmware_priority_03",
+    "category": "skill_gap",
+    "question": "以目前韌體職缺來看，最先該補的是哪些嵌入式能力？",
+    "expected_keywords": ["C/C++", "RTOS", "ARM"],
+    "expected_source_types": ["job-skills", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "rag_scope_01",
+    "category": "work_content",
+    "question": "RAG AI Engineer 的工作內容通常包含哪些模組？",
+    "expected_keywords": ["Knowledge Base", "向量資料庫", "API"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "rag_scope_02",
+    "category": "work_content",
+    "question": "如果工作內容提到知識庫系統與向量資料庫，通常是在做哪些事情？",
+    "expected_keywords": ["Knowledge Base", "向量資料庫", "API"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "rag_scope_03",
+    "category": "work_content",
+    "question": "AI Agent / RAG 類工作的日常開發重點通常是什麼？",
+    "expected_keywords": ["RAG", "Knowledge Base", "API"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "pm_scope_01",
+    "category": "work_content",
+    "question": "產品經理常見的核心工作會有哪些？",
+    "expected_keywords": ["roadmap", "PRD", "跨部門協作"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "pm_scope_02",
+    "category": "work_content",
+    "question": "如果看 PM 類職缺，日常工作通常圍繞哪些內容？",
+    "expected_keywords": ["roadmap", "PRD", "跨部門協作"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "pm_scope_03",
+    "category": "work_content",
+    "question": "AI 產品經理的工作範圍通常怎麼拆？",
+    "expected_keywords": ["roadmap", "PRD", "跨部門協作"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "firmware_priority_04",
+    "category": "skill_gap",
+    "question": "如果想往藍牙韌體工程師發展，最核心要先補哪些能力？",
+    "expected_keywords": ["C/C++", "RTOS", "ARM"],
+    "expected_source_types": ["job-skills", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "firmware_priority_05",
+    "category": "skill_gap",
+    "question": "韌體工作最常反覆要求的能力會是哪幾項？",
+    "expected_keywords": ["C/C++", "RTOS", "ARM"],
+    "expected_source_types": ["job-skills", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "rag_scope_04",
+    "category": "work_content",
+    "question": "RAG / 知識庫系統工程師通常會碰哪些內容？",
+    "expected_keywords": ["Knowledge Base", "向量資料庫", "API"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "rag_scope_05",
+    "category": "work_content",
+    "question": "如果職缺提到向量資料庫與 API 整合，通常代表在做什麼？",
+    "expected_keywords": ["Knowledge Base", "向量資料庫", "API"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "pm_scope_04",
+    "category": "work_content",
+    "question": "PM 類職缺最常提到哪些日常工作？",
+    "expected_keywords": ["roadmap", "PRD", "跨部門協作"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "pm_scope_05",
+    "category": "work_content",
+    "question": "如果我想做產品經理，平常主要會處理哪些事情？",
+    "expected_keywords": ["roadmap", "PRD", "跨部門協作"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_06",
+    "category": "salary_range",
+    "question": "RAG / AI 應用相關工作的薪資通常落在哪個區間？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_06",
+    "category": "resume_gap",
+    "question": "如果我現在只有 Python 與 RAG，還缺哪些能力會更接近市場需求？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["job-skills", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_skill_04",
+    "category": "market_skill",
+    "question": "目前市場最常反覆出現的 AI 技能是哪些？",
+    "expected_keywords": ["Python", "LLM"],
+    "expected_source_types": ["market-skill", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_02",
+    "category": "market_report",
+    "question": "請快速總結目前 AI / RAG 類職缺的市場重點。",
+    "expected_keywords": ["Knowledge Base", "向量資料庫", "API"],
+    "expected_source_types": ["job-work", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "firmware_scope_01",
+    "category": "work_content",
+    "question": "藍牙韌體相關職缺通常在做哪些技術主軸？",
+    "expected_keywords": ["C/C++", "RTOS", "ARM"],
+    "expected_source_types": ["job-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_01",
+    "category": "source_comparison",
+    "question": "這次搜尋裡，不同來源平台的職缺分布差異大概是什麼？",
+    "expected_keywords": ["104", "Cake", "LinkedIn"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_02",
+    "category": "source_comparison",
+    "question": "如果把 104、Cake、LinkedIn 放在一起看，各自比較偏哪種類型的職缺？",
+    "expected_keywords": ["104", "Cake", "LinkedIn"],
+    "expected_source_types": ["job-summary", "market-task-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_03",
+    "category": "source_comparison",
+    "question": "哪個平台比較偏 RAG / PM，哪個平台又比較偏韌體？",
+    "expected_keywords": ["Cake", "LinkedIn", "1111"],
+    "expected_source_types": ["job-summary", "job-work-content"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_04",
+    "category": "source_comparison",
+    "question": "如果只想先看職缺量，這次哪個來源最有代表性？",
+    "expected_keywords": ["104", "Cake", "1111"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_05",
+    "category": "source_comparison",
+    "question": "目前看起來，哪個來源比較偏 AI 平台，哪個來源比較偏知識庫與 RAG？",
+    "expected_keywords": ["LinkedIn", "Cake", "104"],
+    "expected_source_types": ["job-summary", "job-work-content"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_06",
+    "category": "source_comparison",
+    "question": "如果我要比較平台風格，這次 104、1111、Cake、LinkedIn 各自的主軸是什麼？",
+    "expected_keywords": ["104", "1111", "Cake"],
+    "expected_source_types": ["job-summary", "job-work-content"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_01",
+    "category": "location_focus",
+    "question": "目前 AI 類職缺主要集中在哪些城市？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_02",
+    "category": "location_focus",
+    "question": "如果只看這次的市場快照，台北、新北、新竹各自偏什麼方向？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "job-work-content"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_03",
+    "category": "location_focus",
+    "question": "韌體跟 AI 類職缺在地點分布上有什麼差異？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_04",
+    "category": "location_focus",
+    "question": "如果我在北部找工作，這批職缺主要會落在哪幾個城市？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_01",
+    "category": "seniority",
+    "question": "如果是新鮮人或 junior，AI 類工作的常見起薪大概在哪？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_02",
+    "category": "seniority",
+    "question": "如果有幾年經驗，資深 AI 平台類職缺的薪資通常可以到哪裡？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_03",
+    "category": "seniority",
+    "question": "AI 類工作在 junior 和較資深的薪資落差大概怎麼看？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_04",
+    "category": "seniority",
+    "question": "如果從年資來看，AI 類職缺的薪資帶大概怎麼分？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_02",
+    "category": "job_recommendation",
+    "question": "如果以目前市場訊號來看，現在最值得優先投遞的職缺方向有哪些？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_03",
+    "category": "job_recommendation",
+    "question": "這次搜尋裡，哪些職缺方向最值得先追？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_04",
+    "category": "job_recommendation",
+    "question": "如果只能先看三種方向，你會建議我先關注哪些職缺類型？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_03",
+    "category": "market_report",
+    "question": "請幫我把這批職缺的市場重點整理成一句話摘要。",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_04",
+    "category": "market_report",
+    "question": "如果要快速看完這次市場快照，最重要的三個重點是什麼？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_05",
+    "category": "market_report",
+    "question": "請快速整理目前 AI、RAG、韌體三條線的市場重點。",
+    "expected_keywords": ["RAG", "Knowledge Base", "C/C++"],
+    "expected_source_types": ["job-summary", "job-work-content"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_05",
+    "category": "job_recommendation",
+    "question": "目前這波職缺裡，最值得優先投遞的方向會是哪三類？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_06",
+    "category": "job_recommendation",
+    "question": "如果我想先求穩，這次應該先關注哪些職缺方向？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_07",
+    "category": "job_recommendation",
+    "question": "這批市場快照裡，哪些方向最值得優先鎖定？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_08",
+    "category": "job_recommendation",
+    "question": "如果只能先投三種職缺，你建議優先追哪三個方向？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_09",
+    "category": "job_recommendation",
+    "question": "目前市場裡最值得先追的角色組合有哪些？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "job_recommendation_10",
+    "category": "job_recommendation",
+    "question": "如果先看成功率與市場訊號，應該先關注哪些職缺類型？",
+    "expected_keywords": ["AI應用工程師", "RAG AI Engineer", "Product Manager"],
+    "expected_source_types": ["job-summary", "resume-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_05",
+    "category": "location_focus",
+    "question": "從地點分布看，台北、新北、新竹各自偏哪些工作方向？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_06",
+    "category": "location_focus",
+    "question": "如果只比台北、新北、新竹，三地的職缺重心分別是什麼？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_07",
+    "category": "location_focus",
+    "question": "這批職缺在地點上怎麼分布，台北、新北、新竹各偏哪些類型？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_08",
+    "category": "location_focus",
+    "question": "如果以城市來看，新北市、台北市、新竹市各自比較多哪種方向？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_09",
+    "category": "location_focus",
+    "question": "這次市場快照裡，三個主要城市各自偏什麼職缺？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "location_focus_10",
+    "category": "location_focus",
+    "question": "只看地點差異，台北、新北、新竹的角色分布怎麼看？",
+    "expected_keywords": ["新北市", "台北市", "新竹市"],
+    "expected_source_types": ["job-summary", "market-skill-insight"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_06",
+    "category": "market_report",
+    "question": "幫我把這次市場快照快速整理成三個重點。",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_07",
+    "category": "market_report",
+    "question": "如果只給我一句話，這次市場快照的結論是什麼？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_08",
+    "category": "market_report",
+    "question": "請快速總結目前 AI / RAG / 韌體市場的共通重點。",
+    "expected_keywords": ["RAG", "Knowledge Base", "C/C++"],
+    "expected_source_types": ["job-summary", "job-work-content"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_report_09",
+    "category": "market_report",
+    "question": "如果要用一句摘要描述這波市場，你會怎麼說？",
+    "expected_keywords": ["Python", "LLM", "RAG"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_06",
+    "category": "market_skill",
+    "question": "如果只看市場，現在最該注意的能力主軸是什麼？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_07",
+    "category": "market_skill",
+    "question": "目前企業最重視的核心技能組合有哪些？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_08",
+    "category": "market_skill",
+    "question": "這波職缺裡，最常被點名的能力主軸是什麼？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_09",
+    "category": "market_skill",
+    "question": "如果要抓市場核心技能，應該看哪幾項？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_10",
+    "category": "market_skill",
+    "question": "目前 AI 類市場的技能重點大致集中在哪些能力？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "market_focus_11",
+    "category": "market_skill",
+    "question": "如果從市場技能角度看，現在最不能忽略的能力是什麼？",
+    "expected_keywords": ["Python", "LLM", "整合"],
+    "expected_source_types": ["market-skill-insight", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_07",
+    "category": "resume_gap",
+    "question": "以目前這份履歷，如果要更接近 AI 類工作，還要補哪些能力？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_08",
+    "category": "resume_gap",
+    "question": "對照市場需求，這份履歷最需要補強的缺口是什麼？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_09",
+    "category": "resume_gap",
+    "question": "現在這份履歷距離 AI 應用相關職缺，主要還差哪些技能？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "resume_gap_10",
+    "category": "resume_gap",
+    "question": "如果要把履歷補到更接近市場，最先該補哪些缺口？",
+    "expected_keywords": ["Docker", "AWS"],
+    "expected_source_types": ["resume-summary", "job-skills"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_07",
+    "category": "salary_range",
+    "question": "如果只看這波 AI 類職缺，月薪通常集中在哪個區間？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_08",
+    "category": "salary_range",
+    "question": "目前 AI 應用 / AI 工程相關工作的薪資帶大概在哪？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_09",
+    "category": "salary_range",
+    "question": "如果用區間來看，AI 類工作的常見月薪大多落在哪？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "salary_band_ai_10",
+    "category": "salary_range",
+    "question": "這批 AI 相關職缺的薪資大致怎麼分布？",
+    "expected_keywords": ["60,000", "80,000"],
+    "expected_source_types": ["job-summary", "job-salary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_05",
+    "category": "seniority",
+    "question": "如果是 junior 到 senior，AI 類薪資區間大概怎麼拉開？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_06",
+    "category": "seniority",
+    "question": "以年資來看，AI 類工作從初階到資深的薪資差異大概多大？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_07",
+    "category": "seniority",
+    "question": "如果不是新鮮人，而是已有幾年經驗，AI 類薪資通常到哪裡？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_08",
+    "category": "seniority",
+    "question": "AI 平台或較資深職缺，通常會比一般 AI 職缺高到哪個區間？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_09",
+    "category": "seniority",
+    "question": "如果看資深度，AI 類職缺薪資帶通常怎麼往上走？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "seniority_10",
+    "category": "seniority",
+    "question": "從 junior、一般到資深，AI 類月薪大概怎麼分層？",
+    "expected_keywords": ["60,000", "80,000", "90,000"],
+    "expected_source_types": ["job-salary", "job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_07",
+    "category": "source_comparison",
+    "question": "如果只比較 104、1111、Cake、LinkedIn，哪個來源最有代表性？",
+    "expected_keywords": ["104", "Cake", "LinkedIn"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_08",
+    "category": "source_comparison",
+    "question": "這次市場快照裡，104、1111、Cake、LinkedIn 各自偏什麼方向？",
+    "expected_keywords": ["104", "Cake", "LinkedIn"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_09",
+    "category": "source_comparison",
+    "question": "如果先看來源平台差異，哪個來源的職缺量最值得先看？",
+    "expected_keywords": ["104", "Cake", "1111"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  },
+  {
+    "id": "source_compare_10",
+    "category": "source_comparison",
+    "question": "只看來源比較，104、Cake、LinkedIn、1111 的定位怎麼看？",
+    "expected_keywords": ["104", "Cake", "LinkedIn"],
+    "expected_source_types": ["job-summary"],
+    "min_citations": 1
+  }
+]

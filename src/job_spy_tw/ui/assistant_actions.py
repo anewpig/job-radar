@@ -7,7 +7,7 @@ from time import perf_counter
 import streamlit as st
 
 from ..application.assistant_agent import AssistantAgentApplication
-from ..error_taxonomy import error_metadata
+from ..error_taxonomy import ERROR_KIND_LLM, error_metadata
 from ..models import ResumeProfile
 from ..observability import new_trace_id, trace_context
 from .assistant_agent_runtime import (
@@ -240,7 +240,11 @@ def _submit_rag_assistant_question(
             metadata={
                 **base_metadata,
                 "trace_id": trace_id,
-                **error_metadata(exc),
+                **error_metadata(
+                    exc,
+                    default_kind=ERROR_KIND_LLM,
+                    metadata={"operation": "assistant.answer_question"},
+                ),
                 **request_metrics_metadata(getattr(assistant, "last_request_metrics", None)),
                 **usage_metadata(getattr(assistant, "last_usage", None)),
             },
@@ -476,7 +480,11 @@ def generate_assistant_report(
                 "snapshot_jobs": len(ctx.snapshot.jobs),
                 "role_targets": len(ctx.snapshot.role_targets),
                 "trace_id": trace_id,
-                **error_metadata(exc),
+                **error_metadata(
+                    exc,
+                    default_kind=ERROR_KIND_LLM,
+                    metadata={"operation": "assistant.generate_report"},
+                ),
                 **request_metrics_metadata(getattr(assistant, "last_request_metrics", None)),
                 **usage_metadata(getattr(assistant, "last_usage", None)),
             },

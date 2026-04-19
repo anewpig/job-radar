@@ -148,6 +148,10 @@ class QueryRuntimeTests(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0].query_signature, "sig-legacy")
         self.assertEqual(records[0].error_message, "")
+        self.assertEqual(records[0].error_code, "")
+        self.assertEqual(records[0].error_kind, "")
+        self.assertEqual(records[0].error_user_message, "")
+        self.assertFalse(records[0].is_retryable)
         self.assertFalse(records[0].is_partial)
 
     def test_queue_dedupes_and_single_worker_leases_same_query(self) -> None:
@@ -221,6 +225,17 @@ class QueryRuntimeTests(unittest.TestCase):
         self.assertEqual(failed.status, "failed")
         self.assertEqual(failed.attempt_count, 2)
         self.assertEqual(failed.max_attempts, 2)
+        self.assertTrue(failed.error_code)
+        self.assertTrue(failed.error_kind)
+        dead_letter = self.queue.get_dead_letter_for_job(failed.id)
+        self.assertIsNotNone(dead_letter)
+        assert dead_letter is not None
+        self.assertEqual(dead_letter.original_job_id, failed.id)
+        self.assertEqual(dead_letter.error_code, failed.error_code)
+        replayed_dead_letter, replay_job = self.queue.replay_dead_letter(dead_letter.id)
+        self.assertGreater(replay_job.id, failed.id)
+        self.assertEqual(replayed_dead_letter.replay_job_id, replay_job.id)
+        self.assertEqual(replayed_dead_letter.replay_count, 1)
 
     def test_runtime_signal_store_and_list_helpers(self) -> None:
         self.registry.put_snapshot(

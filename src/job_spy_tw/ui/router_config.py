@@ -5,6 +5,7 @@ from __future__ import annotations
 MAIN_TAB_ITEMS_BASE: list[tuple[str, str]] = [
     ("overview", "職缺總覽"),
     ("assistant", "AI 助理"),
+    ("fine_tuning", "Post-Training"),
     ("resume", "履歷匹配"),
     ("tasks", "工作內容 / 技能"),
     ("board", "投遞看板"),
@@ -18,6 +19,8 @@ LEGACY_TAB_MAP = {
     "工作內容 / 技能": "tasks",
     "技能地圖": "tasks",
     "來源比較": "sources",
+    "LLM Post-Training": "fine_tuning",
+    "Fine-tuning": "fine_tuning",
     "資料庫報告": "database",
     "投遞看板": "board",
     "通知設定": "notifications",
@@ -34,6 +37,7 @@ DRAWER_ICON_TOKENS = {
     "tracking": "●",
     "board": "▤",
     "sources": "◎",
+    "fine_tuning": "◫",
     "notifications": "◍",
     "database": "⌘",
     "export": "↧",
@@ -42,7 +46,7 @@ DRAWER_ICON_TOKENS = {
 
 DRAWER_SECTION_SPECS: list[tuple[str, str, tuple[str, ...]]] = [
     ("workspace", "工作台", ("overview", "assistant", "resume", "tasks", "tracking", "board")),
-    ("analysis", "分析與管理", ("sources", "notifications", "database", "export")),
+    ("analysis", "分析與管理", ("sources", "fine_tuning", "notifications", "database", "export")),
     ("system", "系統", ("backend_console",)),
 ]
 
@@ -53,6 +57,7 @@ PAGE_SURFACE_KEYS = {
     "tasks": ("tasks-shell", "tasks-body"),
     "skills": ("skills-shell", "skills-body"),
     "sources": ("sources-shell", "sources-body"),
+    "fine_tuning": ("fine-tuning-shell", "fine-tuning-body"),
     "tracking": ("tracking-shell", "tracking-body"),
     "board": ("board-shell", "board-body"),
     "backend": ("backend-shell", "backend-body"),
@@ -132,6 +137,25 @@ PAGE_SHELL_METADATA = {
             "source summary chart",
             "source role distribution chart",
             "detail expander",
+        ],
+        "text_nodes": [
+            ("section-kicker", "頁首小標。"),
+            ("section-title", "頁面主標題。"),
+            ("section-desc", "頁面說明文字。"),
+        ],
+    },
+    "fine-tuning-shell": {
+        "name": "LLM Post-Training 頁主卡",
+        "description": "展示 SFT / DPO 資料、訓練、評估、人評與 artifacts 的共用外框。",
+        "layers": [
+            "fine-tuning-body",
+            "overview tab",
+            "datasets tab",
+            "training tab",
+            "evaluation tab",
+            "review tab",
+            "failure tab",
+            "artifacts tab",
         ],
         "text_nodes": [
             ("section-kicker", "頁首小標。"),

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import streamlit as st
+from streamlit.errors import StreamlitAPIException
 
 from ..application.crawl import (
     CrawlApplication,
@@ -22,6 +23,14 @@ from .crawl_runtime_state import (
 from .crawl_runtime_status import estimate_crawl_eta_label
 from .search import build_role_targets, get_committed_search_rows
 from .search_setup import SearchSetupState
+
+
+def _safe_rerun_fragment() -> None:
+    """優先觸發 fragment rerun；若目前是 full rerun，退回一般 rerun。"""
+    try:
+        st.rerun(scope="fragment")
+    except StreamlitAPIException:
+        st.rerun()
 
 
 def _poll_cached_crawl_job(*, settings) -> None:
@@ -45,7 +54,7 @@ def _poll_cached_crawl_job(*, settings) -> None:
         return
     if result.status == "completed":
         clear_pending_crawl_state()
-        st.rerun(scope="fragment")
+        _safe_rerun_fragment()
     if result.status == "failed":
         clear_pending_crawl_state()
 
@@ -110,7 +119,7 @@ def _run_finalize_batch(
         )
         clear_pending_crawl_state()
         st.rerun()
-    st.rerun(scope="fragment")
+    _safe_rerun_fragment()
 
 
 def maybe_start_crawl(
@@ -131,6 +140,12 @@ def maybe_start_crawl(
     )
     if not (search_setup_state.run_crawl or pending_saved_search_refresh_id):
         return
+
+    if search_setup_state.run_crawl:
+        # 使用者明確按下「開始抓取並分析」時，下一輪直接切到職缺總覽，
+        # 避免第一次抓取還在等 snapshot 時畫面停留在其他頁面。
+        st.session_state.main_tab_selection = "overview"
+        st.session_state.pending_main_tab_selection = "overview"
 
     effective_search_rows = get_committed_search_rows(
         st.session_state.search_role_rows,

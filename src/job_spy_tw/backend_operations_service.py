@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .crawl_application_service import build_query_runtime, collect_due_saved_searches
+from .error_taxonomy import build_error_info
 from .models import UserAccount
 from .product_store import ProductStore
 from .query_runtime import RuntimeSignalStore
@@ -42,6 +43,11 @@ class QueueJobStatus:
     lease_expires_at: str = ""
     next_retry_at: str = ""
     error_message: str = ""
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -55,6 +61,34 @@ class SnapshotCacheStatus:
     job_count: int = 0
     query_count: int = 0
     error_message: str = ""
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class DeadLetterStatus:
+    dead_letter_id: int
+    original_job_id: int
+    replay_job_id: int
+    status: str
+    priority: int
+    query_signature: str
+    query_labels: list[str] = field(default_factory=list)
+    attempt_count: int = 0
+    max_attempts: int = 0
+    created_at: str = ""
+    updated_at: str = ""
+    replayed_at: str = ""
+    replay_count: int = 0
+    error_message: str = ""
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -66,6 +100,18 @@ class RuntimeComponentStatus:
     updated_at: str
     is_stale: bool = False
     payload: dict[str, Any] = field(default_factory=dict)
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+
+
+@dataclass(slots=True)
+class BackendOperationsActionResult:
+    status: str
+    message: str
+    job_id: int = 0
+    dead_letter_id: int = 0
 
 
 @dataclass(slots=True)
@@ -75,6 +121,7 @@ class BackendOperationsSnapshot:
     pending_job_count: int = 0
     leased_job_count: int = 0
     failed_job_count: int = 0
+    dead_letter_count: int = 0
     ready_snapshot_count: int = 0
     partial_snapshot_count: int = 0
     last_saved_search_refresh_at: str = ""
@@ -84,6 +131,7 @@ class BackendOperationsSnapshot:
     last_snapshot_update_at: str = ""
     due_saved_searches: list[DueSavedSearchStatus] = field(default_factory=list)
     recent_jobs: list[QueueJobStatus] = field(default_factory=list)
+    recent_dead_letters: list[DeadLetterStatus] = field(default_factory=list)
     recent_snapshots: list[SnapshotCacheStatus] = field(default_factory=list)
     runtime_components: list[RuntimeComponentStatus] = field(default_factory=list)
 
@@ -94,6 +142,7 @@ def collect_backend_operations_snapshot(
     product_store: ProductStore,
     due_limit: int = 12,
     job_limit: int = 12,
+    dead_letter_limit: int = 12,
     snapshot_limit: int = 12,
     signal_limit: int = 8,
 ) -> BackendOperationsSnapshot:
@@ -109,6 +158,7 @@ def collect_backend_operations_snapshot(
 
     all_saved_searches_last_run_at = _collect_last_saved_search_refresh(users, product_store)
     recent_jobs = queue.list_jobs(limit=job_limit)
+    recent_dead_letters = queue.list_dead_letters(limit=dead_letter_limit)
     recent_snapshots = registry.list_snapshots(limit=snapshot_limit)
     signals = signal_store.list_signals(limit=signal_limit)
 
@@ -125,6 +175,7 @@ def collect_backend_operations_snapshot(
         pending_job_count=queue.count_jobs(status="pending"),
         leased_job_count=queue.count_jobs(status="leased"),
         failed_job_count=queue.count_jobs(status="failed"),
+        dead_letter_count=queue.count_dead_letters(),
         ready_snapshot_count=registry.count_snapshots(status="ready", is_partial=False),
         partial_snapshot_count=registry.count_snapshots(is_partial=True),
         last_saved_search_refresh_at=all_saved_searches_last_run_at,
@@ -165,8 +216,37 @@ def collect_backend_operations_snapshot(
                 lease_expires_at=job.lease_expires_at,
                 next_retry_at=job.next_retry_at,
                 error_message=job.error_message,
+                error_code=job.error_code,
+                error_kind=job.error_kind,
+                error_user_message=job.error_user_message,
+                is_retryable=bool(job.is_retryable),
+                error_metadata=job.error_metadata(),
             )
             for job in recent_jobs
+        ],
+        recent_dead_letters=[
+            DeadLetterStatus(
+                dead_letter_id=int(record.id),
+                original_job_id=int(record.original_job_id),
+                replay_job_id=int(record.replay_job_id),
+                status=record.status,
+                priority=int(record.priority),
+                query_signature=record.query_signature,
+                query_labels=_extract_query_labels(record.payload()),
+                attempt_count=int(record.attempt_count),
+                max_attempts=int(record.max_attempts),
+                created_at=record.created_at,
+                updated_at=record.updated_at,
+                replayed_at=record.replayed_at,
+                replay_count=int(record.replay_count),
+                error_message=record.error_message,
+                error_code=record.error_code,
+                error_kind=record.error_kind,
+                error_user_message=record.error_user_message,
+                is_retryable=bool(record.is_retryable),
+                error_metadata=record.error_metadata(),
+            )
+            for record in recent_dead_letters
         ],
         recent_snapshots=[
             SnapshotCacheStatus(
@@ -179,6 +259,11 @@ def collect_backend_operations_snapshot(
                 job_count=len(record.snapshot.jobs) if record.snapshot is not None else 0,
                 query_count=len(record.snapshot.queries) if record.snapshot is not None else 0,
                 error_message=record.error_message,
+                error_code=record.error_code,
+                error_kind=record.error_kind,
+                error_user_message=record.error_user_message,
+                is_retryable=bool(record.is_retryable),
+                error_metadata=record.error_metadata(),
             )
             for record in _hydrate_recent_snapshots(registry, recent_snapshots)
         ],
@@ -191,6 +276,10 @@ def collect_backend_operations_snapshot(
                 updated_at=signal.updated_at,
                 is_stale=_is_signal_stale(signal.updated_at, signal.payload()),
                 payload=signal.payload(),
+                error_code=str((signal.payload().get("error") or {}).get("error_code", "")),
+                error_kind=str((signal.payload().get("error") or {}).get("error_kind", "")),
+                error_user_message=str((signal.payload().get("error") or {}).get("error_user_message", "")),
+                is_retryable=bool((signal.payload().get("error") or {}).get("error_retryable", False)),
             )
             for signal in signals
         ],
@@ -254,6 +343,66 @@ def _count_custom_queries(custom_queries_text: str) -> int:
     )
 
 
+def reprocess_failed_job(
+    *,
+    settings: Settings,
+    job_id: int,
+) -> BackendOperationsActionResult:
+    """Requeue one failed job through its dead-letter entry."""
+    _registry, queue = build_query_runtime(settings)
+    try:
+        dead_letter, replay_job = queue.reprocess_failed_job(int(job_id))
+    except Exception as exc:
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "backend_ops_reprocess_failed_job",
+                "job_id": int(job_id),
+            },
+        )
+        return BackendOperationsActionResult(
+            status="error",
+            message=f"{error_info.code}: {error_info.user_message}",
+            job_id=int(job_id),
+        )
+    return BackendOperationsActionResult(
+        status="queued",
+        message=f"已重新排入 job #{replay_job.id}，來源 dead letter #{dead_letter.id}。",
+        job_id=int(replay_job.id),
+        dead_letter_id=int(dead_letter.id),
+    )
+
+
+def replay_dead_letter(
+    *,
+    settings: Settings,
+    dead_letter_id: int,
+) -> BackendOperationsActionResult:
+    """Replay one dead-letter entry back into the crawl queue."""
+    _registry, queue = build_query_runtime(settings)
+    try:
+        dead_letter, replay_job = queue.replay_dead_letter(int(dead_letter_id))
+    except Exception as exc:
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "backend_ops_replay_dead_letter",
+                "dead_letter_id": int(dead_letter_id),
+            },
+        )
+        return BackendOperationsActionResult(
+            status="error",
+            message=f"{error_info.code}: {error_info.user_message}",
+            dead_letter_id=int(dead_letter_id),
+        )
+    return BackendOperationsActionResult(
+        status="queued",
+        message=f"已 replay dead letter #{dead_letter.id}，目前 queue job #{replay_job.id}。",
+        job_id=int(replay_job.id),
+        dead_letter_id=int(dead_letter.id),
+    )
+
+
 def _format_user_label(user: UserAccount | None) -> str:
     if user is None:
         return "未知使用者"
@@ -270,7 +419,7 @@ def _format_user_label(user: UserAccount | None) -> str:
 def _parse_iso(value: str) -> datetime | None:
     try:
         return datetime.fromisoformat(str(value).strip())
-    except Exception:  # noqa: BLE001
+    except ValueError:
         return None
 
 

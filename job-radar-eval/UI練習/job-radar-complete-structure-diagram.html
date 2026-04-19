@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Job Radar 完整結構圖</title>
+<style>
+    :root {
+      --bg: #f7f4ff;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-strong: rgba(255, 255, 255, 0.98);
+      --surface-soft: rgba(245, 240, 255, 0.95);
+      --line: rgba(109, 81, 197, 0.16);
+      --line-strong: rgba(109, 81, 197, 0.28);
+      --text: #1f1734;
+      --muted: #695f86;
+      --accent: #6b4ce6;
+      --accent-2: #5330dc;
+      --green: #2a8f67;
+      --gold: #b88a2e;
+      --red: #c34c62;
+      --shadow: 0 24px 64px rgba(85, 63, 161, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --max: 1520px;
+      --toc: 300px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "SF Pro TC", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(176, 154, 255, 0.22), transparent 34%),
+        radial-gradient(circle at top right, rgba(255, 224, 239, 0.3), transparent 28%),
+        linear-gradient(180deg, #fbf9ff 0%, #f2edff 100%);
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 20px 120px;
+    }
+
+    .hero,
+    .section,
+    .toc,
+    .footer,
+    .summary-card,
+    .node,
+    .stack,
+    .callout,
+    .metric,
+    .lane {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 36px;
+      margin-bottom: 22px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 14% 12%, rgba(183, 160, 255, 0.24), transparent 24%),
+        radial-gradient(circle at 88% 14%, rgba(255, 229, 241, 0.48), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,0.97), rgba(242,236,255,0.98));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(34px, 5vw, 60px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+      max-width: 980px;
+    }
+
+    .hero p,
+    .section-header p,
+    .summary-card p,
+    .node p,
+    .lane p,
+    .callout p,
+    .footer p,
+    .footnote {
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 1080px;
+      font-size: 17px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.95fr;
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .summary-card,
+    .callout {
+      padding: 22px;
+    }
+
+    .summary-card h2,
+    .section-header h2 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      padding: 16px;
+      background: var(--surface-strong);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--toc);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+      background: rgba(255,255,255,0.86);
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .toc a { text-decoration: none; }
+
+    .section {
+      padding: 28px;
+    }
+
+    .section-header { margin-bottom: 18px; }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(107,76,230,0.08);
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .stack-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .stack-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stack-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .stack {
+      padding: 18px;
+      background: rgba(255,255,255,0.82);
+    }
+
+    .stack h3,
+    .lane h3,
+    .callout h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .stack ul,
+    .callout ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .diagram {
+      display: grid;
+      gap: 14px;
+    }
+
+    .lane {
+      padding: 18px;
+      background: rgba(255,255,255,0.86);
+    }
+
+    .lane-label {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(107, 76, 230, 0.08);
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .node {
+      flex: 1 1 170px;
+      min-width: 160px;
+      padding: 16px;
+      background: var(--surface-strong);
+      position: relative;
+    }
+
+    .node.small { min-width: 140px; }
+    .node.medium { min-width: 180px; }
+    .node.large { min-width: 220px; }
+
+    .node-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      background: rgba(255,255,255,0.82);
+      margin-bottom: 10px;
+    }
+
+    .node h4 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      font-size: 28px;
+      color: var(--accent);
+      opacity: 0.8;
+      align-self: center;
+    }
+
+    .flow-col {
+      display: grid;
+      gap: 10px;
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.85fr;
+      gap: 16px;
+    }
+
+    .codebox {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: rgba(250,248,255,0.96);
+      padding: 18px;
+      font-family: "SFMono-Regular", "Menlo", "Monaco", monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #3d3554;
+      white-space: pre-wrap;
+    }
+
+    .footer {
+      margin-top: 24px;
+      padding: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      text-decoration: none;
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    @media (max-width: 1180px) {
+      .layout,
+      .hero-grid,
+      .split-grid,
+      .stack-grid.cols-2,
+      .stack-grid.cols-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .toc {
+        position: static;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell { padding: 18px 14px 100px; }
+      .hero, .section, .footer { padding: 22px; }
+      .flow-row { flex-direction: column; }
+      .arrow { transform: rotate(90deg); min-height: 22px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell" id="top">
+<section class="hero">
+<div class="eyebrow">Job Radar / Complete System Design</div>
+<h1>完整系統設計圖</h1>
+<p>
+        這一頁不是零碎模組清單，而是把整個專案真正的系統設計關係畫出來：
+        從使用者入口、前端工作台、應用協調層、背景執行、資料管線、AI / RAG、到多資料庫與外部系統。
+        如果你要面試講解，這頁可以直接當主圖。
+      </p>
+<div class="hero-grid">
+<div class="summary-card">
+<h2>這頁在解釋什麼</h2>
+<p>
+            你的專案不是單純爬蟲，也不是單純聊天機器人。它是一個以「市場快照」為核心的求職工作台：
+            前端承接搜尋與回訪，後端協調同步與非同步任務，AI 建立 grounded 問答與履歷匹配，
+            而資料層則分離產品主資料、執行期資料、歷史 archive 與 cache。
+          </p>
+<div class="metrics">
+<div class="metric">
+<div class="metric-label">系統核心</div>
+<div class="metric-value">Snapshot-Centered</div>
+</div>
+<div class="metric">
+<div class="metric-label">執行模型</div>
+<div class="metric-value">UI + Scheduler + Worker</div>
+</div>
+<div class="metric">
+<div class="metric-label">AI 模式</div>
+<div class="metric-value">LLM + RAG + Matching</div>
+</div>
+<div class="metric">
+<div class="metric-label">資料分層</div>
+<div class="metric-value">Product / Runtime / History</div>
+</div>
+</div>
+</div>
+<div class="summary-card">
+<h2>面試時的講法</h2>
+<p>
+            最好的講法不是一開始就陷進 chunking 或 DB schema，而是先拿這張主圖講：
+            <strong>使用者問題</strong>、<strong>我怎麼拆成系統層次</strong>、<strong>AI 放在哪裡</strong>、
+            <strong>為什麼要有 background runtime</strong>、<strong>為什麼要多資料庫</strong>。
+          </p>
+<div class="callout">
+<h3>一句話總結</h3>
+<p>
+              Job Radar 是一個模組化單體產品：以 Streamlit 工作台承接互動，以 crawl application service 協調資料刷新，
+              以 pipeline 和 analyzer 把 raw jobs 轉成 snapshot，以 AI layer 建立 grounded 問答與履歷匹配，以多資料層支撐持續運營。
+            </p>
+</div>
+</div>
+</div>
+</section>
+<div class="layout">
+<main class="main">
+<section class="section" id="overall">
+<div class="section-header">
+<div class="kicker">01 / Overall</div>
+<h2>整體系統總圖</h2>
+<p>先從最大圖講，這張就是整個專案的主視圖。</p>
+</div>
+<div class="diagram">
+<div class="lane">
+<div class="lane-label">Users</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">入口</div>
+<h4>一般使用者</h4>
+<p>透過瀏覽器使用 Streamlit UI，進行查詢、履歷分析、AI 問答、追蹤與通知操作。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">入口</div>
+<h4>管理者 / 開發者</h4>
+<p>透過後端控制台、maintenance script、backup/restore drill 觀察與維護系統。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Frontend</div>
+<div class="flow-row">
+<div class="node large">
+<div class="node-tag">app.py</div>
+<h4>App Entry</h4>
+<p>頁面配置、bootstrap、boot loading、session 初始化、hero / auth / page dispatch。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node large">
+<div class="node-tag">UI Shell</div>
+<h4>Session / Router / Navigation</h4>
+<p>主 tab、drawer、search setup、crawl runtime、assistant launcher、page orchestration。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node large">
+<div class="node-tag">Pages</div>
+<h4>Overview / Market / Resume / Assistant / Tracking / Board / Console</h4>
+<p>把資料快取轉成實際工作台介面。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Application</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">Orchestrator</div>
+<h4>crawl_application_service</h4>
+<p>決定命中快取還是建立 job，協調 UI、queue、saved search 與結果同步。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">AI</div>
+<h4>assistant.service / resume.service</h4>
+<p>回答問題、履歷萃取、匹配與 AI monitoring。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Support</div>
+<h4>notification / maintenance / backup services</h4>
+<p>通知投遞、cache 清理、資料庫維護、health 與 backup drill。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Background Runtime</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">Scheduler</div>
+<h4>crawl_scheduler</h4>
+<p>掃描 due saved searches，決定哪些查詢應重新刷新。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Queue</div>
+<h4>query_runtime.sqlite3</h4>
+<p>保存 crawl jobs、signals、lease、status，讓 UI 與 worker 同步狀態。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Worker</div>
+<h4>crawl_worker</h4>
+<p>真正執行 connectors、pipeline、analyzer、notification 與 finalize。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Data Pipeline</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">Connectors</div>
+<h4>104 / 1111 / Cake / LinkedIn</h4>
+<p>站點搜尋與 detail 萃取，轉成統一 JobPosting 模型。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Cleaning</div>
+<h4>job_cleaning + detail_parsing</h4>
+<p>canonical title/company/location、cross-source merge、結構化 detail 萃取。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Analysis</div>
+<h4>pipeline + analyzer</h4>
+<p>role / relevance / skills / tasks / source insights / snapshot。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">AI Layer</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">RAG</div>
+<h4>chunks + retrieval + vector_index</h4>
+<p>chunking、persistent ANN recall、hybrid rerank、dynamic top-k。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Resume AI</div>
+<h4>extractors + matchers + scoring</h4>
+<p>履歷 profile、semantic similarity、exact overlap、market fit。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">LLM</div>
+<h4>OpenAI responses + embeddings</h4>
+<p>模型推理、embedding、usage merge、monitoring events。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Storage</div>
+<div class="flow-row">
+<div class="node small">
+<div class="node-tag">Product</div>
+<h4>product_state.sqlite3</h4>
+<p>saved search、favorites、notification prefs、AI monitoring、auth refs。</p>
+</div>
+<div class="node small">
+<div class="node-tag">Runtime</div>
+<h4>query_runtime.sqlite3</h4>
+<p>jobs、signals、leases、runtime queue。</p>
+</div>
+<div class="node small">
+<div class="node-tag">History</div>
+<h4>market_history.sqlite3</h4>
+<p>歷史職缺 archive 與未來趨勢查詢基礎。</p>
+</div>
+<div class="node small">
+<div class="node-tag">Snapshots</div>
+<h4>jobs_latest.json / snapshots</h4>
+<p>前端與 AI 最常直接消費的市場快照。</p>
+</div>
+<div class="node small">
+<div class="node-tag">Cache</div>
+<h4>embeddings / resume / runtime cache</h4>
+<p>性能優化與長期 ANN 輔助，但需要 maintenance。</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="section" id="entry-runtime">
+<div class="section-header">
+<div class="kicker">02 / Entry Flow</div>
+<h2>前端入口與同步 / 非同步協調</h2>
+<p>這張圖專講使用者按下「開始抓取並分析」後，系統到底怎麼動。</p>
+</div>
+<div class="split-grid">
+<div class="diagram">
+<div class="lane">
+<div class="lane-label">Manual Query Flow</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">UI</div>
+<h4>使用者輸入條件</h4>
+<p>search_setup 收集角色、地區、關鍵字、自訂 query、頻率。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">App Service</div>
+<h4>maybe_start_crawl()</h4>
+<p>先判斷 signature、saved search、快取是否可直接命中。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Branch A</div>
+<h4>有快照就同步回傳</h4>
+<p>直接 hydrate snapshot、cache views、渲染 overview / market。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Async Branch</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">Queue</div>
+<h4>建立 crawl job / signal</h4>
+<p>runtime DB 記錄 pending 狀態，UI 先回傳 staged loading。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Worker</div>
+<h4>lease job 並執行 pipeline</h4>
+<p>fetch、clean、analyze、persist、notification。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Finalize</div>
+<h4>UI 輪詢 signal</h4>
+<p>完成後 reload snapshot 並寫入 page context / saved search results。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="callout">
+<h3>為什麼這樣做</h3>
+<ul>
+<li>同步入口盡量輕，避免 Streamlit request 被長任務卡住。</li>
+<li>第一次查詢可以走快取，未命中才建立 background job。</li>
+<li>UI 不直接抓資料，而是透過 runtime DB 輪詢，這樣進度與失敗都可觀察。</li>
+<li>scheduler 和 worker 分離，代表「決定要不要做」與「真正執行」是兩件事。</li>
+</ul>
+</div>
+</div>
+</section>
+<section class="section" id="pipeline">
+<div class="section-header">
+<div class="kicker">03 / Pipeline</div>
+<h2>抓取與資料處理管線</h2>
+<p>這張圖把從外部職缺站到市場快照的資料工程拆開來看。</p>
+</div>
+<div class="diagram">
+<div class="lane">
+<div class="lane-label">Raw → Canonical → Snapshot</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">Step 1</div>
+<h4>Connector Fetch</h4>
+<p>各站點先拿搜尋結果，再視需要補 detail，輸出統一 JobPosting 模型。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Step 2</div>
+<h4>Cleaning / Canonicalization</h4>
+<p>canonical title / company / location / salary / url，並做 cross-source merge key。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Step 3</div>
+<h4>Dedupe / Merge</h4>
+<p>同來源 exact duplicate、跨來源同職缺合併、保留較完整的一筆。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Step 4</div>
+<h4>Analyzer</h4>
+<p>角色配對、relevance、技能 insight、task insight、source / role / location summary。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Step 5</div>
+<h4>Persist</h4>
+<p>寫入 jobs_latest.json、product_state、market_history、runtime signal。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="stack-grid cols-2" style="margin-top:16px;">
+<div class="stack">
+<h3>為什麼 pipeline 不能直接輸出 raw jobs</h3>
+<ul>
+<li>原始資料跨站格式不一致，直接用會讓 UI、AI、通知都變得脆弱。</li>
+<li>沒有 canonical normalization，跨來源同職缺無法合併。</li>
+<li>沒有 analyzer，AI 就只拿得到雜亂 description，很難做穩定回答。</li>
+</ul>
+</div>
+<div class="stack">
+<h3>這層也是 feature engineering</h3>
+<ul>
+<li>role / relevance / skills / tasks 都是 engineered signals。</li>
+<li>它們不是只給模型用，也給產品排序、統計、篩選與追蹤用。</li>
+<li>這也是為什麼這套系統比一般爬蟲更接近產品平台。</li>
+</ul>
+</div>
+</div>
+</section>
+<section class="section" id="ai">
+<div class="section-header">
+<div class="kicker">04 / AI</div>
+<h2>AI / LLM / RAG 系統設計圖</h2>
+<p>這張圖把 AI 層單獨拉出來，方便你面試時專講 retrieval 與回答品質。</p>
+</div>
+<div class="diagram">
+<div class="lane">
+<div class="lane-label">Assistant Answer Flow</div>
+<div class="flow-row">
+<div class="node small">
+<div class="node-tag">Input</div>
+<h4>Question</h4>
+<p>使用者問題與對話上下文。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Routing</div>
+<h4>Mode / Intent / Policy</h4>
+<p>判斷是 market、personalized、comparison、general，並決定 retrieval 與 token budget。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Knowledge</div>
+<h4>Chunk Build</h4>
+<p>從 snapshot、resume、market insight 建立 chunks，並用 chunk cache 減少重建。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Recall</div>
+<h4>Persistent ANN + Snapshot Candidates</h4>
+<p>長期索引候選召回，與當前 snapshot chunks 合併後去重。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Ranking</div>
+<h4>Hybrid Retrieval</h4>
+<p>embedding + lexical + signal + source bonus + market penalty + dynamic top-k。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node small">
+<div class="node-tag">LLM</div>
+<h4>Answer</h4>
+<p>以 grounded context 生成自然 QA 回覆。</p>
+</div>
+</div>
+</div>
+<div class="lane">
+<div class="lane-label">Resume Intelligence</div>
+<div class="flow-row">
+<div class="node medium">
+<div class="node-tag">Parse</div>
+<h4>Resume Extraction</h4>
+<p>rule-based context selection + OpenAI profile summarization。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Match</div>
+<h4>Semantic + Exact Match</h4>
+<p>role similarity、exact overlap、embedding similarity、market fit。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node medium">
+<div class="node-tag">Output</div>
+<h4>Gap / Recommendation</h4>
+<p>給 resume 頁與 assistant 個人化建議使用。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="split-grid" style="margin-top:16px;">
+<div class="stack">
+<h3>AI 層的關鍵設計</h3>
+<ul>
+<li>不是所有問題都純聊天，大多數帶求職或時間脈絡的問題都會先走 retrieval。</li>
+<li>chunking、top-k、rerank、ANN 不是分開的，而是同一條 answer path 的不同控制點。</li>
+<li>AI monitoring events 讓你可以同時看 mode、latency、status、usage。</li>
+</ul>
+</div>
+<div class="stack">
+<h3>目前仍是產品型 AI，而非研究型大平台</h3>
+<ul>
+<li>它強在 grounded answer、產品整合、維運與可解釋性。</li>
+<li>它還沒走到多 agent planner 或超大型全域知識編排。</li>
+<li>這是刻意取捨，目的是先把可靠與可用做出來。</li>
+</ul>
+</div>
+</div>
+</section>
+<section class="section" id="storage">
+<div class="section-header">
+<div class="kicker">05 / Storage</div>
+<h2>資料與儲存設計圖</h2>
+<p>這張圖不是 schema 細節，而是 ownership 與生命週期邊界。</p>
+</div>
+<div class="stack-grid cols-3">
+<div class="stack">
+<h3>產品主資料</h3>
+<ul>
+<li><strong>product_state.sqlite3</strong></li>
+<li>saved searches、favorites、notification prefs、auth refs、AI monitoring。</li>
+<li>直接服務 UI 與產品邏輯。</li>
+</ul>
+</div>
+<div class="stack">
+<h3>執行期資料</h3>
+<ul>
+<li><strong>query_runtime.sqlite3</strong></li>
+<li>crawl jobs、signals、leases、runtime queue。</li>
+<li>生命週期短，但對非同步協調至關重要。</li>
+</ul>
+</div>
+<div class="stack">
+<h3>歷史與快照</h3>
+<ul>
+<li><strong>jobs_latest.json / snapshots / market_history.sqlite3</strong></li>
+<li>服務當前市場檢視、RAG、歷史 archive 與未來趨勢分析。</li>
+</ul>
+</div>
+</div>
+<div class="flow-row" style="margin-top:16px;">
+<div class="node large">
+<div class="node-tag">Cache Layer</div>
+<h4>Embeddings / Resume / Runtime Cache</h4>
+<p>提升 LLM 與 retrieval 效能，但不應被當成主資料。需要固定 maintenance 與上限治理。</p>
+</div>
+<div class="arrow">→</div>
+<div class="node large">
+<div class="node-tag">Maintenance Layer</div>
+<h4>runtime_maintenance / backup / restore drill</h4>
+<p>確保 cache 不膨脹、DB 可備份、狀態可觀測、系統可復原。</p>
+</div>
+</div>
+</section>
+<section class="section" id="sequences">
+<div class="section-header">
+<div class="kicker">06 / Sequences</div>
+<h2>兩條最重要的 sequence</h2>
+<p>這裡是面試時最容易畫在白板上的版本。</p>
+</div>
+<div class="stack-grid cols-2">
+<div class="callout">
+<h3>手動查詢 sequence</h3>
+<div class="codebox">User
+  -&gt; Streamlit UI
+  -&gt; crawl_application_service
+     -&gt; 快取 / signature / saved search 判斷
+     -&gt; 若命中：直接回 snapshot
+     -&gt; 若未命中：建立 crawl job 到 query_runtime
+  -&gt; UI 先顯示 pending 狀態
+Worker
+  -&gt; lease runtime job
+  -&gt; connectors / cleaning / analyzer
+  -&gt; persist snapshot + update signals
+UI
+  -&gt; 輪詢 runtime signal
+  -&gt; finalize 後重新載入 snapshot
+  -&gt; 渲染 overview / market / tracking</div>
+</div>
+<div class="callout">
+<h3>AI 助理 sequence</h3>
+<div class="codebox">User Question
+  -&gt; assistant.service
+     -&gt; classify mode / intent / retrieval policy
+     -&gt; build chunks from snapshot / resume / insights
+     -&gt; persistent ANN candidate recall
+     -&gt; hybrid retrieval + rerank
+     -&gt; OpenAI responses.create
+     -&gt; write ai monitoring / usage / cache
+  -&gt; UI renderer
+  -&gt; grounded QA answer</div>
+</div>
+</div>
+</section>
+<section class="section" id="why">
+<div class="section-header">
+<div class="kicker">07 / Why This Shape</div>
+<h2>為什麼系統會長成這個樣子</h2>
+<p>這裡講設計動機，不只是畫圖漂亮而已。</p>
+</div>
+<div class="stack-grid cols-2">
+<div class="stack">
+<h3>優點</h3>
+<ul>
+<li>模組化單體比早期微服務更適合你目前的 stage。</li>
+<li>UI / scheduler / worker 分離後，使用體驗與觀測性都更穩。</li>
+<li>snapshot-centered RAG 讓回答更貼近「當前這批市場資料」。</li>
+<li>多資料層讓產品主資料、執行期資料、歷史資料不互相污染。</li>
+</ul>
+</div>
+<div class="stack">
+<h3>代價</h3>
+<ul>
+<li>規則、routing、rerank 會逐漸累積，需要持續整理。</li>
+<li>Streamlit 仍不是最理想的長期高互動前端框架。</li>
+<li>多個 SQLite 在早期很好用，但未來量級大了會遇到治理邊界。</li>
+<li>AI 仍受限於模型 latency 與 answer-level evaluation 不夠完整。</li>
+</ul>
+</div>
+</div>
+</section>
+</main>
+<aside class="toc">
+<h2>章節索引</h2>
+<ol>
+<li><a href="#overall">整體系統總圖</a></li>
+<li><a href="#entry-runtime">前端入口與同步/非同步協調</a></li>
+<li><a href="#pipeline">抓取與資料處理管線</a></li>
+<li><a href="#ai">AI / LLM / RAG 系統設計</a></li>
+<li><a href="#storage">資料與儲存設計</a></li>
+<li><a href="#sequences">兩條關鍵 sequence</a></li>
+<li><a href="#why">為什麼系統長這樣</a></li>
+<li><a href="#top">回到頂部</a></li>
+</ol>
+</aside>
+</div>
+<footer class="footer">
+<p>這份頁面是完整版結構圖說明，適合拿來對照模組、資料層與主要服務之間的實際連接方式。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</div>
+</body>
+</html>

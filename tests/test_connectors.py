@@ -91,6 +91,57 @@ class ConnectorTests(unittest.TestCase):
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0].salary, "月薪 45,000 - 80,000 元")
 
+    def test_104_search_404_surfaces_maintenance_window(self) -> None:
+        class MaintenanceFetcher:
+            def fetch(
+                self,
+                url: str,
+                force_refresh: bool = False,
+                headers: dict[str, str] | None = None,
+                delay_seconds: float | None = None,
+                cache_ttl_seconds: float | None = None,
+            ) -> str:
+                del force_refresh, headers, delay_seconds, cache_ttl_seconds
+                if url == Site104Connector.operation_announcement_url:
+                    return 'window.OPERATION_TIME = "2026/04/19 (日) 04:00-11:30";'
+                raise HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+
+        connector = Site104Connector(self.settings, MaintenanceFetcher())  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(RuntimeError, "2026/04/19 \\(日\\) 04:00-11:30"):
+            connector.fetch_search_page("AI應用工程師", 1)
+
+    def test_104_detail_404_surfaces_maintenance_window(self) -> None:
+        class MaintenanceFetcher:
+            def fetch(
+                self,
+                url: str,
+                force_refresh: bool = False,
+                headers: dict[str, str] | None = None,
+                delay_seconds: float | None = None,
+                cache_ttl_seconds: float | None = None,
+            ) -> str:
+                del force_refresh, headers, delay_seconds, cache_ttl_seconds
+                if url == Site104Connector.operation_announcement_url:
+                    return 'window.OPERATION_TIME = "2026/04/19 (日) 04:00-11:30";'
+                raise HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+
+        connector = Site104Connector(self.settings, MaintenanceFetcher())  # type: ignore[arg-type]
+        job = JobListing(
+            source="104",
+            title="AI 應用工程師",
+            company="測試公司",
+            location="台北市",
+            salary="",
+            posted_at="",
+            url="https://www.104.com.tw/job/abc123",
+            summary="",
+        )
+
+        connector._populate_detail_job(job)
+
+        self.assertIn("2026/04/19 (日) 04:00-11:30", str(job.metadata.get("detail_error", "")))
+
     def test_linkedin_card_parser_extracts_job(self) -> None:
         connector = LinkedInConnector(self.settings, self.fetcher)
         html = """

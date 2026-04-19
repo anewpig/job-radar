@@ -59,6 +59,14 @@ def dispatch_main_tab(selected_main_tab: str, page_context) -> None:
         from .pages_market import render_sources_page
 
         _render_page_in_surface(*PAGE_SURFACE_KEYS["sources"], render_sources_page, page_context)
+    elif selected_main_tab == "fine_tuning":
+        from .pages_fine_tuning import render_fine_tuning_page
+
+        _render_page_in_surface(
+            *PAGE_SURFACE_KEYS["fine_tuning"],
+            render_fine_tuning_page,
+            page_context,
+        )
     elif selected_main_tab == "tracking":
         from .pages_product import render_tracking_page
 

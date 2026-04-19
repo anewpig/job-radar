@@ -124,6 +124,12 @@ def build_summary_cards(snapshot: BackendOperationsSnapshot) -> list[str]:
             tone="risk" if snapshot.failed_job_count else "good",
         ),
         metric_card(
+            "Dead Letters",
+            str(snapshot.dead_letter_count),
+            "終態失敗工作會保留在這裡，供 replay / reprocess。",
+            tone="risk" if snapshot.dead_letter_count else "good",
+        ),
+        metric_card(
             "Snapshot Cache",
             f"{snapshot.ready_snapshot_count} ready / {snapshot.partial_snapshot_count} partial",
             f"最近快照更新：{format_relative_time(snapshot.last_snapshot_update_at)}",
@@ -308,11 +314,44 @@ def build_job_rows(snapshot: BackendOperationsSnapshot) -> list[dict[str, object
                 if item.next_retry_at
                 else "未排程"
             ),
+            "Retryable": "是" if item.is_retryable else "否",
+            "錯誤代碼": item.error_code or "",
+            "錯誤分類": item.error_kind or "",
+            "使用者訊息": item.error_user_message or "",
             "Lease Owner": item.lease_owner or "未租用",
             "Lease 到期": format_timestamp(item.lease_expires_at) if item.lease_expires_at else "未租用",
             "錯誤": item.error_message or "",
         }
         for item in snapshot.recent_jobs
+    ]
+
+
+def build_dead_letter_rows(snapshot: BackendOperationsSnapshot) -> list[dict[str, object]]:
+    """Build dead-letter queue dataframe rows."""
+    return [
+        {
+            "DLQ ID": item.dead_letter_id,
+            "原始 Job": item.original_job_id,
+            "Replay Job": item.replay_job_id or "",
+            "狀態": item.status,
+            "Priority": item.priority,
+            "Query": ", ".join(item.query_labels) if item.query_labels else short_signature(item.query_signature),
+            "Attempts": (
+                f"{item.attempt_count}/{item.max_attempts}"
+                if item.max_attempts
+                else str(item.attempt_count)
+            ),
+            "Retryable": "是" if item.is_retryable else "否",
+            "錯誤代碼": item.error_code or "",
+            "錯誤分類": item.error_kind or "",
+            "使用者訊息": item.error_user_message or "",
+            "建立時間": format_timestamp(item.created_at),
+            "最後更新": format_timestamp(item.updated_at),
+            "最後 Replay": format_timestamp(item.replayed_at) if item.replayed_at else "尚未 replay",
+            "Replay 次數": item.replay_count,
+            "錯誤": item.error_message or "",
+        }
+        for item in snapshot.recent_dead_letters
     ]
 
 
@@ -328,6 +367,10 @@ def build_snapshot_rows(snapshot: BackendOperationsSnapshot) -> list[dict[str, o
             "Fresh Until": format_timestamp(item.fresh_until),
             "Queries": item.query_count,
             "Jobs": item.job_count,
+            "Retryable": "是" if item.is_retryable else "否",
+            "錯誤代碼": item.error_code or "",
+            "錯誤分類": item.error_kind or "",
+            "使用者訊息": item.error_user_message or "",
             "錯誤": item.error_message or "",
         }
         for item in snapshot.recent_snapshots

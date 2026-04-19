@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Job Radar Product &amp; System Design Playbook</title>
+<style>
+    :root {
+      --bg: #f7f4ff;
+      --surface: rgba(255,255,255,0.9);
+      --surface-strong: #ffffff;
+      --surface-soft: #f4efff;
+      --line: rgba(104, 82, 176, 0.14);
+      --line-strong: rgba(104, 82, 176, 0.28);
+      --text: #201936;
+      --muted: #6b6188;
+      --accent: #6a52d8;
+      --accent-strong: #4f34c7;
+      --accent-soft: rgba(106, 82, 216, 0.1);
+      --good: #15803d;
+      --warn: #b45309;
+      --danger: #b42318;
+      --shadow: 0 22px 64px rgba(93, 69, 175, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --max: 1520px;
+      --toc: 300px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "SF Pro TC", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(169, 147, 255, 0.24), transparent 34%),
+        radial-gradient(circle at top right, rgba(255, 223, 241, 0.28), transparent 30%),
+        linear-gradient(180deg, #fbf8ff 0%, #f4efff 100%);
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 20px 120px;
+    }
+
+    .hero,
+    .section,
+    .toc,
+    .card,
+    .metric,
+    .table-wrap,
+    .footer,
+    .subcard,
+    .callout,
+    .lane,
+    .step,
+    .stack-box,
+    details.component {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 34px;
+      margin-bottom: 22px;
+      background:
+        radial-gradient(circle at 10% 18%, rgba(169, 147, 255, 0.3), transparent 24%),
+        radial-gradient(circle at 92% 14%, rgba(255, 229, 246, 0.54), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(244,239,255,0.98));
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -90px -90px auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      border: 1px solid rgba(106, 82, 216, 0.08);
+      box-shadow:
+        0 0 0 36px rgba(106, 82, 216, 0.05),
+        0 0 0 92px rgba(106, 82, 216, 0.03);
+      pointer-events: none;
+    }
+
+    .eyebrow,
+    .kicker,
+    .pill,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      color: var(--accent-strong);
+      font-size: 13px;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      max-width: 1040px;
+    }
+
+    .hero p,
+    .section-header p,
+    .metric p,
+    .card p,
+    .subcard p,
+    .table-wrap td,
+    .table-wrap th,
+    .table-wrap li,
+    .footer p,
+    .stack-box p,
+    .step p,
+    .callout p,
+    details.component p {
+      color: var(--muted);
+      line-height: 1.78;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 1080px;
+      font-size: 17px;
+    }
+
+    .hero-grid,
+    .metric-grid,
+    .two-col,
+    .three-col,
+    .four-col,
+    .decision-grid,
+    .journey-grid,
+    .matrix-grid,
+    .layer-grid,
+    .expansion-grid,
+    .kpi-grid,
+    .mistake-grid,
+    .check-grid,
+    .module-grid,
+    .lane-grid,
+    .roadmap-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero-grid {
+      grid-template-columns: 1.45fr 0.95fr;
+      margin-top: 28px;
+      gap: 18px;
+    }
+
+    .metric-grid,
+    .journey-grid,
+    .decision-grid,
+    .layer-grid,
+    .kpi-grid,
+    .mistake-grid,
+    .roadmap-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .expansion-grid,
+    .matrix-grid,
+    .check-grid,
+    .module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card,
+    .footer,
+    .subcard,
+    .stack-box,
+    .callout,
+    .metric,
+    .lane,
+    .step {
+      padding: 20px;
+    }
+
+    .card h2,
+    .section-header h2 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+    }
+
+    .section {
+      padding: 28px;
+    }
+
+    .section-header {
+      margin-bottom: 18px;
+    }
+
+    .kicker {
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      background: rgba(106,82,216,0.08);
+      color: var(--accent-strong);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 30px;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    .metric span,
+    .tag {
+      color: var(--accent-strong);
+    }
+
+    .tag {
+      padding: 7px 11px;
+      font-size: 11px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(106, 82, 216, 0.14);
+    }
+
+    .pill {
+      padding: 7px 11px;
+      font-size: 11px;
+      background: rgba(255,255,255,0.74);
+      border: 1px solid var(--line);
+      color: var(--accent-strong);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--toc);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+      background: rgba(255,255,255,0.86);
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .toc a { text-decoration: none; }
+
+    .list,
+    .check-list,
+    .decision-list,
+    .module-list,
+    .hero-list {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .hero-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding-left: 0;
+      list-style: none;
+      gap: 10px;
+    }
+
+    .hero-list li {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .journey-board,
+    .lane-board {
+      display: grid;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .lane-grid {
+      grid-template-columns: 210px minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .lane-title {
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(106,82,216,0.08);
+      color: var(--accent-strong);
+      font-weight: 800;
+      line-height: 1.5;
+      display: flex;
+      align-items: center;
+    }
+
+    .lane-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .step {
+      border-radius: 20px;
+      background: rgba(255,255,255,0.86);
+      min-height: 170px;
+    }
+
+    .step h3,
+    .subcard h3,
+    .callout h3,
+    .stack-box h3,
+    details.component summary,
+    .table-wrap caption {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .step .index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: rgba(106,82,216,0.12);
+      color: var(--accent-strong);
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .arrow-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: -2px 0 2px 224px;
+      color: var(--accent-strong);
+      font-weight: 800;
+      text-align: center;
+      font-size: 24px;
+      opacity: 0.7;
+    }
+
+    .table-wrap {
+      padding: 18px 20px;
+      overflow-x: auto;
+      border-radius: 22px;
+      margin-top: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 14px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: var(--accent-strong);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .callout.good { border-color: rgba(21, 128, 61, 0.2); }
+    .callout.warn { border-color: rgba(180, 83, 9, 0.2); }
+    .callout.danger { border-color: rgba(180, 35, 24, 0.2); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+      background: rgba(106,82,216,0.08);
+      color: var(--accent-strong);
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+
+    details.component {
+      padding: 18px 20px;
+    }
+
+    details.component summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    details.component summary::-webkit-details-marker { display: none; }
+
+    .footer {
+      margin-top: 20px;
+      padding: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .footer-links a {
+      text-decoration: none;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(106,82,216,0.08);
+      border: 1px solid var(--line);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    @media (max-width: 1180px) {
+      .layout,
+      .hero-grid,
+      .metric-grid,
+      .two-col,
+      .three-col,
+      .four-col,
+      .decision-grid,
+      .journey-grid,
+      .matrix-grid,
+      .layer-grid,
+      .expansion-grid,
+      .kpi-grid,
+      .mistake-grid,
+      .check-grid,
+      .module-grid,
+      .lane-grid,
+      .lane-flow,
+      .roadmap-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .arrow-row {
+        display: none;
+      }
+
+      .toc { position: static; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+<header class="hero">
+<div class="eyebrow">Product &amp; System Playbook</div>
+<h1>Job Radar 產品思考與系統設計手冊</h1>
+<p>
+        這份頁面不只是講架構，而是把這個專案當成一個真的要走向產品化的案例，從使用者價值、功能切分、資料與狀態設計、
+        同步與非同步流程、AI 位置、資料庫分層、營運指標、擴充路線，一路講到你未來要怎麼做決策。
+        你如果之後要自己做一個產品，真正要學的不是「某個元件怎麼寫」，而是「為什麼這個系統要這樣切」。
+      </p>
+<div class="hero-grid">
+<section class="card">
+<h2>你真正該看什麼</h2>
+<ul class="hero-list">
+<li>這個產品的核心價值不是爬資料，而是把求職決策變成持續更新的工作台。</li>
+<li>功能應該怎麼從使用者問題往下切，不是從技術模組往上湊。</li>
+<li>哪些流程要同步，哪些流程要背景執行，為什麼。</li>
+<li>狀態與資料的 source of truth 應該放在哪一層。</li>
+<li>AI 應該是產品的哪一層能力，不該直接變成唯一核心。</li>
+<li>如果要擴充成多人、多來源、企業版、可營運的產品，要怎麼演進。</li>
+</ul>
+</section>
+<section class="card">
+<h2>這份手冊怎麼讀</h2>
+<div class="metric-grid">
+<article class="metric">
+<span>產品面</span>
+<strong>6</strong>
+<p>從使用者、價值、流程、功能、指標、路線圖來拆。</p>
+</article>
+<article class="metric">
+<span>系統面</span>
+<strong>7</strong>
+<p>從狀態、資料流、同步/非同步、模組邊界、儲存、可靠性、擴充來拆。</p>
+</article>
+<article class="metric">
+<span>專案對照</span>
+<strong>實戰</strong>
+<p>每一段都會回扣到這個專案的真實模組，而不是抽象空話。</p>
+</article>
+</div>
+</section>
+</div>
+</header>
+<div class="layout">
+<main class="main">
+<section class="section" id="product-thesis">
+<div class="section-header">
+<div class="kicker">01 Product Thesis</div>
+<h2>先定義產品，不要先定義技術</h2>
+<p>
+              這個專案表面上像「職缺爬蟲」，但如果你把它只當成爬蟲，你會把產品做小。
+              它真正能成為產品的地方，是把「市場變化、個人背景、履歷匹配、投遞節奏、通知、看板、AI 助理」整合成一套求職工作台。
+            </p>
+</div>
+<div class="three-col">
+<article class="callout good">
+<h3>核心承諾</h3>
+<p>我幫你持續整理你所在職位市場，讓你知道哪些技能值得補、哪些職缺值得投、哪些變化值得追。</p>
+</article>
+<article class="callout">
+<h3>產品單位價值</h3>
+<p>不是一筆 job listing，而是一個「可持續刷新、可被比較、可被解釋」的市場快照與決策工作台。</p>
+</article>
+<article class="callout warn">
+<h3>最容易走歪的地方</h3>
+<p>如果只追求抓得更多、畫面更花、AI 回答更長，卻沒有讓使用者更快做決策，產品會很快失焦。</p>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<caption>這個專案若要產品化，定位應該怎麼講</caption>
+<thead>
+<tr>
+<th>層次</th>
+<th>錯的講法</th>
+<th>更對的講法</th>
+<th>為什麼</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>技術層</td>
+<td>這是一個職缺爬蟲。</td>
+<td>這是一個市場資料採集與分析引擎。</td>
+<td>爬只是手段，不是產品價值本身。</td>
+</tr>
+<tr>
+<td>功能層</td>
+<td>它可以抓 104 / 1111 / Cake / LinkedIn。</td>
+<td>它可以把多平台職缺彙整成同一份市場快照與行動清單。</td>
+<td>使用者在意的是決策整合，不是來源數量本身。</td>
+</tr>
+<tr>
+<td>產品層</td>
+<td>它幫你找工作。</td>
+<td>它幫你持續理解市場，並把求職行動系統化。</td>
+<td>找工作不是一次性搜尋，而是持續迭代的過程。</td>
+</tr>
+<tr>
+<td>商業層</td>
+<td>它是個工具。</td>
+<td>它是求職 operating system 的雛型。</td>
+<td>這樣你未來才有機會往訂閱、企業協助、教練化服務擴。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="users-jtbd">
+<div class="section-header">
+<div class="kicker">02 Users &amp; JTBD</div>
+<h2>先想使用者在解什麼問題</h2>
+<p>
+              產品設計不是先列功能，而是先搞清楚誰痛、什麼時候痛、哪一個決策點最卡。
+              這個專案最適合的切法是用 JTBD，而不是只按使用者身份分類。
+            </p>
+</div>
+<div class="journey-grid">
+<article class="subcard">
+<h3>JTBD 1：市場摸底</h3>
+<p>「我想知道 AI 工程師 / 應用工程師 / PM 目前市場到底在要什麼，不想一個平台一個平台慢慢查。」</p>
+<div class="pill-row">
+<span class="pill">對應功能：搜尋工作台</span>
+<span class="pill">市場快照</span>
+<span class="pill">技能 / 工作內容 insight</span>
+</div>
+</article>
+<article class="subcard">
+<h3>JTBD 2：履歷校正</h3>
+<p>「我想知道我的履歷跟這批市場缺口在哪，先補什麼最有用。」</p>
+<div class="pill-row">
+<span class="pill">對應功能：履歷分析</span>
+<span class="pill">AI 匹配</span>
+<span class="pill">缺口建議</span>
+</div>
+</article>
+<article class="subcard">
+<h3>JTBD 3：持續追市場</h3>
+<p>「我不要每次重頭搜尋，我想讓系統自動幫我追某些條件，有新結果再通知我。」</p>
+<div class="pill-row">
+<span class="pill">對應功能：saved search</span>
+<span class="pill">scheduler / worker</span>
+<span class="pill">通知</span>
+</div>
+</article>
+<article class="subcard">
+<h3>JTBD 4：整理行動</h3>
+<p>「我不只是看職缺，我還要追蹤收藏、投遞進度、下一步。」</p>
+<div class="pill-row">
+<span class="pill">對應功能：tracking</span>
+<span class="pill">board</span>
+<span class="pill">favorites</span>
+</div>
+</article>
+<article class="subcard">
+<h3>JTBD 5：快速理解資料</h3>
+<p>「我不想自己解讀一堆卡片與圖表，我想直接問：目前要補什麼？哪個方向值得投？」</p>
+<div class="pill-row">
+<span class="pill">對應功能：AI 助理</span>
+<span class="pill">RAG</span>
+<span class="pill">launcher</span>
+</div>
+</article>
+<article class="subcard">
+<h3>JTBD 6：建立長期節奏</h3>
+<p>「我希望這不是一次性工具，而是一個會陪我持續迭代的求職系統。」</p>
+<div class="pill-row">
+<span class="pill">對應功能：通知</span>
+<span class="pill">歷史資料</span>
+<span class="pill">個人設定</span>
+</div>
+</article>
+</div>
+</section>
+<section class="section" id="journey">
+<div class="section-header">
+<div class="kicker">03 User Journey</div>
+<h2>從第一次進站到持續使用的完整旅程</h2>
+<p>
+              做產品時，你要把「第一次價值」、「第二次回來的理由」、「長期保留的機制」分開設計。
+              這個專案其實已經具備完整旅程雛型，只是要更有意識地把每一段當成產品決策來看。
+            </p>
+</div>
+<div class="journey-board">
+<div class="lane-grid">
+<div class="lane-title">第一次進站</div>
+<div class="lane-flow">
+<article class="step">
+<div class="index">1</div>
+<h3>輸入目標職缺</h3>
+<p>使用者輸入角色、關鍵字與自訂查詢，這一步是在建立他的市場邊界。</p>
+</article>
+<article class="step">
+<div class="index">2</div>
+<h3>系統抓取市場</h3>
+<p>從多來源抓結果，做快照與初步分析，快速讓使用者看到第一波可用結果。</p>
+</article>
+<article class="step">
+<div class="index">3</div>
+<h3>使用者形成理解</h3>
+<p>透過 overview、market insight、job cards，開始知道市場在要什麼。</p>
+</article>
+<article class="step">
+<div class="index">4</div>
+<h3>引導下一步</h3>
+<p>不是停在瀏覽，而是引導到履歷分析、收藏、saved search、AI 問答。</p>
+</article>
+</div>
+</div>
+<div class="arrow-row"><div>→</div><div>→</div><div>→</div></div>
+<div class="lane-grid">
+<div class="lane-title">第二次回來</div>
+<div class="lane-flow">
+<article class="step">
+<div class="index">5</div>
+<h3>讀取既有快照</h3>
+<p>不必重頭等整輪爬完，先有快照與狀態承接。</p>
+</article>
+<article class="step">
+<div class="index">6</div>
+<h3>看到變化與通知</h3>
+<p>新職缺、saved search 更新、通知摘要，讓使用者有「回來值得」的理由。</p>
+</article>
+<article class="step">
+<div class="index">7</div>
+<h3>做更深決策</h3>
+<p>履歷校正、AI 助理報告、比較不同角色與來源分布。</p>
+</article>
+<article class="step">
+<div class="index">8</div>
+<h3>整理行動</h3>
+<p>把有興趣職缺收藏、放進看板、安排下一步。</p>
+</article>
+</div>
+</div>
+<div class="arrow-row"><div>→</div><div>→</div><div>→</div></div>
+<div class="lane-grid">
+<div class="lane-title">長期留存</div>
+<div class="lane-flow">
+<article class="step">
+<div class="index">9</div>
+<h3>saved search 自動刷新</h3>
+<p>系統開始替使用者定期工作，而不是只等他手動進站。</p>
+</article>
+<article class="step">
+<div class="index">10</div>
+<h3>市場變動被記住</h3>
+<p>歷史資料與 snapshots 讓產品不只是「現在」，而是逐步有時間深度。</p>
+</article>
+<article class="step">
+<div class="index">11</div>
+<h3>個人背景持續更新</h3>
+<p>履歷、偏好、AI profile 會影響後續建議的個人化程度。</p>
+</article>
+<article class="step">
+<div class="index">12</div>
+<h3>產品變成工作流</h3>
+<p>這時候你賣的不再是資料，而是持續降低使用者求職決策成本。</p>
+</article>
+</div>
+</div>
+</div>
+</section>
+<section class="section" id="loop">
+<div class="section-header">
+<div class="kicker">04 Product Loop</div>
+<h2>這個產品真正的成長迴圈</h2>
+<p>
+              一個工具能不能變成產品，取決於它有沒有 loop。這個專案的 loop 不是社交網路那種 viral loop，
+              而是「資料迴圈 + 行為迴圈 + AI 解讀迴圈」。
+            </p>
+</div>
+<div class="three-col">
+<article class="callout good">
+<h3>資料迴圈</h3>
+<p>使用者定義搜尋條件 → 系統抓資料 → 形成市場快照 → 保存為 saved search → 定時刷新 → 新資料再回到使用者。</p>
+</article>
+<article class="callout">
+<h3>決策迴圈</h3>
+<p>使用者看市場 → 履歷分析 → 發現缺口 → 調整履歷 / 投遞方向 → 再回來看新的市場結果。</p>
+</article>
+<article class="callout warn">
+<h3>AI 解讀迴圈</h3>
+<p>使用者提問 → RAG 助理解釋 → 使用者縮小範圍或問更深入問題 → 更快收斂到具體行動。</p>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<caption>如果你要做產品，loop 比功能清單更重要</caption>
+<thead>
+<tr>
+<th>迴圈</th>
+<th>觸發物</th>
+<th>回饋物</th>
+<th>產品價值</th>
+<th>沒有這個迴圈會怎樣</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>資料迴圈</td>
+<td>saved search / scheduler</td>
+<td>新職缺、快照更新、通知</td>
+<td>讓產品具有持續性</td>
+<td>產品會退化成一次性搜尋工具</td>
+</tr>
+<tr>
+<td>決策迴圈</td>
+<td>resume analysis / tracking / board</td>
+<td>補強方向、投遞動作</td>
+<td>把資料轉成行動</td>
+<td>使用者看完資料卻不知道下一步</td>
+</tr>
+<tr>
+<td>AI 解讀迴圈</td>
+<td>assistant / launcher</td>
+<td>摘要、比較、個人化建議</td>
+<td>降低理解成本</td>
+<td>功能很多，但認知門檻高</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="feature-stack">
+<div class="section-header">
+<div class="kicker">05 Feature Stack</div>
+<h2>功能不是一坨，應該按價值鏈拆</h2>
+<p>
+              你如果之後要再加功能，不要按頁面名稱想，而是按價值鏈想：發現、理解、決策、行動、保留。
+            </p>
+</div>
+<div class="matrix-grid">
+<article class="subcard">
+<h3>發現層</h3>
+<ul class="decision-list">
+<li>搜尋設定</li>
+<li>多平台抓取</li>
+<li>overview / market overview</li>
+<li>來源分布 / 匹配角色</li>
+</ul>
+</article>
+<article class="subcard">
+<h3>理解層</h3>
+<ul class="decision-list">
+<li>市場技能 insight</li>
+<li>工作內容 insight</li>
+<li>AI 助理</li>
+<li>履歷匹配與缺口分析</li>
+</ul>
+</article>
+<article class="subcard">
+<h3>行動層</h3>
+<ul class="decision-list">
+<li>收藏</li>
+<li>投遞看板</li>
+<li>saved search</li>
+<li>通知設定</li>
+</ul>
+</article>
+<article class="subcard">
+<h3>保留層</h3>
+<ul class="decision-list">
+<li>快照歷史</li>
+<li>自動刷新</li>
+<li>通知</li>
+<li>個人 profile / 履歷保存</li>
+</ul>
+</article>
+</div>
+<div class="two-col" style="margin-top:16px;">
+<article class="callout good">
+<h3>這樣拆的好處</h3>
+<p>你會知道新功能到底是在補哪一層價值，而不是只覺得「這頁還能再加一個按鈕」。</p>
+</article>
+<article class="callout warn">
+<h3>常見錯誤</h3>
+<p>只圍繞某個頁面加功能，最後頁面越做越胖，但整體使用者旅程沒有變更完整。</p>
+</article>
+</div>
+</section>
+<section class="section" id="product-thinking">
+<div class="section-header">
+<div class="kicker">06 Product Thinking</div>
+<h2>如果你要做一個產品，應該怎麼思考</h2>
+<p>
+              這段是最核心的。你以後做任何產品，都應該先回答下面這些問題，再開始寫系統。
+            </p>
+</div>
+<div class="decision-grid">
+<article class="stack-box">
+<h3>問題 1：產品的最小承諾是什麼</h3>
+<p>對這個專案來說，不是「我會抓很多資料」，而是「我會讓你更快知道市場與自己的落差」。</p>
+</article>
+<article class="stack-box">
+<h3>問題 2：使用者第一次何時覺得有價值</h3>
+<p>當他輸入角色後，能在短時間看到第一批有解釋力的市場快照，而不是只看到 loading。</p>
+</article>
+<article class="stack-box">
+<h3>問題 3：第二次為什麼會回來</h3>
+<p>因為系統會記住他的搜尋、更新快照、有新職缺通知，並累積個人背景與歷史資料。</p>
+</article>
+<article class="stack-box">
+<h3>問題 4：什麼是 source of truth</h3>
+<p>市場快照、saved search、履歷 profile、board 狀態、AI 監控，都應該有明確存放層，而不是都塞 session。</p>
+</article>
+<article class="stack-box">
+<h3>問題 5：哪裡需要同步，哪裡需要背景化</h3>
+<p>第一次價值需要同步快速回應；定期刷新與通知應該背景化；AI 長任務之後也可能要 background 化。</p>
+</article>
+<article class="stack-box">
+<h3>問題 6：什麼狀況算失敗</h3>
+<p>不是只有 exception。資料太舊、沒有個人背景、通知綁定失效、搜索條件不合理，也都算產品層失敗。</p>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<caption>你做產品時應該先回答的問題</caption>
+<thead>
+<tr>
+<th>問題</th>
+<th>在這個專案裡的答案</th>
+<th>如果答不出來會有什麼後果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>使用者來這裡是為了什麼</td>
+<td>理解市場、校正履歷、追蹤新機會、整理求職行動。</td>
+<td>功能會長很多，但方向混亂。</td>
+</tr>
+<tr>
+<td>你的 unit of value 是什麼</td>
+<td>一份市場快照 + 一組持續追蹤的搜尋 + 一套個人化決策輔助。</td>
+<td>你會錯把某個局部功能當成整個產品。</td>
+</tr>
+<tr>
+<td>第一個 wow moment 是什麼</td>
+<td>快速看到多平台整合後的市場結果與 insight。</td>
+<td>使用者還沒看到價值就先離開。</td>
+</tr>
+<tr>
+<td>留存機制是什麼</td>
+<td>saved search、自動刷新、通知、看板、歷史資料。</td>
+<td>產品只有新鮮感，沒有回訪理由。</td>
+</tr>
+<tr>
+<td>AI 在哪裡最有價值</td>
+<td>解讀市場、解釋缺口、摘要複雜資訊，而不是取代核心資料流程。</td>
+<td>你會把 AI 放在錯誤位置，成本高又不穩。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="system-principles">
+<div class="section-header">
+<div class="kicker">07 System Principles</div>
+<h2>系統設計的核心原則</h2>
+<p>
+              你如果想把這個專案做成產品，系統設計就不能只看 class 與 function，而是要先有幾條穩定原則。
+            </p>
+</div>
+<div class="four-col">
+<article class="callout">
+<h3>原則一：先有產品節奏，再有技術拆分</h3>
+<p>同步與背景流程怎麼切，要看使用者等待容忍度，不是看你喜歡哪種架構。</p>
+</article>
+<article class="callout">
+<h3>原則二：每一份狀態都要有主人</h3>
+<p>session、快照、saved search、board、notification preference、AI event，不能模糊混放。</p>
+</article>
+<article class="callout">
+<h3>原則三：AI 不是 source of truth</h3>
+<p>AI 應該負責解讀、排序、補強，不應取代資料採集與核心狀態管理。</p>
+</article>
+<article class="callout">
+<h3>原則四：每條長流程都要可恢復</h3>
+<p>爬蟲、AI、通知、背景刷新，都要能知道做到哪裡、失敗在哪裡、怎麼續跑。</p>
+</article>
+</div>
+</section>
+<section class="section" id="system-topology">
+<div class="section-header">
+<div class="kicker">08 Topology</div>
+<h2>這個專案的系統拓樸應該怎麼理解</h2>
+<p>
+              現在這個專案是一個非常典型的「模組化單體 + 背景工作者 + 多個 SQLite 邊界」產品架構。
+              這不是壞事，反而很適合現在這個階段。
+            </p>
+</div>
+<div class="journey-board">
+<div class="lane-grid">
+<div class="lane-title">互動層</div>
+<div class="lane-flow">
+<article class="step">
+<div class="index">1</div>
+<h3>Streamlit App Shell</h3>
+<p>負責頁面導航、工作台、履歷頁、AI 助理、看板、通知設定等互動。</p>
+</article>
+<article class="step">
+<div class="index">2</div>
+<h3>Session State</h3>
+<p>承接當前頁面互動中的暫時狀態，例如選中的 tab、pending crawl、draft input。</p>
+</article>
+<article class="step">
+<div class="index">3</div>
+<h3>UI Action Layer</h3>
+<p>像 <code>pages_resume_actions</code>、<code>assistant_actions</code>、<code>crawl_runtime_flow</code> 這些模組負責把使用者動作轉成服務呼叫。</p>
+</article>
+<article class="step">
+<div class="index">4</div>
+<h3>產品反饋</h3>
+<p>status、通知、面板、launcher、看板卡片等，把系統狀態轉成可理解的 UI。</p>
+</article>
+</div>
+</div>
+<div class="arrow-row"><div>↓</div><div>↓</div><div>↓</div></div>
+<div class="lane-grid">
+<div class="lane-title">服務層</div>
+<div class="lane-flow">
+<article class="step">
+<div class="index">5</div>
+<h3>Crawl Application Service</h3>
+<p>協調查詢、快照、queue、saved search 刷新、worker 任務封裝。</p>
+</article>
+<article class="step">
+<div class="index">6</div>
+<h3>JobMarketPipeline</h3>
+<p>負責 collect、dedupe、detail enrichment、analyzer、snapshot 生成。</p>
+</article>
+<article class="step">
+<div class="index">7</div>
+<h3>Resume / Assistant Services</h3>
+<p>負責履歷分析與 AI 解讀，但都建立在已經存在的市場資料與 profile 之上。</p>
+</article>
+<article class="step">
+<div class="index">8</div>
+<h3>Notification / Maintenance Services</h3>
+<p>負責通知投遞、運維摘要、備份、狀態健康度。</p>
+</article>
+</div>
+</div>
+<div class="arrow-row"><div>↓</div><div>↓</div><div>↓</div></div>
+<div class="lane-grid">
+<div class="lane-title">資料與執行層</div>
+<div class="lane-flow">
+<article class="step">
+<div class="index">9</div>
+<h3>Product Store</h3>
+<p>承接使用者資料、saved search、favorites、profiles、metrics、notifications。</p>
+</article>
+<article class="step">
+<div class="index">10</div>
+<h3>Query Runtime</h3>
+<p>承接 crawl queue、query snapshot registry、job lease、worker 狀態。</p>
+</article>
+<article class="step">
+<div class="index">11</div>
+<h3>History / Submissions</h3>
+<p>承接歷史快照、匿名化 profile、補充提交資料與追蹤。</p>
+</article>
+<article class="step">
+<div class="index">12</div>
+<h3>外部平台</h3>
+<p>104 / 1111 / Cake / LinkedIn / LINE / Email / OpenAI。</p>
+</article>
+</div>
+</div>
+</div>
+</section>
+<section class="section" id="state-ownership">
+<div class="section-header">
+<div class="kicker">09 State Ownership</div>
+<h2>狀態設計：每一份資料該放哪裡</h2>
+<p>
+              這是產品系統最重要的題目之一。很多系統後來難維護，不是因為技術不夠，而是因為 state 放錯地方。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>這個專案的 state ownership 地圖</caption>
+<thead>
+<tr>
+<th>狀態</th>
+<th>應該放哪裡</th>
+<th>為什麼</th>
+<th>如果放錯地方會怎樣</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>當前 UI tab、draft text、臨時 pending state</td>
+<td><code>st.session_state</code></td>
+<td>它是互動中的暫存狀態，不值得長久保存。</td>
+<td>若存到 DB，會讓持久層混入一堆垃圾互動狀態。</td>
+</tr>
+<tr>
+<td>saved searches、favorites、board、notification preferences、auth</td>
+<td><code>product_state.sqlite3</code> / ProductStore</td>
+<td>這些是產品主資料，應該長期保存並與 user 綁定。</td>
+<td>若只放 session，重新整理就沒了；若拆散在很多檔案，資料一致性會很差。</td>
+</tr>
+<tr>
+<td>crawl jobs、lease、runtime snapshots</td>
+<td><code>query_runtime.sqlite3</code> + snapshot dir</td>
+<td>這些是執行狀態，不該跟產品主資料混在一起。</td>
+<td>會讓產品 DB 又大又亂，也難做 scheduler / worker 維護。</td>
+</tr>
+<tr>
+<td>市場歷史 archive</td>
+<td><code>market_history.sqlite3</code></td>
+<td>歷史資料量大、用途不同，應與即時產品狀態分層。</td>
+<td>放進主 DB 會拖慢查詢，也會讓 schema 難演化。</td>
+</tr>
+<tr>
+<td>匿名化 profile / 補充提交</td>
+<td><code>user_submissions.sqlite3</code></td>
+<td>這塊屬於收集型資料，不該直接混到產品主 state。</td>
+<td>資料治理與權限邊界會模糊。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="two-col" style="margin-top:16px;">
+<article class="callout good">
+<h3>現在這樣分層的優點</h3>
+<ul class="check-list">
+<li>產品資料、執行資料、歷史資料、收集資料各自有邊界。</li>
+<li>做備份、維護、健康檢查時比較容易針對性處理。</li>
+<li>未來如果要拆服務，也比較知道每塊資料應該跟誰走。</li>
+</ul>
+</article>
+<article class="callout warn">
+<h3>未來要注意的點</h3>
+<ul class="check-list">
+<li>跨 DB 的一致性要靠應用層協調，而不是幻想有交易。</li>
+<li>query signature、search_id、user_id 要維持穩定，不然會很難對資料。</li>
+<li>如果之後多機部署，檔案 snapshot 與 cache 要重新考慮共享策略。</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="sync-async">
+<div class="section-header">
+<div class="kicker">10 Sync vs Async</div>
+<h2>哪些流程應該同步，哪些應該非同步</h2>
+<p>
+              很多人做產品時會把所有事情都做成同步，因為簡單；或反過來把什麼都 background 化，因為看起來很專業。
+              其實正確答案只有一個：看使用者等待時是否還能感受到價值。
+            </p>
+</div>
+<div class="three-col">
+<article class="subcard">
+<h3>適合同步的</h3>
+<ul class="decision-list">
+<li>第一次搜尋後的初始波結果</li>
+<li>履歷分析的第一輪回饋</li>
+<li>AI 助理的一般提問</li>
+</ul>
+<p>因為這些是「第一次價值」的一部分，等待可以接受，但一定要有明確 staged feedback。</p>
+</article>
+<article class="subcard">
+<h3>適合背景化的</h3>
+<ul class="decision-list">
+<li>saved search 定時刷新</li>
+<li>通知發送</li>
+<li>備份、維護、健康檢查</li>
+<li>未來的大型 AI 報告</li>
+</ul>
+<p>因為使用者不必卡在畫面上等，而且這些工作可以排隊、重試、監控。</p>
+</article>
+<article class="subcard">
+<h3>這個專案目前的平衡點</h3>
+<ul class="decision-list">
+<li>搜尋有 staged crawl 與 queue。</li>
+<li>saved search 有 scheduler / worker。</li>
+<li>AI 仍以同步互動為主，因為產品還在強化互動體驗期。</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<caption>同步 / 非同步設計判準</caption>
+<thead>
+<tr>
+<th>流程</th>
+<th>現在做法</th>
+<th>為什麼</th>
+<th>未來何時應該改</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>初次查詢</td>
+<td>前台等待第一波結果，再逐步補 detail / finalize。</td>
+<td>使用者需要立即看到價值。</td>
+<td>若查詢量暴增，可改成先讀舊 snapshot + 背景 refresh。</td>
+</tr>
+<tr>
+<td>履歷分析</td>
+<td>同步執行，畫面顯示狀態。</td>
+<td>這是高意圖、低頻但高價值動作，等待可接受。</td>
+<td>若分析流程拉長或加 OCR / 多模型，就應 background 化。</td>
+</tr>
+<tr>
+<td>AI 助理提問</td>
+<td>同步執行。</td>
+<td>對話互動若轉背景，體驗會明顯變差。</td>
+<td>只有在要做超長報告或多步 agent 才考慮切背景。</td>
+</tr>
+<tr>
+<td>saved search 刷新</td>
+<td>scheduler / worker 背景處理。</td>
+<td>天然非同步，也需要重試與 lease。</td>
+<td>量變大時可從 SQLite queue 升級到更專門的 queue。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="design-decisions">
+<div class="section-header">
+<div class="kicker">11 Design Decisions</div>
+<h2>系統設計關鍵取捨：這個專案為什麼這樣做</h2>
+<p>
+              這裡不是在列「最佳實踐」，而是直接討論這個專案現在的選擇為什麼合理，還有什麼時候會不再合理。
+            </p>
+</div>
+<div class="decision-grid">
+<article class="callout">
+<h3>單體應用 + 模組化分層</h3>
+<p><strong>為什麼：</strong>產品還在快速迭代，需要低摩擦調整 UI、服務、資料層。</p>
+<p><strong>優點：</strong>開發快、跨層改動容易、部署簡單。</p>
+<p><strong>缺點：</strong>當併發與團隊變大時，邊界治理會變難。</p>
+<p><strong>替代：</strong>前後端分離、微服務、BFF。</p>
+</article>
+<article class="callout">
+<h3>SQLite 多庫分層</h3>
+<p><strong>為什麼：</strong>單機產品最划算，且不同資料型態天然就適合不同庫。</p>
+<p><strong>優點：</strong>簡單、便宜、可攜、好備份。</p>
+<p><strong>缺點：</strong>跨庫一致性與多機共享能力有限。</p>
+<p><strong>替代：</strong>Postgres + dedicated queue + object storage。</p>
+</article>
+<article class="callout">
+<h3>Query Signature 作為查詢身份</h3>
+<p><strong>為什麼：</strong>同條件查詢應該共用快照與背景刷新邏輯。</p>
+<p><strong>優點：</strong>好 dedupe、好 cache、好做 scheduler。</p>
+<p><strong>缺點：</strong>簽名邏輯若變，舊資料遷移要小心。</p>
+<p><strong>替代：</strong>顯式 SearchSpec table + normalized query graph。</p>
+</article>
+<article class="callout">
+<h3>AI 疊在資料層之上</h3>
+<p><strong>為什麼：</strong>資料採集與產品狀態是核心，AI 是解讀與增強層。</p>
+<p><strong>優點：</strong>即使 AI 不可用，產品仍可運作。</p>
+<p><strong>缺點：</strong>會有兩套邏輯：AI path 與 non-AI path。</p>
+<p><strong>替代：</strong>AI-native first product，但穩定性與成本風險更高。</p>
+</article>
+<article class="callout">
+<h3>前台 staged feedback</h3>
+<p><strong>為什麼：</strong>使用者能感覺到系統正在做什麼，比單一 spinner 更有信心。</p>
+<p><strong>優點：</strong>等待感受更好，也更便於 debug。</p>
+<p><strong>缺點：</strong>流程邏輯與 UI 狀態會比較複雜。</p>
+<p><strong>替代：</strong>背景任務 + notification，或更簡化的 skeleton-only 策略。</p>
+</article>
+<article class="callout">
+<h3>保存歷史與當前分開</h3>
+<p><strong>為什麼：</strong>當前快照重可用性，歷史資料重分析深度。</p>
+<p><strong>優點：</strong>兩種查詢模式不互相污染。</p>
+<p><strong>缺點：</strong>要多維護一套 history store。</p>
+<p><strong>替代：</strong>單一分析倉儲，但產品即時體驗通常會變差。</p>
+</article>
+</div>
+</section>
+<section class="section" id="kpis">
+<div class="section-header">
+<div class="kicker">12 Metrics</div>
+<h2>如果這是產品，你要看哪些指標</h2>
+<p>
+              很多人把技術監控和產品指標混在一起。實際上你需要三層：產品使用、系統健康、AI 質量 / 成本。
+            </p>
+</div>
+<div class="kpi-grid">
+<article class="stack-box">
+<h3>產品使用指標</h3>
+<ul class="check-list">
+<li>首次搜尋完成率</li>
+<li>建立 saved search 比率</li>
+<li>履歷分析使用率</li>
+<li>AI 助理提問率</li>
+<li>通知綁定率</li>
+<li>回訪率 / 留存率</li>
+</ul>
+</article>
+<article class="stack-box">
+<h3>系統健康指標</h3>
+<ul class="check-list">
+<li>crawl success rate</li>
+<li>snapshot freshness</li>
+<li>queue backlog</li>
+<li>worker heartbeat</li>
+<li>notification send success</li>
+<li>DB health / backup status</li>
+</ul>
+</article>
+<article class="stack-box">
+<h3>AI 指標</h3>
+<ul class="check-list">
+<li>resume build success rate</li>
+<li>assistant answer success rate</li>
+<li>blocked_missing_profile 比例</li>
+<li>AI latency</li>
+<li>token per request</li>
+<li>citation usage / used_chunks</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<caption>建議你真的要看的 KPI</caption>
+<thead>
+<tr>
+<th>類型</th>
+<th>KPI</th>
+<th>這個專案為什麼重要</th>
+<th>如果變差代表什麼</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Activation</td>
+<td>首次看到市場快照的比例</td>
+<td>這是產品第一個價值點。</td>
+<td>搜尋設定或爬取流程太慢 / 太複雜。</td>
+</tr>
+<tr>
+<td>Retention</td>
+<td>saved search 建立率與回訪率</td>
+<td>如果沒有這個，產品會變成一次性工具。</td>
+<td>沒有持續價值、沒有回來理由。</td>
+</tr>
+<tr>
+<td>Action</td>
+<td>收藏 / 看板使用率</td>
+<td>這表示產品是否從「看資料」跨到「做行動」。</td>
+<td>資料很多，但沒有形成 workflow。</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>履歷分析成功率與 AI 問答成功率</td>
+<td>這兩條是高價值功能，一旦不穩，信任會下降很快。</td>
+<td>模型、資料品質、流程穩定性有問題。</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>每次問答 / 每次履歷分析 token 成本</td>
+<td>AI 成本一高，產品規模就會被卡死。</td>
+<td>cache 不夠、模型太大、prompt 太肥。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="mistakes">
+<div class="section-header">
+<div class="kicker">13 Mistakes</div>
+<h2>如果你繼續做這個產品，最常見會踩的坑</h2>
+<p>
+              這一段我刻意寫得直接一點。因為產品做到這一步，最大的風險不是寫不出功能，而是方向做錯。
+            </p>
+</div>
+<div class="mistake-grid">
+<article class="callout danger">
+<h3>坑 1：把抓更多來源當成唯一成長</h3>
+<p>來源當然重要，但如果理解層、通知層、行動層沒跟上，只會讓資料更多、更亂。</p>
+</article>
+<article class="callout danger">
+<h3>坑 2：過度迷信 AI</h3>
+<p>AI 應該幫你解釋與排序，不是取代資料採集、狀態管理、產品邏輯。</p>
+</article>
+<article class="callout danger">
+<h3>坑 3：所有東西都做成同步</h3>
+<p>會讓等待時間變長、互動變卡，也很難做 scheduler / worker 維運。</p>
+</article>
+<article class="callout danger">
+<h3>坑 4：所有資料都塞一個 DB</h3>
+<p>最後維護、備份、健康檢查、遷移都會痛。</p>
+</article>
+<article class="callout danger">
+<h3>坑 5：UI 頁面越做越胖</h3>
+<p>如果功能切分只跟頁面走，很快就會失去產品邏輯與模組邊界。</p>
+</article>
+<article class="callout danger">
+<h3>坑 6：沒有定義留存機制</h3>
+<p>使用者看一次市場很新鮮，但沒有 saved search / 通知 / 歷史資料，第二次就不會回來。</p>
+</article>
+</div>
+</section>
+<section class="section" id="roadmap">
+<div class="section-header">
+<div class="kicker">14 Roadmap</div>
+<h2>如果要把這個專案做成真正的產品，建議路線圖</h2>
+<p>
+              不是一次把架構全換掉，而是按產品成熟度逐段升級。以下這四階段，是我覺得最合理的演進路徑。
+            </p>
+</div>
+<div class="roadmap-grid">
+<article class="stack-box">
+<h3>Stage 1：單機產品化</h3>
+<p>把現在這套 UI、queue、AI、DB 手冊化、監控化、回歸化。這是把 prototype 變成可穩定營運的版本。</p>
+</article>
+<article class="stack-box">
+<h3>Stage 2：流程產品化</h3>
+<p>強化 saved search、通知、看板、歷史資料與 KPI，讓留存機制完整。</p>
+</article>
+<article class="stack-box">
+<h3>Stage 3：服務拆分</h3>
+<p>當負載上來後，再把 crawl、AI、通知、前端介面逐步切開，不要提早微服務化。</p>
+</article>
+<article class="stack-box">
+<h3>Stage 4：企業 / 多租戶</h3>
+<p>加治理、RBAC、審計、共享隊列、外部 cache、Postgres / object storage、SLA 與告警。</p>
+</article>
+</div>
+</section>
+<section class="section" id="expansion">
+<div class="section-header">
+<div class="kicker">15 Expansion</div>
+<h2>未來要擴充時，你應該怎麼切</h2>
+<p>
+              下面不是抽象方向，而是針對這個專案，當你要擴新功能時，最應該下刀的位置。
+            </p>
+</div>
+<div class="expansion-grid">
+<article class="subcard">
+<h3>新增來源平台</h3>
+<p>去 connector 層與 pipeline 層擴，不要碰 UI 主邏輯。重點是統一成相同的 <code>JobListing</code> 與 detail parsing 結構。</p>
+</article>
+<article class="subcard">
+<h3>新增 AI 能力</h3>
+<p>去 <code>resume/*</code> 或 <code>assistant/*</code> 擴，不要讓 AI 反過來綁死抓取流程。先問清楚 AI 是補「理解層」還是「行動層」。</p>
+</article>
+<article class="subcard">
+<h3>做團隊版 / 顧問版</h3>
+<p>加 user / workspace / role / shared board / shared searches，不要先去改畫面，先想資料模型與權限模型。</p>
+</article>
+<article class="subcard">
+<h3>做營收</h3>
+<p>最自然的是從高價值流程切：高頻刷新、深度 AI 報告、履歷教練、求職記錄與通知、自訂監控、顧問協作。</p>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<caption>擴充時的建議切點</caption>
+<thead>
+<tr>
+<th>想擴什麼</th>
+<th>先切哪一層</th>
+<th>這樣做的優點</th>
+<th>不要先做什麼</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>更多來源</td>
+<td>connectors / pipeline / analysis mapping</td>
+<td>既有產品層不必大改</td>
+<td>不要直接在頁面上加平台特例</td>
+</tr>
+<tr>
+<td>更強 AI 問答</td>
+<td>assistant service / retrieval / chunk schema</td>
+<td>維持產品邊界清楚</td>
+<td>不要先把所有資料都灌進大 prompt</td>
+</tr>
+<tr>
+<td>更多用戶與併發</td>
+<td>runtime queue / store / cache / deployment</td>
+<td>先穩住系統壓力點</td>
+<td>不要只改前端 loading 樣式</td>
+</tr>
+<tr>
+<td>企業版</td>
+<td>auth、RBAC、audit、workspace 資料模型</td>
+<td>避免後面權限模型返工</td>
+<td>不要先只加一個「公司模式」開關</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="checklist">
+<div class="section-header">
+<div class="kicker">16 Checklist</div>
+<h2>如果你要繼續把這個專案做成產品，下一輪最值得做的清單</h2>
+<p>
+              我把這份清單分成產品、系統、AI、營運四類。你不需要一次全做，但至少要有這份地圖。
+            </p>
+</div>
+<div class="check-grid">
+<article class="subcard">
+<h3>產品面</h3>
+<ul class="check-list">
+<li>把首次體驗再收斂，縮短從輸入到第一批結果的時間。</li>
+<li>把 saved search 建立率做成明確引導與 KPI。</li>
+<li>讓 tracking / board 更像工作流，而不是附加頁面。</li>
+<li>把通知與回訪理由做得更清楚。</li>
+</ul>
+</article>
+<article class="subcard">
+<h3>系統面</h3>
+<ul class="check-list">
+<li>做完整手動回歸腳本與 smoke checklist。</li>
+<li>補 queue、snapshot freshness、notification、DB 健康指標。</li>
+<li>把備份 / 還原 / drill 真的納入營運節奏。</li>
+<li>規劃多機與共享 cache 的升級路線，但先不要急著改。</li>
+</ul>
+</article>
+<article class="subcard">
+<h3>AI 面</h3>
+<ul class="check-list">
+<li>建立固定的問題集與履歷樣本做離線回歸。</li>
+<li>把 AI 監控拆到 retrieval / generation / citation 更細粒度。</li>
+<li>為助理補一層更穩的 fallback answer 策略。</li>
+<li>整理 prompt / schema / model policy 文件。</li>
+</ul>
+</article>
+<article class="subcard">
+<h3>營運面</h3>
+<ul class="check-list">
+<li>定義核心 KPI 與每週檢視儀表板。</li>
+<li>建立失敗類型分類：資料、AI、通知、使用者設定。</li>
+<li>規劃資料保留與清理策略。</li>
+<li>把產品說法從「爬蟲」轉成「求職工作台」。</li>
+</ul>
+</article>
+</div>
+<details class="component" style="margin-top:16px;">
+<summary>一句話總結這份手冊</summary>
+<p>
+              這個專案真正該走的方向，不是把每個頁面做得更滿，而是把它明確做成一個「會持續更新市場、會理解使用者、會幫助做決策」的求職 operating system。
+              產品思考的核心不是多做功能，而是讓資料、AI、流程與留存機制對齊同一個使用者價值。
+            </p>
+</details>
+</section>
+<footer class="footer">
+<p>這份頁面從產品思維切入，整理價值鏈、使用者回訪機制、功能優先序與系統設計判斷。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</main>
+<aside class="toc">
+<h2>本頁索引</h2>
+<ol>
+<li><a href="#product-thesis">產品定位</a></li>
+<li><a href="#users-jtbd">使用者與 JTBD</a></li>
+<li><a href="#journey">使用者旅程</a></li>
+<li><a href="#loop">產品迴圈</a></li>
+<li><a href="#feature-stack">功能價值鏈</a></li>
+<li><a href="#product-thinking">產品思考方法</a></li>
+<li><a href="#system-principles">系統設計原則</a></li>
+<li><a href="#system-topology">系統拓樸</a></li>
+<li><a href="#state-ownership">狀態與資料邊界</a></li>
+<li><a href="#sync-async">同步 / 非同步</a></li>
+<li><a href="#design-decisions">設計取捨</a></li>
+<li><a href="#kpis">指標</a></li>
+<li><a href="#mistakes">常見錯誤</a></li>
+<li><a href="#roadmap">產品路線</a></li>
+<li><a href="#expansion">擴充方式</a></li>
+<li><a href="#checklist">下一步清單</a></li>
+</ol>
+</aside>
+</div>
+</div>
+</body>
+</html>

@@ -5,13 +5,18 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from ..backend_operations_service import BackendOperationsSnapshot
+from ..backend_operations_service import (
+    BackendOperationsSnapshot,
+    replay_dead_letter,
+    reprocess_failed_job,
+)
 from .common import render_section_header
 from .page_context import PageContext
 from .pages_backend_operations_helpers import (
     build_ai_budget_cards,
     build_budget_rows,
     build_cache_rows,
+    build_dead_letter_rows,
     build_due_rows,
     build_event_rows,
     build_job_rows,
@@ -22,6 +27,25 @@ from .pages_backend_operations_helpers import (
     format_relative_time,
     signal_card,
 )
+
+OPS_FEEDBACK_MESSAGE_KEY = "backend_ops_feedback_message"
+OPS_FEEDBACK_STATUS_KEY = "backend_ops_feedback_status"
+
+
+def _set_ops_feedback(*, status: str, message: str) -> None:
+    st.session_state[OPS_FEEDBACK_STATUS_KEY] = status
+    st.session_state[OPS_FEEDBACK_MESSAGE_KEY] = message
+
+
+def _render_ops_feedback() -> None:
+    message = str(st.session_state.get(OPS_FEEDBACK_MESSAGE_KEY, "")).strip()
+    status = str(st.session_state.get(OPS_FEEDBACK_STATUS_KEY, "")).strip()
+    if not message:
+        return
+    if status == "error":
+        st.error(message)
+    else:
+        st.success(message)
 
 
 def inject_ops_styles() -> None:
@@ -239,7 +263,11 @@ def render_runtime_signals_section(snapshot: BackendOperationsSnapshot) -> None:
                 kind=item.component_kind,
                 component_id=item.component_id,
                 status=item.status,
-                detail=item.message or "無額外訊息",
+                detail=(
+                    f"{item.error_code} · {item.message}"
+                    if item.error_code and item.message
+                    else (item.message or item.error_user_message or "無額外訊息")
+                ),
                 freshness=(
                     f"{'stale' if item.is_stale else 'fresh'} · {format_relative_time(item.updated_at)}"
                 ),
@@ -278,10 +306,101 @@ def render_recent_jobs_section(snapshot: BackendOperationsSnapshot) -> None:
     )
     job_rows = build_job_rows(snapshot)
     with st.container(border=True, key="backend-ops-jobs-shell"):
+        _render_ops_feedback()
         if job_rows:
             st.dataframe(pd.DataFrame(job_rows), use_container_width=True, hide_index=True)
         else:
             st.info("目前 queue 內還沒有 job 紀錄。")
+
+
+def render_queue_control_section(
+    *,
+    ctx: PageContext,
+    snapshot: BackendOperationsSnapshot,
+) -> None:
+    """Render replay/reprocess tools for failed jobs and dead letters."""
+    render_section_header(
+        "Queue Recovery",
+        "這裡提供維運級 reprocess / replay。failed job 會先透過 dead-letter queue 保留，再由你手動重放。",
+        "Recovery Tools",
+    )
+    with st.container(border=True, key="backend-ops-recovery-shell"):
+        _render_ops_feedback()
+        failed_jobs = [item for item in snapshot.recent_jobs if item.status == "failed"]
+        dead_letters = snapshot.recent_dead_letters
+        action_cols = st.columns(2, gap="small")
+
+        with action_cols[0]:
+            if failed_jobs:
+                options = {
+                    f"Job #{item.job_id} · {item.error_code or item.status}": int(item.job_id)
+                    for item in failed_jobs
+                }
+                with st.form("backend-ops-reprocess-job-form"):
+                    selected_label = st.selectbox(
+                        "選擇 failed job",
+                        options=list(options.keys()),
+                        key="backend-ops-reprocess-job-select",
+                    )
+                    submitted = st.form_submit_button(
+                        "重新排入 Queue",
+                        use_container_width=True,
+                        type="primary",
+                    )
+                if submitted:
+                    result = reprocess_failed_job(
+                        settings=ctx.settings,
+                        job_id=int(options[selected_label]),
+                    )
+                    _set_ops_feedback(status=result.status, message=result.message)
+                    st.rerun()
+            else:
+                st.caption("目前沒有 failed job 可 reprocess。")
+
+        with action_cols[1]:
+            if dead_letters:
+                options = {
+                    f"DLQ #{item.dead_letter_id} · {item.error_code or item.status}": int(item.dead_letter_id)
+                    for item in dead_letters
+                }
+                with st.form("backend-ops-replay-dlq-form"):
+                    selected_label = st.selectbox(
+                        "選擇 dead letter",
+                        options=list(options.keys()),
+                        key="backend-ops-replay-dlq-select",
+                    )
+                    submitted = st.form_submit_button(
+                        "Replay Dead Letter",
+                        use_container_width=True,
+                    )
+                if submitted:
+                    result = replay_dead_letter(
+                        settings=ctx.settings,
+                        dead_letter_id=int(options[selected_label]),
+                    )
+                    _set_ops_feedback(status=result.status, message=result.message)
+                    st.rerun()
+            else:
+                st.caption("目前 dead-letter queue 是空的。")
+
+
+def render_dead_letter_queue_section(snapshot: BackendOperationsSnapshot) -> None:
+    """Render dead-letter queue table."""
+    render_section_header(
+        "Dead Letter Queue",
+        "終態失敗工作會留在這裡，保留 payload、錯誤代碼、retryable 判斷與 replay 紀錄。",
+        "DLQ",
+    )
+    dead_letter_rows = build_dead_letter_rows(snapshot)
+    with st.container(border=True, key="backend-ops-dlq-shell"):
+        if dead_letter_rows:
+            st.dataframe(
+                pd.DataFrame(dead_letter_rows),
+                use_container_width=True,
+                hide_index=True,
+            )
+        else:
+            st.success("目前沒有 dead-letter job。")
 
 
 def render_snapshot_cache_section(snapshot: BackendOperationsSnapshot) -> None:

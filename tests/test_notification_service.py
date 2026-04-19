@@ -81,6 +81,7 @@ class NotificationServiceTests(unittest.TestCase):
         self.assertIn("AI追蹤", email_calls[0][0])
         self.assertIn("AI工程師", line_calls[0][0])
         self.assertEqual(line_calls[0][1], "U1234567890")
+        self.assertEqual(result["errors"], [])
 
     def test_send_new_job_alert_respects_channel_flags(self) -> None:
         email_calls: list[tuple[str, str, list[str]]] = []
@@ -145,6 +146,24 @@ class NotificationServiceTests(unittest.TestCase):
         self.assertEqual(len(seen_contexts), 2)
         self.assertTrue(seen_contexts[0].check_hostname)
         self.assertFalse(seen_contexts[1].check_hostname)
+
+    def test_send_new_job_alert_returns_structured_channel_error(self) -> None:
+        service = NotificationService(
+            self._settings(),
+            email_sender=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("SMTP timeout")),
+            line_sender=lambda body, target: None,
+        )
+
+        result = service.send_new_job_alert(
+            search_name="AI追蹤",
+            new_jobs=[{"title": "AI工程師", "company": "A", "source": "104", "url": "u"}],
+            line_enabled=False,
+        )
+
+        self.assertFalse(result["email_sent"])
+        self.assertTrue(result["errors"])
+        self.assertEqual(result["errors"][0]["error_kind"], "notification_error")
+        self.assertIn("Email 推播失敗", result["notes"][0])
 
 
 if __name__ == "__main__":

@@ -132,6 +132,12 @@ class BackendOperationsServiceTests(unittest.TestCase):
         )
         leased = queue.lease_job_for_signature("sig-leased", worker_id="worker-a")
         self.assertIsNotNone(leased)
+        failed_job = queue.enqueue_crawl(
+            "sig-failed",
+            priority=40,
+            payload_json='{"queries":["AI工程師","LLM 平台工程師"]}',
+        )
+        queue.fail_job(failed_job.id, "database is locked")
         signal_store.put_signal(
             component_kind="scheduler",
             component_id="scheduler-a",
@@ -142,9 +148,18 @@ class BackendOperationsServiceTests(unittest.TestCase):
         signal_store.put_signal(
             component_kind="worker",
             component_id="worker-a",
-            status="processing",
-            message="Processing crawl job",
-            payload={"poll_interval": 2.0, "job_id": leased.id if leased is not None else 0},
+            status="failed",
+            message="RUNTIME_DATABASE_LOCKED: 系統資料庫忙碌中，稍後可再試一次。",
+            payload={
+                "poll_interval": 2.0,
+                "job_id": leased.id if leased is not None else 0,
+                "error": {
+                    "error_code": "RUNTIME_DATABASE_LOCKED",
+                    "error_kind": "runtime_error",
+                    "error_retryable": True,
+                    "error_user_message": "系統資料庫忙碌中，稍後可再試一次。",
+                },
+            },
         )
 
         operations = collect_backend_operations_snapshot(
@@ -156,14 +171,21 @@ class BackendOperationsServiceTests(unittest.TestCase):
         self.assertEqual(operations.due_saved_search_count, 1)
         self.assertEqual(operations.pending_job_count, 1)
         self.assertEqual(operations.leased_job_count, 1)
-        self.assertEqual(operations.failed_job_count, 0)
+        self.assertEqual(operations.failed_job_count, 1)
+        self.assertEqual(operations.dead_letter_count, 1)
         self.assertEqual(operations.ready_snapshot_count, 1)
         self.assertEqual(operations.partial_snapshot_count, 1)
         self.assertEqual(len(operations.due_saved_searches), 1)
         self.assertEqual(operations.due_saved_searches[0].search_name, "每日 AI 追蹤")
-        self.assertEqual(len(operations.recent_jobs), 2)
+        self.assertEqual(len(operations.recent_jobs), 3)
+        self.assertEqual(len(operations.recent_dead_letters), 1)
+        self.assertEqual(operations.recent_dead_letters[0].error_code, "RUNTIME_DATABASE_LOCKED")
         self.assertEqual(len(operations.recent_snapshots), 2)
         self.assertEqual(len(operations.runtime_components), 2)
+        worker_component = next(
+            item for item in operations.runtime_components if item.component_kind == "worker"
+        )
+        self.assertEqual(worker_component.error_code, "RUNTIME_DATABASE_LOCKED")
         self.assertTrue(operations.last_scheduler_pass_at)
         self.assertTrue(operations.last_worker_activity_at)
 

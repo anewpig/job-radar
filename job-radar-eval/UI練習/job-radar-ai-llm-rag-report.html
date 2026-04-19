@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Job Radar AI / LLM / RAG 完整報告</title>
+<style>
+    :root {
+      --bg: #f4f1ea;
+      --paper: #fffdf9;
+      --ink: #1d2433;
+      --muted: #667089;
+      --line: rgba(61, 75, 114, 0.16);
+      --brand: #2251cc;
+      --brand-soft: rgba(34, 81, 204, 0.1);
+      --brand-2: #0f766e;
+      --brand-3: #915930;
+      --rose: #9f1239;
+      --shadow: 0 18px 60px rgba(35, 46, 79, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max: 1460px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(34, 81, 204, 0.08), transparent 22%),
+        radial-gradient(circle at top right, rgba(15, 118, 110, 0.08), transparent 20%),
+        linear-gradient(180deg, #f8f6f1 0%, #f3efe7 100%);
+      color: var(--ink);
+      font: 16px/1.7 "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .shell {
+      width: min(calc(100vw - 32px), var(--max));
+      margin: 24px auto 48px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(34, 81, 204, 0.96), rgba(31, 106, 182, 0.95) 45%, rgba(15, 118, 110, 0.96));
+      color: white;
+      border-radius: 34px;
+      padding: 34px 36px 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -8% -35% auto;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.22), rgba(255,255,255,0));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.22);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(2rem, 4vw, 3.7rem);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      max-width: 920px;
+      margin: 0;
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.55fr .95fr;
+      gap: 22px;
+      margin-top: 28px;
+    }
+
+    .hero-card,
+    .panel,
+    .stat-card,
+    .note-card,
+    .interview-card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: var(--radius-lg);
+      padding: 18px 18px 16px;
+      backdrop-filter: blur(14px);
+    }
+
+    .hero-card h2,
+    .panel h2,
+    .section h2 {
+      margin: 0 0 10px;
+      font-size: 1.3rem;
+      line-height: 1.22;
+    }
+
+    .hero-card p,
+    .panel p { font-size: .98rem; }
+
+    .hero-list {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .hero-list li { margin: 8px 0; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .stat-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 28px rgba(17, 24, 39, 0.06);
+      color: var(--ink);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: .82rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      margin-top: 6px;
+      font-size: 2rem;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .stat-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 24px;
+      margin-top: 24px;
+      align-items: start;
+    }
+
+    .main {
+      display: grid;
+      gap: 22px;
+    }
+
+    .section {
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(61, 75, 114, 0.12);
+      border-radius: 26px;
+      padding: 28px 30px;
+      box-shadow: 0 12px 30px rgba(24, 33, 61, 0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .section-header {
+      margin-bottom: 18px;
+    }
+
+    .section-header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .kicker {
+      margin-bottom: 8px;
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .panel {
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      backdrop-filter: none;
+    }
+
+    .panel h3,
+    .note-card h3,
+    .interview-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+      line-height: 1.3;
+    }
+
+    .panel p,
+    .panel li,
+    .note-card p,
+    .note-card li,
+    .interview-card p,
+    .interview-card li {
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .panel ul,
+    .note-card ul,
+    .interview-card ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .panel li,
+    .note-card li,
+    .interview-card li { margin: 7px 0; }
+
+    .flow {
+      display: grid;
+      gap: 14px;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .flow-box {
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,255,0.92));
+      border: 1px solid rgba(34,81,204,0.16);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .flow-box strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: .95rem;
+      color: var(--ink);
+    }
+
+    .flow-box span {
+      display: block;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.55;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    caption {
+      text-align: left;
+      padding: 16px 18px 0;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(61,75,114,0.1);
+      text-align: left;
+      vertical-align: top;
+      font-size: .95rem;
+    }
+
+    th {
+      background: #f8fafe;
+      color: #304267;
+      font-weight: 700;
+    }
+
+    .score-good { color: var(--brand-2); font-weight: 700; }
+    .score-warn { color: var(--brand-3); font-weight: 700; }
+    .score-risk { color: var(--rose); font-weight: 700; }
+
+    .bars {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr) 80px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .bar-label {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: .93rem;
+    }
+
+    .bar-track {
+      height: 12px;
+      background: rgba(34, 81, 204, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand), #50a2ff);
+    }
+
+    .bar-value {
+      text-align: right;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .formula {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #f8fbff, #eef5ff);
+      border: 1px solid rgba(34, 81, 204, 0.16);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .95rem;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(34,81,204,0.08);
+      border: 1px solid rgba(34,81,204,0.12);
+      color: #1f3f8d;
+      font-size: .88rem;
+      font-weight: 600;
+    }
+
+    .callout {
+      margin-top: 16px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--brand);
+      border-radius: 0 16px 16px 0;
+      background: rgba(34, 81, 204, 0.06);
+      color: #304267;
+    }
+
+    .risk-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .note-card,
+    .interview-card {
+      background: white;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 24px rgba(22, 34, 62, 0.06);
+      backdrop-filter: none;
+    }
+
+    .toc {
+      position: sticky;
+      top: 24px;
+      padding: 20px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(61,75,114,0.12);
+      border-radius: 22px;
+      box-shadow: 0 12px 26px rgba(18, 28, 55, 0.06);
+      backdrop-filter: blur(14px);
+    }
+
+    .toc h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .toc a {
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .footer {
+      margin-top: 24px;
+      padding: 26px 28px 32px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(61,75,114,0.12);
+      box-shadow: 0 12px 30px rgba(19, 28, 54, 0.06);
+    }
+
+    .footer p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,81,204,0.14);
+      background: rgba(34,81,204,0.06);
+      color: #23449f;
+      font-size: .9rem;
+      font-weight: 600;
+    }
+
+    .footer-link:hover {
+      background: rgba(34,81,204,0.12);
+    }
+
+    @media (max-width: 1180px) {
+      .content,
+      .hero-grid,
+      .flow-row,
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 700px) {
+      .shell { width: min(calc(100vw - 18px), var(--max)); margin-top: 10px; }
+      .hero, .section, .footer { padding: 20px 18px; border-radius: 22px; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; }
+      table { min-width: 760px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell" id="top">
+<section class="hero">
+<div class="eyebrow">AI / LLM / RAG Complete Report</div>
+<h1>Job Radar AI / LLM / RAG 完整報告</h1>
+<p>
+        這份頁面不是泛用 AI 教科書，而是直接以你目前的 Job Radar 專案為主體，整理出 AI 助理、履歷分析、檢索、chunking、prompt、向量索引、評估數據與後續改善路線。面試時你可以把它當成「這個產品的 AI 系統設計說明書」來講。
+      </p>
+<div class="hero-grid">
+<div class="hero-card">
+<h2>這份報告回答什麼</h2>
+<ul class="hero-list">
+<li>目前專案裡哪些地方真的有用到 LLM，哪些地方只是規則或檢索，不混著講。</li>
+<li>現在的 RAG 流程到底怎麼跑，chunk 怎麼切，rerank 怎麼算，top-k 怎麼選。</li>
+<li>目前離線 benchmark 和 live runtime 可以拿出哪些數據，哪些地方還欠缺監控。</li>
+<li>如果要往更高精準度、更大 corpus、或更像正式產品的 AI 系統演進，下一步應該怎麼做。</li>
+</ul>
+</div>
+<div class="hero-card">
+<h2>一句話總結</h2>
+<p>
+            目前 Job Radar 的 AI 層已經不是「單純把 OpenAI 接上去」。它是
+            <strong>snapshot-centered、rule-aware、hybrid retrieval</strong>
+            的產品化 AI 系統：先有市場快照與結構化資料，再把 LLM 放在摘要、檢索與個人化建議的正確位置上。
+          </p>
+<div class="badge-row">
+<span class="badge">assistant_model: gpt-4.1-mini</span>
+<span class="badge">embedding: text-embedding-3-large</span>
+<span class="badge">resume_llm: gpt-4.1-mini</span>
+<span class="badge">title_llm: gpt-4.1-mini</span>
+</div>
+</div>
+</div>
+</section>
+<div class="kpi-grid">
+<div class="stat-card">
+<div class="stat-label">Live Assistant Questions</div>
+<div class="stat-value">27</div>
+<div class="stat-sub">目前 live `assistant.answer_question` 事件數</div>
+</div>
+<div class="stat-card">
+<div class="stat-label">Current Chunk Count</div>
+<div class="stat-value">427</div>
+<div class="stat-sub">34 筆職缺生成的 production chunks</div>
+</div>
+<div class="stat-card">
+<div class="stat-label">Realistic Hit@1</div>
+<div class="stat-value">78.95%</div>
+<div class="stat-sub">目前 production `current_structured` 離線 realistic set</div>
+</div>
+<div class="stat-card">
+<div class="stat-label">Best Realistic Hit@1</div>
+<div class="stat-value">84.21%</div>
+<div class="stat-sub">`hybrid_layered` 策略目前最佳</div>
+</div>
+</div>
+<div class="content">
+<main class="main">
+<section class="section" id="scope">
+<div class="section-header">
+<div class="kicker">Scope</div>
+<h2>AI 在這個專案裡到底做哪些工作</h2>
+<p>
+      這個專案的 AI 不是只有一條鏈。它至少有四個實際工作面：求職問答、履歷 profile 建構、履歷與職缺語意匹配，以及檢索層的 embedding / persistent ANN。
+    </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>1. AI 助理問答</h3>
+<p>
+        由 <code>JobMarketRAGAssistant</code> 驅動。它會先分類回答模式，再決定如何檢索、組 prompt、選 citations；具體職缺薪資題現在還會接薪資預估支線。
+      </p>
+<ul>
+<li>主問題：市場摘要、個人化建議、職缺比較、一般對話</li>
+<li>核心價值：把當前快照轉成可問答的求職市場語境</li>
+<li>風險：回答品質高度依賴 chunking 與 retrieval，不是只靠模型本身</li>
+</ul>
+</article>
+<article class="panel">
+<h3>2. 履歷 profile 建構</h3>
+<p>
+        使用 LLM 將履歷文字抽成 <code>summary / target_roles / core_skills / preferred_tasks / match_keywords</code>，供後續 match 與 personalized guidance 使用。
+      </p>
+<ul>
+<li>不是把整份履歷直接丟給回答 prompt，而是先做 profile 化</li>
+<li>有 cache，可避免相同履歷反覆抽取</li>
+<li>缺點是目前仍偏摘要級，experience / project 尚未 chunk 化</li>
+</ul>
+</article>
+<article class="panel">
+<h3>3. 履歷與職缺匹配</h3>
+<p>
+        這條鏈不是傳統 RAG，而是語意比對。會把履歷與職缺技能/任務/關鍵字轉成 embedding，再計算 semantic similarity。
+      </p>
+<ul>
+<li>另有 title similarity LLM 與 rule-based scorer</li>
+<li>目前比較像 ranking system，不是聊天式回答</li>
+<li>這條鏈對面試很重要，因為它能證明你不只做 chatbot</li>
+</ul>
+</article>
+<article class="panel">
+<h3>4. 長期向量與檢索 cache</h3>
+<p>
+        專案裡不只有 embedding cache，現在本地也已經有 <code>assistant_vector_index.sqlite3</code>。比較準確的描述是：persistent ANN 已能在本地工作，但還不是 shared vector service。
+      </p>
+<ul>
+<li>local <code>assistant_vector_index.sqlite3</code>：已存在</li>
+<li><code>rag_embeddings</code>：主助理熱路徑的磁碟 cache</li>
+<li><code>resume_match_embeddings</code>：履歷 matching 的語意 cache</li>
+<li>下一步：shared backend、health metrics、multi-instance strategy</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="live">
+<div class="section-header">
+<div class="kicker">Live Snapshot</div>
+<h2>目前本地資料面可直接拿來講的狀態</h2>
+<p>
+      這一段只保留能直接從目前 repo / data 目錄驗證的資訊，不再硬寫過期的事件筆數或平均延遲。這樣文件比較適合當現在版本的真實快照。
+    </p>
+</div>
+<div class="grid-3">
+<article class="note-card">
+<h3>模型配置</h3>
+<ul>
+<li>Assistant Model：<code>gpt-4.1-mini</code></li>
+<li>Embedding Model：<code>text-embedding-3-large</code></li>
+<li>Resume LLM：<code>gpt-4.1-mini</code></li>
+<li>Title Similarity LLM：<code>gpt-4.1-mini</code></li>
+<li>Assistant fast profile output budget：<code>market 300 / personalized 320 / comparison 380 / general 220</code></li>
+<li>Persistent source sync interval：<code>900 秒 / 15 分鐘</code></li>
+</ul>
+</article>
+<article class="note-card">
+<h3>cache / 向量現況</h3>
+<ul>
+<li><code>rag_embeddings</code>：3818 檔，約 177.67 MB</li>
+<li><code>resume_match_embeddings</code>：2032 檔，約 122.70 MB</li>
+<li>總 cache：9090 檔，約 590.28 MB</li>
+<li>ANN index 檔案：已建立，約 1.48 MB</li>
+<li>runtime snapshot sync 已改成「snapshot hash 變動才同步」</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>觀測與文件策略</h3>
+<ul>
+<li><code>ai_monitoring_events</code> 的 schema 與寫入路徑已在 codebase</li>
+<li>但這份本地資料不把事件筆數 / 平均延遲當固定 live 指標</li>
+<li>這頁現在優先使用能直接從檔案系統與設定驗證的數據</li>
+<li>如果要講延遲，建議用 backend console 或最新的實際執行樣本，不要背舊報表</li>
+</ul>
+</article>
+</div>
+<div class="grid-2" style="margin-top:16px;">
+<article class="panel">
+<h3>這輪可明確講的延遲控制</h3>
+<ul>
+<li>Assistant chunk build 有 process 內快取，同一份 snapshot / resume 組合不重建。</li>
+<li>Persistent ANN 的 runtime snapshot sync 只在 snapshot hash 變動時執行。</li>
+<li>Persistent source sync 節流到 <code>900 秒</code>，不再每次互動都碰長期 corpus。</li>
+<li>Assistant embedding 有 memory cache + disk cache，不必每次都重新打遠端 embedding。</li>
+<li>Assistant 回答長度改成 mode-aware output budget，而不是固定一個大 token 上限。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>目前仍然要誠實講的限制</h3>
+<ul>
+<li>本地 SQLite ANN 可工作，但不是 shared vector service。</li>
+<li>cache 體積已經不小，之後仍需要更正式的 GC / shared backend 策略。</li>
+<li>這份本地資料不適合再硬寫舊的平均延遲數字，容易過期。</li>
+<li>如果要做 release-level latency 對照，還需要 steady-state telemetry 報表。</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="models">
+<div class="section-header">
+<div class="kicker">Model Stack</div>
+<h2>模型配置、路由策略與輸出預算</h2>
+<p>
+              這套系統不是單一模型硬打到底，而是把 assistant、resume extraction、title similarity、embedding 分成不同責任。這是產品級 AI 系統很重要的一點，因為不同任務的延遲、成本、精度需求不同。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>目前模型層配置</caption>
+<thead>
+<tr>
+<th>能力</th>
+<th>模型 / 路由</th>
+<th>目前用途</th>
+<th>為什麼這樣配</th>
+<th>下一步可調整點</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Assistant generation</td>
+<td>`gpt-4.1-mini`</td>
+<td>市場摘要、general chat、個人化建議、比較題最終回答</td>
+<td>維持較穩品質，同時控制回覆延遲</td>
+<td>可再做 mode-based model routing，讓 general chat 與比較題分流</td>
+</tr>
+<tr>
+<td>Resume profile extraction</td>
+<td>`gpt-4.1-mini`</td>
+<td>把履歷文字轉成 profile schema</td>
+<td>抽取任務比自由生成更在意 schema 穩定性</td>
+<td>可做更嚴格 structured output contract 與 answer-level eval</td>
+</tr>
+<tr>
+<td>Title similarity</td>
+<td>`gpt-4.1-mini`</td>
+<td>履歷與職缺 title 的高階語意對齊</td>
+<td>比單純字串更能處理 title alias 與語意近義</td>
+<td>若之後量大，可再縮小 candidate 後才呼叫</td>
+</tr>
+<tr>
+<td>Embedding</td>
+<td>`text-embedding-3-large`</td>
+<td>assistant retrieval 與 resume matching 的語意相似度</td>
+<td>目前精準度仍比成本優先</td>
+<td>可對 assistant / resume 分別做 `small vs large` A/B</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="grid-2" style="margin-top:16px;">
+<article class="panel">
+<h3>Mode-based output budget</h3>
+<ul>
+<li>目前預設 latency profile：<code>fast</code></li>
+<li><code>market_summary</code>：<code>300</code></li>
+<li><code>personalized_guidance</code>：<code>320</code></li>
+<li><code>job_comparison</code>：<code>380</code></li>
+<li><code>general_chat</code>：<code>220</code></li>
+<li>報告類或較完整回答仍可切到 <code>balanced</code>，但不是目前互動主路徑預設</li>
+</ul>
+<p>
+    這個設定的重點是把回答長度當成延遲與成本的第一層控管，而不是等 token 用完才事後觀察。它比一律給固定大 token 上限更像產品化做法。
+  </p>
+</article>
+<article class="panel">
+<h3>Prompt variant 現況</h3>
+<ul>
+<li>`control`：目前 production 主體</li>
+<li>`compact_qa`：較緊湊、較短回答的候選變體</li>
+<li>variant 會寫進 monitoring metadata，並綁 `prompt_version`</li>
+<li>release gate 目前已能攔 retrieval regression，但 answer quality gate 尚未補齊</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="architecture">
+<div class="section-header">
+<div class="kicker">Execution Topology</div>
+<h2>AI / LLM / RAG 執行結構圖</h2>
+<p>
+              這張圖把「UI 點一下問問題」之後，背後實際發生的事情拆開來看。重點不是把 OpenAI 當唯一中心，而是把資料快照、檢索、prompt、回答、監控分成不同責任層。
+            </p>
+</div>
+<div class="flow">
+<div class="flow-row">
+<div class="flow-box">
+<strong>1. UI / Session</strong>
+<span>問題從 `pages_assistant` 或 launcher 送出，並附帶目前 snapshot、resume profile、最近對話上下文。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>2. Answer Mode Routing</strong>
+<span>先判斷是 `market_summary / personalized_guidance / job_comparison / general_chat`，再決定 top-k 與是否偏向市場檢索。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>3. Retrieval Query Build</strong>
+<span>把本輪問題與最近問答上下文壓成 retrieval query，避免 follow-up 問題失去前文。</span>
+</div>
+</div>
+<div class="flow-row">
+<div class="flow-box">
+<strong>4. Chunk Build</strong>
+<span>從 snapshot 建 `job-summary / job-skills / job-work-content / market-* / resume-summary` 等結構化 chunks。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>5. Retrieval / Rerank</strong>
+<span>先粗篩 candidates，再做 embedding，相加 lexical / signal / source bonus / market penalty，最後 diverse top-k。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>6. Prompt Assembly + LLM</strong>
+<span>把 answer mode block、style block、question focus、chunks、resume block 一起組成回答 prompt。</span>
+</div>
+</div>
+<div class="flow-row">
+<div class="flow-box">
+<strong>7. Structured Response</strong>
+<span>模型輸出 JSON，再轉成自然段落 QA；UI render 不再硬顯示「重點 / 限制 / 下一步」。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>8. Monitoring</strong>
+<span>把事件寫進 `ai_monitoring_events`，目前有 mode 與 latency，但 token usage 尚未穩定落地。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>9. Product Memory</strong>
+<span>問題、回答與對話上下文留在 app session / product state，支撐 follow-up 與 personalized guidance。</span>
+</div>
+</div>
+</div>
+</section>
+<section class="section" id="modes">
+<div class="section-header">
+<div class="kicker">Mode Design</div>
+<h2>回答模式、prompt 策略與目前的設計問題</h2>
+<p>
+              現在 answer mode 兼管了三件事：題目類型、回答口吻、某種程度的 retrieval policy。這讓系統能跑，但也是你後面最需要重構的一塊。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>目前四種 answer mode</caption>
+<thead>
+<tr>
+<th>Mode</th>
+<th>主要用途</th>
+<th>目前風格</th>
+<th>是否偏向市場檢索</th>
+<th>風險</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>market_summary</strong></td>
+<td>技能、工作內容、來源、薪資、市場走勢</td>
+<td>正式 QA</td>
+<td>幾乎必用</td>
+<td>太多責任被塞在一起，容易把市場題和 job-specific 題混在同一框架</td>
+</tr>
+<tr>
+<td><strong>personalized_guidance</strong></td>
+<td>根據履歷給缺口與下一步</td>
+<td>正式 QA + 履歷參照</td>
+<td>必用</td>
+<td>履歷目前還是單一 summary chunk，個人化粒度偏粗</td>
+</tr>
+<tr>
+<td><strong>job_comparison</strong></td>
+<td>比較兩個職缺的技能、內容、薪資、風險</td>
+<td>正式比較</td>
+<td>必用</td>
+<td>比較題目前靠 `_ensure_comparison_coverage` 補位，之後可再有專用 rerank</td>
+</tr>
+<tr>
+<td><strong>general_chat</strong></td>
+<td>非求職題或較自由的 QA</td>
+<td>自然 QA</td>
+<td>現在大多數問題仍會串 RAG；只有明顯 skip hint 才跳過</td>
+<td>mode 名稱容易誤導，因為它現在已不是純聊天模式</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout">
+            如果面試官問「你目前這個 mode 切法有沒有哪裡不滿意？」最誠實的回答是：<strong>目前 `answer_mode` 還混著 `subject / tone / retrieval_policy` 三個軸</strong>。下一步我會拆成三層，讓分類更乾淨，也更好 debug。
+          </div>
+</section>
+<section class="section" id="resume-ai">
+<div class="section-header">
+<div class="kicker">Resume AI</div>
+<h2>履歷 AI 鏈不是 RAG 附屬，而是另一條獨立能力線</h2>
+<p>
+              很多人會把這個專案只講成 AI 助理，但其實履歷分析是另一條完整 AI 鏈：先抽 profile，再做 resume-job matching，再把結果回寫成可視化分析。這條線更能證明你不是只會做 chatbot。
+            </p>
+</div>
+<div class="flow">
+<div class="flow-row">
+<div class="flow-box">
+<strong>1. Resume Upload</strong>
+<span>使用者上傳履歷，系統先抽文字，再做清理與上下文選取。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>2. Profile Extraction</strong>
+<span>用 LLM 抽出 `summary / target_roles / core_skills / preferred_tasks / match_keywords`。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>3. Resume Chunk / Facet Build</strong>
+<span>把 profile facets 與 `resume-window-*` 變成後續 personalized guidance 的上下文層。</span>
+</div>
+</div>
+<div class="flow-row">
+<div class="flow-box">
+<strong>4. Market Job Pool</strong>
+<span>直接吃目前 `jobs_latest.json / snapshots`，以當前市場職缺池為匹配基準。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>5. Matching / Scoring</strong>
+<span>結合 exact match、semantic similarity、title similarity、keyword/task/skill scorer。</span>
+</div>
+<div class="arrow">→</div>
+<div class="flow-box">
+<strong>6. UI Analysis</strong>
+<span>輸出缺口技能、推薦職缺、匹配分數與摘要解釋。</span>
+</div>
+</div>
+</div>
+<div class="grid-2" style="margin-top:16px;">
+<article class="panel">
+<h3>這條鏈目前已做好的</h3>
+<ul>
+<li>履歷抽取有 cache，不會每次都重做相同 profile</li>
+<li>matching 不只靠 embedding，還有 exact skill / task / keyword / role signal</li>
+<li>履歷已從單塊 summary 升級成多 facet + windows</li>
+<li>resume.service、extractors、matchers、scoring 責任已拆乾淨</li>
+</ul>
+</article>
+<article class="panel">
+<h3>這條鏈還缺的</h3>
+<ul>
+<li>experience / project / accomplishment 級別的 evidence chunks</li>
+<li>更正式的 profile extraction answer-level eval</li>
+<li>resume retrieval 與 market retrieval 的雙路融合策略</li>
+<li>可視化顯示「這段履歷證據對應到哪些職缺要求」</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="chunking">
+<div class="section-header">
+<div class="kicker">Chunking</div>
+<h2>目前 production chunking 狀態</h2>
+<p>
+              這套系統現在的 chunking 不是 token-based recursive splitter，而是結構導向的 product chunking。它快、穩、貼合你的資料模型，而且這一輪已把履歷從 summary-only 推進到第一階段分塊；但對更細的工作內容問答與 project-level personalization 仍有上限。
+            </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>當前 chunk 組成</h3>
+<div class="bars">
+<div class="bar-row"><div class="bar-label">job-work-content</div><div class="bar-track"><div class="bar-fill" style="width:40.28%"></div></div><div class="bar-value">172 / 40.28%</div></div>
+<div class="bar-row"><div class="bar-label">job-skills</div><div class="bar-track"><div class="bar-fill" style="width:38.88%"></div></div><div class="bar-value">166 / 38.88%</div></div>
+<div class="bar-row"><div class="bar-label">job-summary</div><div class="bar-track"><div class="bar-fill" style="width:7.96%"></div></div><div class="bar-value">34 / 7.96%</div></div>
+<div class="bar-row"><div class="bar-label">market-skill-insight</div><div class="bar-track"><div class="bar-fill" style="width:4.68%"></div></div><div class="bar-value">20 / 4.68%</div></div>
+<div class="bar-row"><div class="bar-label">market-task-insight</div><div class="bar-track"><div class="bar-fill" style="width:4.68%"></div></div><div class="bar-value">20 / 4.68%</div></div>
+<div class="bar-row"><div class="bar-label">job-salary</div><div class="bar-track"><div class="bar-fill" style="width:2.81%"></div></div><div class="bar-value">12 / 2.81%</div></div>
+</div>
+</article>
+<article class="panel">
+<h3>它目前怎麼切</h3>
+<ul>
+<li>每個 job 一定有 `job-summary`</li>
+<li>有薪資才有 `job-salary`</li>
+<li>有技能或 requirement 就切出 `job-skills`，並加 item-level skills</li>
+<li>有工作內容就切出 `job-work-content`，並加 item-level tasks</li>
+<li>市場層另外有 `market-skill-insight / market-task-insight / summary chunks`</li>
+<li>有履歷時現在會補 `resume-summary / resume-target-roles / resume-core-skills / resume-tool-skills / resume-domain-keywords / resume-preferred-tasks / resume-match-keywords`</li>
+<li>raw resume 也會切出經過清理的 `resume-window-*` 局部片段，讓 personalized guidance 不只吃總摘要</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>目前 chunking 的優缺點</caption>
+<thead>
+<tr>
+<th>面向</th>
+<th>優點</th>
+<th>缺點</th>
+<th>下一步</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>速度</td>
+<td class="score-good">快，因為直接建結構化 chunks，不做全文 recursive split</td>
+<td>遇到細節題時，上下文不夠細</td>
+<td>在 raw JD 上加一層 paragraph-aware detail chunks</td>
+</tr>
+<tr>
+<td>穩定性</td>
+<td class="score-good">不太會被長篇 description 噪音拖垮</td>
+<td>市場 insight 很容易搶走 job-specific 題</td>
+<td>把 aggregate 與 job-specific 分兩個 retrieval namespace</td>
+</tr>
+<tr>
+<td>個人化</td>
+<td class="score-good">履歷已從單一 summary 升級成 profile facets + resume windows，個人化回答基礎明顯更好</td>
+<td class="score-warn">仍未切到 `experience / project / accomplishment` 結構層級，project-level explanation 還不夠細</td>
+<td>第二階段把 experience / project / role-evidence chunks 補上，再做 resume retrieval 與 market retrieval 雙路融合</td>
+</tr>
+<tr>
+<td>可擴充性</td>
+<td>很貼合現在的 MarketSnapshot 資料形狀</td>
+<td>日後跨歷史 / 全庫搜尋時，chunk schema 會變得不夠細</td>
+<td>在不破壞現有 chunk 的前提下加第二層 detail chunks</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="retrieval">
+<div class="section-header">
+<div class="kicker">Retrieval</div>
+<h2>Retrieval / Rerank / top-k 目前怎麼跑</h2>
+<p>
+              這套檢索不是只用向量相似度，而是完整 hybrid retrieval。這是你在面試時應該主動強調的地方，因為它代表你知道「只上 embedding 不等於產品級檢索」。
+            </p>
+</div>
+<div class="formula">final_score
+= embedding_score * 0.52
++ lexical_overlap * 0.18
++ signal_overlap * 0.22
++ source_type_bonus
++ market_priority_bonus
++ role_alignment_bonus
++ job_reference_bonus
+- specific_job_market_penalty</div>
+<div class="grid-2" style="margin-top:16px;">
+<article class="panel">
+<h3>top-k routing</h3>
+<ul>
+<li>specific job + `work_content / skill_gap / salary`：<strong>5</strong></li>
+<li>`market_summary`：<strong>6</strong></li>
+<li>`personalized_guidance`：<strong>6</strong></li>
+<li>`job_comparison`：<strong>10</strong></li>
+<li>`general_chat`：<strong>4</strong></li>
+</ul>
+<p>
+                這代表系統已經不是固定 `top_k=8`。你現在會依題型壓縮 context，避免市場題、一般題與比較題都吃同一套上下文預算。
+              </p>
+</article>
+<article class="panel">
+<h3>目前 rerank 的關鍵意圖</h3>
+<ul>
+<li>`work_content` 題會強拉 `job-work-content`</li>
+<li>`skill_gap` 題會強拉 `job-skills / market-skill-insight`</li>
+<li>specific job 題會對完整 title / company 追加 bonus</li>
+<li>specific job 題時，market chunk 會吃 penalty，避免市場摘要壓過單一職缺</li>
+<li>最後還會做 diversity selection，避免 top-k 全被同類 chunks 佔滿</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>為什麼這套 retrieval 對產品有意義</caption>
+<thead>
+<tr>
+<th>設計</th>
+<th>為什麼這樣做</th>
+<th>優點</th>
+<th>缺點 / 成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>先 coarse candidate，再 embed</td>
+<td>避免每題對全庫所有 chunks 做 embedding 比分</td>
+<td class="score-good">速度與成本比較穩</td>
+<td>coarse stage 設計不好會一開始就把正確 chunk 篩掉</td>
+</tr>
+<tr>
+<td>hybrid score</td>
+<td>純 embedding 不足以表達 job-specific / market-specific 的產品意圖</td>
+<td class="score-good">對結構化資料更友善</td>
+<td>rule 會越堆越多，維護成本上升</td>
+</tr>
+<tr>
+<td>specific job bonus</td>
+<td>解決「問某個缺，卻被市場摘要搶走」的常見錯誤</td>
+<td class="score-good">命中率明顯上升</td>
+<td>title alias / company alias 還不夠完整時，仍會有誤差</td>
+</tr>
+<tr>
+<td>diversity selection</td>
+<td>避免同一類 chunks 佔滿 top-k</td>
+<td>讓 prompt context 更均衡</td>
+<td>如果 diversity 規則太硬，也可能稀釋最強證據</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="ann">
+<div class="section-header">
+<div class="kicker">ANN / Vector Index</div>
+<h2>長期持久化向量索引目前做到哪裡</h2>
+<p>
+      專案裡的 <code>PersistentANNIndex</code> 已不是只有空骨架。現在本地 <code>data/assistant_vector_index.sqlite3</code> 已實際存在，
+      而且程式路徑能同步 <code>runtime snapshot / snapshot_file / snapshot_store / market_history</code>。目前比較準確的說法是：
+      這塊已經進入「可工作的本地 persistent ANN」階段，但還不是多實例共享、獨立向量服務化的 production 最終形態。
+    </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>目前已具備</h3>
+<ul>
+<li>SQLite-backed persistent vector corpus</li>
+<li>random-projection LSH band search</li>
+<li>可同步 runtime snapshot</li>
+<li>可同步 snapshot file / snapshot store</li>
+<li>可同步 market_history job_posts</li>
+<li>runtime snapshot sync 已改成 hash-based incremental style</li>
+<li>本地已觀察到 <code>assistant_vector_index.sqlite3</code> 實體檔案，表示 steady-state index 不再只是理論 code path</li>
+</ul>
+</article>
+<article class="panel">
+<h3>目前仍然要誠實講的限制</h3>
+<ul>
+<li>現在是 product-local SQLite index，不是 shared vector service</li>
+<li>還沒有外部 dashboard 去追 corpus growth、fan-out、recall 趨勢</li>
+<li>多實例上線時不能直接把這一顆本地 SQLite 當共享索引</li>
+<li>若未來 corpus 持續擴大，仍建議升級成獨立索引服務或共享 backend</li>
+</ul>
+</article>
+</div>
+<div class="callout">
+    這一段面試時可以這樣講：<strong>我不是只停在 embedding cache，而是已把 persistent ANN index 路徑落地到本地可運作狀態；下一步要補的是 shared backend、observability 與多實例部署策略。</strong>
+</div>
+</section>
+<section class="section" id="embedding">
+<div class="section-header">
+<div class="kicker">Embedding / Cache Layer</div>
+<h2>Embedding、cache 與向量層在系統裡的實際角色</h2>
+<p>
+      目前預設 embedding model 是 <code>text-embedding-3-large</code>。系統不是把所有原始資料直接丟去做 embedding，
+      而是先把 snapshot / resume 轉成結構化 chunks，再把 retrieval query 與 candidate chunks 一起向量化。也就是說，
+      embedding 在這裡負責「先找語意近的候選」，最後排名仍要靠 hybrid score 收斂。
+    </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>目前 embedding / cache 分層</caption>
+<thead>
+<tr>
+<th>層</th>
+<th>目前用途</th>
+<th>資料位置</th>
+<th>目前優點</th>
+<th>目前缺口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>process memory cache</td>
+<td>降低同一輪互動重複 embedding / profile / title 計算</td>
+<td>app process memory</td>
+<td>對熱路徑延遲很有效</td>
+<td>重啟後會消失，沒有跨 process reuse</td>
+</tr>
+<tr>
+<td>disk cache</td>
+<td>保存 assistant / resume embeddings 與中間結果</td>
+<td><code>data/cache/rag_embeddings</code>、其他 resume caches</td>
+<td>成本低、易維護，而且 repeated question 不必每次都打遠端 embedding API</td>
+<td>仍不是正式的 metrics backend，也缺 cache hit 長期趨勢圖</td>
+</tr>
+<tr>
+<td>persistent ANN index</td>
+<td>做長期候選召回</td>
+<td><code>data/assistant_vector_index.sqlite3</code></td>
+<td>已能承接 runtime / snapshot / history 三種來源</td>
+<td>還不是 shared backend，也未拆成獨立索引服務</td>
+</tr>
+<tr>
+<td>monitoring metadata</td>
+<td>追 cache hits、remote embeddings、ANN fan-out</td>
+<td><code>ai_monitoring_events</code></td>
+<td>已能回看是哪一層 cache 沒打中</td>
+<td>還沒做長期 trend dashboard 與告警</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="grid-2" style="margin-top:16px;">
+<article class="panel">
+<h3>實際被拿去 embed 的不是什麼</h3>
+<ul>
+<li>不是整份 HTML 原文。</li>
+<li>不是整個 JSON snapshot 一次送進去。</li>
+<li>而是 <code>job-summary / job-salary / job-skills / job-work-content / market-* / resume-*</code> 這些結構化 chunk。</li>
+<li>query 也不是只用原句，而是會帶上 answer mode 與最多 2 輪對話摘要。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>這條路徑為什麼不是純 cosine similarity</h3>
+<ul>
+<li>embedding 先把語意近的候選拉出來。</li>
+<li>lexical overlap / signal overlap 補字面與任務訊號。</li>
+<li>source type bonus 把對的資料型態往前推。</li>
+<li>specific-job 問題還會壓低 market chunks，避免「語意像但類型錯」的證據搶位。</li>
+</ul>
+</article>
+</div>
+<div class="callout">
+    這條鏈真正的意思是：<strong>embedding 在系統裡不是單一功能，而是 retrieval、matching、latency control、cost control 的共同基礎層。</strong>
+</div>
+</section><section class="section" id="salary-prediction">
+<div class="section-header">
+<div class="kicker">2026-04-14 Update</div>
+<h2>薪資預測 v1：Hybrid RAG + Interval Estimation</h2>
+<p>
+      AI 助理現在除了傳統 RAG 問答，還多了一條「具體職缺薪資題」支線。這一版不是做全市場盲猜，而是只在
+      <strong>具體職缺、原始職缺沒有真實薪資</strong> 的情況下，回傳 <code>AI 預估月薪區間 + 相似職缺證據 + 限制說明</code>。
+    </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>產品行為</h3>
+<ul>
+<li>若 job card 或 assistant 指到的職缺已經有真實薪資，就直接優先顯示真實薪資。</li>
+<li>若是具體職缺薪資題，且職缺沒有真實薪資，就走薪資預估支線。</li>
+<li>若是「AI 工程師市場薪資大概多少」這種市場題，仍維持 RAG-only，不會硬做泛化預測。</li>
+<li>若模型檔不存在、信心不足、或特徵不足，assistant 會回退到純 RAG，job card 則不顯示 AI 預估 chip。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>模型與證據層</h3>
+<ul>
+<li>baseline 模型走 <code>TF-IDF + OneHot + numeric features + Ridge low/high regressor</code>。</li>
+<li>訓練資料來自 <code>jobs_latest.json</code> 與 <code>market_history.sqlite3</code> 的可解析薪資職缺。</li>
+<li>預測後不是只丟一組數字，而是再檢索 2-3 筆相似且有揭露薪資的職缺作 evidence。</li>
+<li>這條線是 <strong>Hybrid RAG + prediction</strong>，不是單純 LLM 自由生成，也不是純回歸黑盒。</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>薪資預測路徑何時會啟動</caption>
+<thead>
+<tr>
+<th>情境</th>
+<th>目前做法</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>職缺已有真實薪資</td>
+<td>直接顯示原始薪資，不覆蓋成 AI 預測</td>
+<td>避免和來源資料衝突，也保留資料可信度</td>
+</tr>
+<tr>
+<td>具體職缺 + 無薪資 + 模型可用 + confidence 足夠</td>
+<td>顯示 <code>AI 預估月薪 xx-yy</code>，並附 evidence citations</td>
+<td>這時候預測有明確對象，也有相似職缺可以支撐</td>
+</tr>
+<tr>
+<td>市場型薪資問題</td>
+<td>維持 RAG-only 市場摘要</td>
+<td>避免把角色市場行情和單一職缺估值混在一起</td>
+</tr>
+<tr>
+<td>模型不存在 / 信心不足 / 特徵不足</td>
+<td>assistant fallback 到純 RAG；job card 不顯示預估</td>
+<td>這條線寧願保守，不亂給數字</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout" style="margin-top:16px;">
+    這個設計很值得講，因為它代表你沒有把「薪資預測」做成脫離產品脈絡的研究模型，而是把它收斂成
+    <strong>只在證據足夠、場景明確、UI 不會和真實資料衝突時才啟用</strong> 的產品能力。
+  </div>
+</section>
+<section class="section" id="benchmarks">
+<div class="section-header">
+<div class="kicker">Evaluation</div>
+<h2>離線 benchmark 與目前暴露出來的真問題</h2>
+<p>
+              目前專案已有兩類 retrieval benchmark：一組偏標準題、一組偏真實提問。前者已飽和，後者才真正能反映現在的短板。這一輪又再往前走一步，把 prompt variant 與 retrieval baseline 綁進 release gate，讓 benchmark 不只是觀察工具，而是放版門檻的一部分。
+            </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>Benchmark 設計</h3>
+<ul>
+<li>資料：`data/jobs_latest.json`</li>
+<li>職缺數：34</li>
+<li>evaluation cases：19</li>
+<li>top-k：5</li>
+<li>strategy sweep：7 種 chunking / retrieval 組合</li>
+<li>metric：`hit@1 / hit@3 / hit@5 / MRR / source_hit_rate / target_hit_rate`</li>
+<li>baseline file：`benchmarks/rag_retrieval_baseline.json`</li>
+<li>gate 會同時記錄 `prompt_variant / prompt_version / retrieval_policy_version / chunking_policy_version`</li>
+</ul>
+</article>
+<article class="panel">
+<h3>怎麼解讀</h3>
+<ul>
+<li>`default` set 現在已經 100% 飽和，不再能區分策略優劣</li>
+<li>`realistic` set 才有辨識度，因為它更像真實使用者問法</li>
+<li>目前最好的是 `hybrid_layered`，不是現在 production 的 `current_structured`</li>
+<li>主要 miss 幾乎都集中在「工作內容題被市場技能 chunk 搶走」</li>
+<li>CI / release gate 現在鎖的是 production 用的 `current_structured` realistic baseline，不讓 `hit@1` 或 `MRR` 低於基線就直接放版</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>Default Set（已飽和）</caption>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Chunks</th>
+<th>Hit@1</th>
+<th>Hit@3</th>
+<th>Hit@5</th>
+<th>MRR</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>current_structured</td><td>427</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">1.000</td></tr>
+<tr><td>granular_itemized</td><td>885</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">1.000</td></tr>
+<tr><td>anchored_itemized</td><td>885</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">1.000</td></tr>
+<tr><td>anchored_windowed</td><td>975</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">1.000</td></tr>
+<tr><td>hybrid_layered</td><td>1223</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">100%</td><td class="score-good">1.000</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>Realistic Set（真正有辨識度）</caption>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Chunks</th>
+<th>Hit@1</th>
+<th>Hit@3</th>
+<th>Hit@5</th>
+<th>MRR</th>
+<th>解讀</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>current_structured</td>
+<td>427</td>
+<td class="score-warn">78.95%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-warn">0.807</td>
+<td>目前 production 主體；夠用，但工作內容題仍偏弱</td>
+</tr>
+<tr>
+<td>granular_itemized</td>
+<td>885</td>
+<td class="score-warn">78.95%</td>
+<td class="score-risk">78.95%</td>
+<td class="score-risk">78.95%</td>
+<td class="score-risk">0.789</td>
+<td>切更細不一定更好，若 market insight 仍搶前面，會放大噪音</td>
+</tr>
+<tr>
+<td>anchored_itemized</td>
+<td>885</td>
+<td class="score-risk">73.68%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-risk">0.781</td>
+<td>title anchoring 有幫助，但仍不夠解決工作內容 / 市場技能衝突</td>
+</tr>
+<tr>
+<td>hybrid_layered</td>
+<td>1223</td>
+<td class="score-good">84.21%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-good">0.842</td>
+<td><strong>目前 realistic set 最佳</strong>；值得當下一版 production 候選</td>
+</tr>
+<tr>
+<td>anchored_hybrid</td>
+<td>1269</td>
+<td class="score-warn">78.95%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-warn">84.21%</td>
+<td class="score-warn">0.816</td>
+<td>細節量更大，但沒有再比 hybrid_layered 多拿到真正有效的提升</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout">
+            目前最值得你在面試時主動講的 benchmark 結論是：<strong>default set 已飽和，realistic set 才能看出真問題，而真問題集中在 `work_content` 題被 `market-skill-insight` 搶走。</strong>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>Regression Gate（已接進 CI / Release）</caption>
+<thead>
+<tr>
+<th>項目</th>
+<th>目前設定</th>
+<th>目的</th>
+<th>目前限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>case set</td>
+<td>`realistic`</td>
+<td>避免 default set 飽和後失去辨識力</td>
+<td>仍是單輪 retrieval 題，不含 multi-turn</td>
+</tr>
+<tr>
+<td>gate strategy</td>
+<td>`current_structured`</td>
+<td>對齊 production 主體，不拿實驗分支當放版基準</td>
+<td>還沒做多策略 parallel gate</td>
+</tr>
+<tr>
+<td>quality floor</td>
+<td>`hit@1 &gt;= 0.75`、`MRR &gt;= 0.78`</td>
+<td>某版 prompt / retrieval 若退化，就不讓 CI / release 過關</td>
+<td>目前 gate 量的是 retrieval，不是 end-to-end answer quality</td>
+</tr>
+<tr>
+<td>version binding</td>
+<td>`prompt_variant / prompt_version / retrieval_policy_version / chunking_policy_version`</td>
+<td>出現回歸時能直接追是哪一版調整造成</td>
+<td>還沒做線上 A/B 統計</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="improvements">
+<div class="section-header">
+<div class="kicker">Gaps &amp; Improvements</div>
+<h2>目前最值得改善的點</h2>
+<p>
+              下面這些不是「想得到但還沒做」的 wishlist，而是根據現有 benchmark、live event 與結構觀察後，最值得優先處理的項目。
+            </p>
+</div>
+<div class="risk-list">
+<article class="note-card">
+<h3>1. `work_content` 題仍容易被市場技能 chunk 搶走</h3>
+<p>
+                這是現在最明確的 retrieval 問題。雖然你已經加了 specific job bonus 與 market penalty，但 realistic set 的 miss samples 仍顯示 `主要在做什麼` 類題目，前幾名常出現 `market-skill-insight`。
+              </p>
+<ul>
+<li>改善方向：把 `work_content` 題的 coarse candidate score 再往 `job-work-content` 傾斜</li>
+<li>改善方向：把 market insight 與 raw job detail 分 namespace 搜尋</li>
+<li>改善方向：對 `做什麼 / 職責 / 負責什麼` 類題單獨加 reranker</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>2. mode 設計仍混著題型、口吻、retrieval policy</h3>
+<p>
+                現在 `market_summary` 和 `general_chat` 的問題，不是 prompt 寫得差，而是 mode 名稱本身已經承載太多責任。這會讓 debug、ablation 與 prompt 演進越來越難。
+              </p>
+<ul>
+<li>改善方向：拆成 `subject_mode / tone_mode / retrieval_mode` 三層</li>
+<li>改善方向：讓 general chat 真的只管語氣，不要兼任檢索策略</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>3. 本地向量索引已存在，但 shared corpus 還未成熟</h3>
+<p>
+    現在本地已經能看到 <code>assistant_vector_index.sqlite3</code>，代表 persistent ANN 不再只是空的 code path。不過它目前仍是 product-local SQLite index，
+    不是多實例共享的索引服務，因此「有本地 index」不等於「向量基礎設施已經全部完成」。
+  </p>
+<ul>
+<li>改善方向：補 index health / corpus size / recall 監控</li>
+<li>改善方向：把本地 SQLite index 升級成 shared backend 或獨立索引服務</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>4. 延遲優化已上線，但還缺 steady-state 對照報表</h3>
+<p>
+                這輪已經把 chunk cache、runtime ANN sync、resume context、output budget 都往下收，而且 backend console 也已能看 cache hit / remote embedding / prompt version 分布；但目前 live `ai_monitoring_events` 還沒有一組「優化前 / 優化後」可直接對照的 steady-state 報表。
+              </p>
+<ul>
+<li>改善方向：把 deployment time / code version / tuning profile 寫進 monitoring metadata</li>
+<li>改善方向：把 usage tokens、retrieved source types、citation count、retrieval mode 一起落監控表</li>
+<li>改善方向：補一張優化前後 latency 對照報表，而不是只看單點平均值</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>5. 履歷 personalization 的 chunk 粒度仍太粗</h3>
+<p>
+                這一輪已經把履歷從 `resume-summary` 單塊升級成 facets + `resume-window-*`，所以 personalized guidance 的基礎比前一版好很多；但它仍然還不是 project-level / experience-level 的精細證據層。
+              </p>
+<ul>
+<li>改善方向：拆 experience / project / accomplishment / tool evidence chunks</li>
+<li>改善方向：把 resume retrieval 與 market retrieval 做雙路融合</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>6. Prompt A/B 已有版本治理，但 answer-quality gate 還沒補齊</h3>
+<p>
+                現在 prompt 已有 `control / compact_qa` 變體、也有 version registry，而且 CI / release 已接 retrieval regression gate。下一步要補的是「模型最後回答有沒有更好」，而不只是 retrieval 有沒有退步。
+              </p>
+<ul>
+<li>改善方向：補 answer-level review set，量摘要正確性、引用對齊、篇幅控制</li>
+<li>改善方向：把 `prompt_variant` 的線上事件分布做成 A/B 看板</li>
+</ul>
+</article>
+<article class="note-card">
+<h3>7. Snapshot lineage 已落 metadata，但還沒有獨立品質儀表板</h3>
+<p>
+                snapshot 現在已經會帶 `snapshot_kind / schema_version / data_quality / lineage / snapshot_query_signature`，對 debug 跨來源 merge 非常有幫助。不過這些資訊目前還主要活在 snapshot payload 裡，還沒被整理成單獨 dashboard。
+              </p>
+<ul>
+<li>改善方向：做 `source_record_id / canonical_identity_key / lineage trail` 查詢頁</li>
+<li>改善方向：把 dedupe rate / merge rate / detail enrichment rate 做成固定報表</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="roadmap">
+<div class="section-header">
+<div class="kicker">Roadmap</div>
+<h2>從現在這版系統往下一版 AI 平台演進的順序</h2>
+<p>
+              如果你想講得更像系統設計者，不要只講「我還想做 vector DB」。比較好的講法是明確說出演進順序，證明你知道先修什麼最划算。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>建議演進順序</caption>
+<thead>
+<tr>
+<th>優先級</th>
+<th>項目</th>
+<th>為什麼先做</th>
+<th>預期收益</th>
+<th>替代方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>work_content 專用 retrieval 修正</td>
+<td>目前真實 miss 最大宗就在這裡</td>
+<td>最直接提升 realistic set 精準度</td>
+<td>也可先加 cross-encoder reranker，但成本較高</td>
+</tr>
+<tr>
+<td>2</td>
+<td>answer-quality regression gate</td>
+<td>retrieval gate 已上線，但 end-to-end 回答品質還沒被 release gate 卡住</td>
+<td>把 prompt A/B 從「可切換」提升到「可放版治理」</td>
+<td>先維持人工 review checklist，但效率較差</td>
+</tr>
+<tr>
+<td>3</td>
+<td>resume detail chunking 第二階段</td>
+<td>第一階段 facets + windows 已落地，但 still missing experience / project evidence</td>
+<td>personalized guidance 會更像顧問，而不是 generic suggestion</td>
+<td>只維持目前 facets 模式，但 project-level explanation 會受限</td>
+</tr>
+<tr>
+<td>4</td>
+<td>mode 拆軸</td>
+<td>現在 debug 和 prompt 優化會被 mode 混責任拖慢</td>
+<td>提高 prompt 可維護性</td>
+<td>維持現狀，只加更多 mode；但會越來越亂</td>
+</tr>
+<tr>
+<td>5</td>
+<td>ANN backfill + live index observability</td>
+<td>向量索引程式已有，但還沒進入穩定 runtime</td>
+<td>支撐全庫搜尋與歷史檢索</td>
+<td>先維持 snapshot-centered only，不開全庫檢索</td>
+</tr>
+<tr>
+<td>6</td>
+<td>evaluation set 擴到 multi-turn / citation</td>
+<td>現在 realistic set 仍只有 19 題，且偏單輪 retrieval</td>
+<td>能更接近實際使用情境</td>
+<td>先補人工 review checklist</td>
+</tr>
+<tr>
+<td>7</td>
+<td>token / cost / citation 監控完整化</td>
+<td>目前成本與輸出品質還不能真正量化治理</td>
+<td>支撐 prompt A/B 與 budget policy</td>
+<td>只靠 OpenAI usage logs，但系統內無法 cross-check</td>
+</tr>
+<tr>
+<td>8</td>
+<td>lineage-driven quality dashboard</td>
+<td>snapshot version 與 lineage 已有，但目前還沒整理成固定診斷畫面</td>
+<td>跨來源 merge、資料品質與 AI context 來源會更好 debug</td>
+<td>維持 payload-level metadata，不做可視化</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="interview">
+<div class="section-header">
+<div class="kicker">Interview Script</div>
+<h2>面試時怎麼講這套 AI / LLM / RAG</h2>
+<p>
+              這一段不是技術文件，而是講法。你最好不要只背功能列表，而是用「產品問題 -&gt; AI 放在哪裡 -&gt; 現在做到哪裡 -&gt; 哪裡還沒做完」的順序講。
+            </p>
+</div>
+<div class="grid-2">
+<article class="interview-card">
+<h3>5 分鐘版本</h3>
+<ul>
+<li>這個產品不是純爬蟲，我把它做成求職工作台，AI 只是其中一層。</li>
+<li>AI 助理不是直接把所有資料丟給模型，而是先有市場快照，再把職缺切成結構化 chunks 做 hybrid retrieval。</li>
+<li>模型不是唯一核心，我同時做了 chunking、top-k routing、rerank bonus / penalty、離線 benchmark。</li>
+<li>目前 production realistic retrieval 還有 headroom，工作內容題最容易被市場技能 chunk 搶走，這是下一步會優先修的點。</li>
+<li>我也已經把長期向量索引的程式骨架落地，但 live corpus 還在收尾，這是我後續會補的基礎設施。</li>
+</ul>
+</article>
+<article class="interview-card">
+<h3>10 分鐘版本</h3>
+<ul>
+<li>先講產品：使用者真正要的是「快速理解這波職缺在要什麼」，不是單純抓資料。</li>
+<li>再講 AI 切面：assistant 問答、resume profile、resume-job matching、embedding cache / vector index 是四條不同能力，不混為一談。</li>
+<li>再講 retrieval：我不是只做 semantic search，而是 embedding + lexical + signal + source bonus + specific-job penalty 的 hybrid rank。</li>
+<li>再講數據：default benchmark 已飽和，但 realistic set 仍只有 78.95% hit@1；問題集中在工作內容題。這代表我有量測，也知道真正弱點在哪。</li>
+<li>最後講 roadmap：先修 retrieval 與 resume chunking，再把 ANN index 與 observability 完整接起來。</li>
+</ul>
+</article>
+</div>
+<div class="callout">
+            面試時最好的姿態不是把它講成「我都做完了」，而是講成：<strong>我知道這套系統現在已經到什麼成熟度、最真實的缺口在哪、下一步怎麼用最低成本把準確度拉高。</strong>
+</div>
+</section>
+<section class="section" id="agent-orchestration">
+<div class="section-header">
+<div class="kicker">2026-04-12 Update</div>
+<h2>AI 助理已從單純 RAG assistant 升級成求職工作流 agent</h2>
+<p>
+              這一輪沒有把既有 RAG 全部推倒重寫，而是在既有 `classify → retrieval → answer/report` 上面再包一層 orchestration。現在 AI 助理不只能回答問題，還會先進入 planning phase，先把任務拆成 plan steps；等使用者按下執行後，才進入 execution phase，逐步調用 tools，並在寫入型動作前停下來等使用者確認。
+            </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>這次實際改了什麼</h3>
+<ul>
+<li>新增 `JobSearchWorkflowAgent`，先判斷輸入要走 `assistant` 還是 `agent` 路徑。</li>
+<li>新增 `AgentIntent / AgentTaskPlan / AgentStep / AgentToolCall / AgentExecutionResult / AgentPendingConfirmation` 這組內部 schema。</li>
+<li>互動流程已明確拆成 `plan → execute → confirmation`，送出任務後先只顯示計畫，不會立刻動系統狀態。</li>
+<li>read tools 現在可直接執行：`inspect_snapshot`、`start_or_refresh_search`、`summarize_market_snapshot`、`generate_job_report`、`switch_main_tab`、`open_relevant_surface`。</li>
+<li>write tools 現在一定先過 confirmation gate：`save_assistant_profile`、`create_or_update_saved_search`、`update_notification_preferences`。</li>
+<li>如果更新個人背景時同時改了 `target role`，確認寫入後會順便刷新搜尋快照，不再只改 profile 卻保留舊職缺結果。</li>
+<li>AI 助理頁的個人化背景卡現在改成「履歷摘要 + 可補充表單」模式；即使已載入履歷，使用者仍可補充目標職缺、技能與地點，而 assistant 會真正使用合併後的 profile。</li>
+<li>UI 不另外做新 console，而是沿用原本 assistant page，用「聊天 + 任務卡」顯示計畫、結果、待確認寫入。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>為什麼這樣拆，而不是直接做通用 agent</h3>
+<ul>
+<li>這個產品的任務邊界很清楚，主要就是求職搜尋、報告、saved search、通知、個人背景這幾類工作流。</li>
+<li>底層 RAG 已經能回答市場問題，所以不需要把 retrieval / prompt 邏輯混進 agent；agent 只做 orchestration。</li>
+<li>先把 tools 固定在產品內已存在能力上，比直接開放通用 function calling 更可控，也更好測。</li>
+<li>寫入動作全部先確認，代表它還是 assistant-first，而不是自治型 agent，這比較符合求職場景。</li>
+<li>tab 切換現在也只在明確出現「切到 / 打開 / 開啟」時才觸發，避免把「技能」這類一般描述誤判成切頁指令。</li>
+</ul>
+</article>
+</div>
+<div class="grid-3" style="margin-top:16px;">
+<article class="panel">
+<h3>執行流程</h3>
+<ul>
+<li>1. 使用者提問。</li>
+<li>2. agent router 判斷這題是一般問答、RAG 問答，還是 workflow task。</li>
+<li>3. 若走 agent，先只產生 plan steps，讓使用者先看到這次打算怎麼做。</li>
+<li>4. 使用者按下「開始執行計畫」後，executor 才逐步執行 tools。</li>
+<li>5. 只要遇到 write tool，就先產生變更摘要卡，等待使用者確認。</li>
+<li>6. 確認後才真的寫入，最後回傳結果摘要與下一個建議入口。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>這樣做的優點</h3>
+<ul>
+<li>把「回答」和「動作」分開，避免本來只想問問題卻被直接改設定。</li>
+<li>既有 RAG assistant 不用重寫，風險比整顆改成 agent 小很多。</li>
+<li>任務卡可直接展示給使用者看，也很適合面試時講系統演進。</li>
+<li>read / write tools 有清楚邊界，之後要補 multi-agent 或 background jobs 也比較好接。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>第一版仍刻意保留的限制</h3>
+<ul>
+<li>只處理求職工作流，不做通用 agent。</li>
+<li>一個使用者一次只跑一個 agent task，不做多任務並行。</li>
+<li>guest user 不允許持久化寫入。</li>
+<li>agent 不碰 backend console、database 與 operator-only surface。</li>
+<li>背景自治排程 agent 也還沒開，這一版是同步互動式 agent。</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>Agent orchestration 現在怎麼對接既有 AI / RAG</caption>
+<thead>
+<tr>
+<th>層級</th>
+<th>現在的責任</th>
+<th>和原本系統的關係</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>agent router / planner</td>
+<td>判斷是不是 workflow task、拆步驟、選 tool、處理 confirmation。</td>
+<td>是新加的一層，不取代既有 assistant。</td>
+</tr>
+<tr>
+<td>assistant answer / report</td>
+<td>回答市場問題、生成求職報告。</td>
+<td>仍是原本 `JobMarketRAGAssistant` 在做，agent 只是把它包成 tool。</td>
+</tr>
+<tr>
+<td>crawl / snapshot</td>
+<td>啟動搜尋、刷新市場快照、切換工作台。</td>
+<td>直接複用現有 crawl application 與 UI state。</td>
+</tr>
+<tr>
+<td>saved search / notifications / profile</td>
+<td>保存搜尋、通知條件、AI 助理個人背景。</td>
+<td>沿用既有 store / user_data_store，但現在多了一層 confirmation 與 audit。</td>
+</tr>
+<tr>
+<td>observability / audit</td>
+<td>每個 tool call 都記 `trace_id`、intent、status、latency；寫入會多 audit event。</td>
+<td>不是另建新系統，而是接回原本的 AI monitoring 與 audit log。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout" style="margin-top:16px;">
+            這次最值得講的，不是「我把 AI 助理變得更聰明」，而是 <strong>我把它從只會回答問題的 RAG assistant，推進成可規劃、可執行、可確認、可稽核的 job workflow agent</strong>。這是產品成熟度很明顯的一步。
+          </div>
+</section>
+<section class="section" id="ops-update">
+<div class="section-header">
+<div class="kicker">2026-04-11 Update</div>
+<h2>觀測、版本治理與延遲控制新狀態</h2>
+<p>
+              這輪不是再調回答文案，而是把 AI / LLM / RAG 這條線往 production hardening 推：補上 trace、prompt/version registry、cache efficiency 指標、backend status build/schema 報表，以及更清楚的 deployment / release 治理骨架。
+            </p>
+</div>
+<div class="grid-2">
+<article class="panel">
+<h3>新增的 runtime metadata</h3>
+<ul>
+<li>assistant 事件現在會記錄 `selected_model`、`answer_mode`、`top_k`、`chunk_cache_hit`、`persistent_ann_candidates`。</li>
+<li>retrieval 事件會記錄 `candidate_chunk_count`、`retrieval_scored_chunk_count`、`retrieved_chunk_count`。</li>
+<li>embedding 路徑會記錄 `embedding_memory_hits / embedding_disk_hits / embedding_remote_texts / embedding_remote_batches`。</li>
+<li>resume 路徑會記錄 `profile_cache_memory_hit / profile_cache_disk_hit / profile_cache_write`、`title_cache_memory_hits / title_cache_disk_hits`。</li>
+<li>assistant / resume 監控事件都已加上 `trace_id` 與標準化 `error_kind`。</li>
+<li>assistant 事件也會記錄 `prompt_variant` 與 `prompt_version`，方便之後做 A/B 與 release 對照。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>這輪真正補到的治理能力</h3>
+<ul>
+<li>build info 已顯性化：`package_version / api_version / deploy_env / release_channel / git_sha`。</li>
+<li>schema registry 已顯性化：`product_state / query_runtime / market_history / auth / audit / prompt_registry`。</li>
+<li>backend status 報表現在會帶 AI latency budgets、cache efficiency 與 recent audit event 概況。</li>
+<li>logging 已支援 `text / json` 兩種格式，且可在 log 上直接看到 `trace_id`。</li>
+<li>CI / release workflow、changelog、deployment runbook 已補進 repo，讓 prompt / schema / AI tuning 能納入 release discipline。</li>
+<li>snapshot payload 現在會帶 `snapshot_kind / schema_version / data_quality / lineage / snapshot_query_signature`，AI 之後可直接追到資料來路。</li>
+</ul>
+</article>
+</div>
+<div class="grid-2" style="margin-top:16px;">
+<article class="panel">
+<h3>這輪真正新增的 AI / RAG 能力</h3>
+<ul>
+<li>prompt variant 已落地，支援 `control / compact_qa`，並綁版本 registry。</li>
+<li>benchmark 現在不只是報表，CI / release 會用 `realistic` set baseline 做 regression gate。</li>
+<li>backend console 已新增 `AI Cache / ANN 效率` 與 `Prompt / Retrieval / Model 版本分布`。</li>
+<li>resume chunking 第一階段已上線，不再只有 `resume-summary` 單塊。</li>
+<li>snapshot 已補 lineage 與 schema version，讓 AI context 的 provenance 可追。</li>
+</ul>
+</article>
+<article class="panel">
+<h3>現在仍然要誠實講的限制</h3>
+<ul>
+<li>release gate 目前量的是 retrieval，不是最終 answer quality。</li>
+<li>cache dashboard 已進 backend console，但還不是外部 metrics backend。</li>
+<li>resume chunking 仍未做到 `experience / project / accomplishment` 結構層。</li>
+<li>snapshot lineage 已在 payload 裡，但尚未整理成獨立 data quality dashboard。</li>
+</ul>
+</article>
+</div>
+<div class="table-wrap" style="margin-top:16px;">
+<table>
+<caption>這輪新增的 AI / RAG 可觀測欄位</caption>
+<thead>
+<tr>
+<th>欄位</th>
+<th>用途</th>
+<th>你面試時可以怎麼講</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>`trace_id`</td>
+<td>把 UI 互動、AI 監控、log 事件串成同一條請求鏈。</td>
+<td>我不是只看平均延遲，而是能追同一次互動從前端到 LLM 的路徑。</td>
+</tr>
+<tr>
+<td>`selected_model`</td>
+<td>把 mode-based model routing 顯性化，分辨正式 QA 與 general chat 實際用了哪個模型。</td>
+<td>我後面如果做 model routing A/B，不需要重新猜每次用的是哪個模型。</td>
+</tr>
+<tr>
+<td>`prompt_variant`</td>
+<td>把 prompt A/B 與 release baseline 對齊，知道現在線上到底用哪個語氣 / 篇幅策略。</td>
+<td>這讓 prompt 調整不再只是文案微調，而是可以進版控與 regression gate。</td>
+</tr>
+<tr>
+<td>`prompt_version / retrieval_policy_version / chunking_policy_version / persistent_index_version`</td>
+<td>讓 AI tuning 與 release 之間有版本對照。</td>
+<td>之後如果 benchmark 漂移，我可以直接對照是哪一版 prompt 或 retrieval policy 造成的。</td>
+</tr>
+<tr>
+<td>`embedding_* hits`</td>
+<td>把 cache hit 與 remote embedding 成本拆出來看。</td>
+<td>延遲不是只看整體平均值，我也能看是哪一層 cache 沒打中。</td>
+</tr>
+<tr>
+<td>`profile/title cache hits`</td>
+<td>觀察履歷抽取與 title-similarity 這兩條 AI 副路徑是否有重複成本。</td>
+<td>resume 不只是單次分析，我已經把 extraction 與 matching 拆開監控。</td>
+</tr>
+<tr>
+<td>`snapshot_kind / schema_version / data_quality / lineage`</td>
+<td>讓 AI / resume 吃的市場上下文具備版本與來源可追性。</td>
+<td>如果某次 merge 或來源品質出問題，我可以從 snapshot 直接往回追資料來路。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout" style="margin-top:16px;">
+            這輪最關鍵的提升不是「又多做了一個 benchmark」，而是讓 <strong>AI tuning 可以被版本化、被追蹤、被回溯</strong>。這會把系統從 demo 進一步推向可維運產品。
+          </div>
+</section>
+<section class="section" id="failure">
+<div class="section-header">
+<div class="kicker">Failure Modes</div>
+<h2>AI / LLM / RAG 最容易出問題的點與現在的應對</h2>
+<p>
+              完整報告不只要講做了什麼，還要能講哪裡最容易壞、目前如何觀測、還有什麼沒補完。這一段是你面試時很加分的地方，因為它顯示你不是只會堆功能。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>主要風險點</caption>
+<thead>
+<tr>
+<th>風險點</th>
+<th>現象</th>
+<th>目前應對</th>
+<th>仍待補強</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>retrieval 命中錯誤 chunk</td>
+<td>問某個缺在做什麼，卻先回市場技能摘要</td>
+<td>specific job bonus、market penalty、top-k routing、benchmark realistic set</td>
+<td>work_content 專用 reranker / namespace split</td>
+</tr>
+<tr>
+<td>OpenAI 依賴延遲或失敗</td>
+<td>assistant / resume 變慢或失敗</td>
+<td>cache、token budget、error_kind、latency monitoring</td>
+<td>更完整 alerting 與 fallback policy</td>
+</tr>
+<tr>
+<td>prompt 調整造成品質回歸</td>
+<td>回答風格或 grounding 變差</td>
+<td>prompt version registry、retrieval regression gate</td>
+<td>answer-quality gate / A-B 統計</td>
+</tr>
+<tr>
+<td>resume personalization 不夠細</td>
+<td>建議太 generic，不像真的顧問</td>
+<td>facets + resume windows 已落地</td>
+<td>experience / project evidence chunks</td>
+</tr>
+<tr>
+<td>lineage 不透明</td>
+<td>難追某次 snapshot 為何 merge 成那樣</td>
+<td>snapshot `data_quality / lineage / schema_version` 已落 payload</td>
+<td>獨立 data quality dashboard</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="appendix">
+<div class="section-header">
+<div class="kicker">Appendix</div>
+<h2>模組地圖與你可以點名的實作位置</h2>
+<p>
+              如果面試官追問「這些規則在哪裡？」，你可以直接講模組位置，這會比只說概念更有說服力。
+            </p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>核心模組對照</caption>
+<thead>
+<tr>
+<th>責任</th>
+<th>模組</th>
+<th>你可以怎麼講</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>回答主流程</td>
+<td>`src/job_spy_tw/assistant/service.py`</td>
+<td>answer mode、top-k routing、是否檢索、comparison coverage 都在這裡。</td>
+</tr>
+<tr>
+<td>chunking</td>
+<td>`src/job_spy_tw/assistant/chunks.py`</td>
+<td>目前是 product chunking，不是 generic token splitter。</td>
+</tr>
+<tr>
+<td>retrieval / rerank</td>
+<td>`src/job_spy_tw/assistant/retrieval.py`</td>
+<td>hybrid score、source bonus、specific job penalty、diversity selection 都在這裡。</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td>`src/job_spy_tw/assistant/prompts.py`</td>
+<td>answer mode block、style block、question focus 都在 prompt builder 裡。</td>
+</tr>
+<tr>
+<td>長期向量索引</td>
+<td>`src/job_spy_tw/assistant/vector_index.py`</td>
+<td>目前已經有 persistent ANN code path，但 live corpus 尚未成熟。</td>
+</tr>
+<tr>
+<td>benchmark</td>
+<td>`src/job_spy_tw/assistant/chunking_eval.py`、`scripts/benchmark_chunking_strategies.py`</td>
+<td>已有 default / realistic evaluation set，可做 chunking 與 retrieval sweep。</td>
+</tr>
+<tr>
+<td>履歷分析</td>
+<td>`src/job_spy_tw/resume/extractors.py`、`src/job_spy_tw/resume/matchers.py`</td>
+<td>profile extraction 與 resume-job semantic matching 是另一條 AI 鏈。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<aside class="toc">
+<h2>AI 專章索引</h2>
+<ol>
+<li><a href="#scope">AI 範圍</a></li>
+<li><a href="#live">live 數據</a></li>
+<li><a href="#models">模型與路由</a></li>
+<li><a href="#architecture">執行結構圖</a></li>
+<li><a href="#modes">mode 與 prompt</a></li>
+<li><a href="#resume-ai">履歷 AI 鏈</a></li>
+<li><a href="#chunking">chunking 狀態</a></li>
+<li><a href="#retrieval">retrieval / rerank / top-k</a></li>
+<li><a href="#ann">ANN / 向量索引</a></li>
+<li><a href="#embedding">embedding / cache / 向量層</a></li>
+<li><a href="#benchmarks">benchmark</a></li>
+<li><a href="#improvements">改善點</a></li>
+<li><a href="#roadmap">演進順序</a></li>
+<li><a href="#interview">面試講法</a></li>
+<li><a href="#agent-orchestration">workflow agent 升級</a></li>
+<li><a href="#ops-update">觀測與版本治理更新</a></li>
+<li><a href="#failure">失效模式</a></li>
+<li><a href="#appendix">模組附錄</a></li>
+<li><a href="#top">回到頂部</a></li>
+</ol>
+</aside>
+</div>
+<footer class="footer">
+<p>這份頁面是 AI / LLM / RAG 深度報告，現在也同步納入 workflow agent orchestration、confirmation gate、tool 分層與觀測設計。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</div>
+</body>
+</html>

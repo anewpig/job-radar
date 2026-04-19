@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Job Radar Learning Curriculum</title>
+<style>
+    :root {
+      --bg: #f7f4ff;
+      --surface: rgba(255,255,255,0.9);
+      --surface-soft: #f4efff;
+      --line: rgba(104,82,176,0.14);
+      --text: #201936;
+      --muted: #6b6188;
+      --accent: #6a52d8;
+      --accent-strong: #4f34c7;
+      --accent-soft: rgba(106,82,216,0.1);
+      --good: #15803d;
+      --warn: #b45309;
+      --danger: #b42318;
+      --shadow: 0 22px 64px rgba(93,69,175,0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --max: 1500px;
+      --toc: 290px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "SF Pro TC", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(169,147,255,0.24), transparent 34%),
+        radial-gradient(circle at top right, rgba(255,223,241,0.28), transparent 30%),
+        linear-gradient(180deg, #fbf8ff 0%, #f4efff 100%);
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 20px 120px;
+    }
+
+    .hero,
+    .section,
+    .toc,
+    .card,
+    .metric,
+    .track-card,
+    .lesson-card,
+    .table-wrap,
+    .footer,
+    .callout,
+    details.component {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 34px;
+      margin-bottom: 22px;
+      background:
+        radial-gradient(circle at 10% 18%, rgba(169,147,255,0.3), transparent 24%),
+        radial-gradient(circle at 92% 14%, rgba(255,229,246,0.54), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(244,239,255,0.98));
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -90px -90px auto;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      border: 1px solid rgba(106,82,216,0.08);
+      box-shadow: 0 0 0 36px rgba(106,82,216,0.05), 0 0 0 88px rgba(106,82,216,0.03);
+      pointer-events: none;
+    }
+
+    .eyebrow,
+    .kicker,
+    .pill,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      color: var(--accent-strong);
+      font-size: 13px;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      max-width: 1000px;
+    }
+
+    .hero p,
+    .section-header p,
+    .card p,
+    .metric p,
+    .track-card p,
+    .lesson-card p,
+    .callout p,
+    .footer p,
+    .table-wrap td,
+    .table-wrap th,
+    .table-wrap li,
+    details.component p {
+      color: var(--muted);
+      line-height: 1.78;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 1080px;
+      font-size: 17px;
+    }
+
+    .hero-grid,
+    .metric-grid,
+    .track-grid,
+    .lesson-grid,
+    .two-col,
+    .three-col,
+    .four-col,
+    .practice-grid,
+    .plan-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero-grid {
+      grid-template-columns: 1.4fr 0.95fr;
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .metric-grid,
+    .track-grid,
+    .lesson-grid,
+    .practice-grid,
+    .plan-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card,
+    .metric,
+    .track-card,
+    .lesson-card,
+    .callout,
+    .footer {
+      padding: 20px;
+    }
+
+    .section {
+      padding: 28px;
+    }
+
+    .section-header {
+      margin-bottom: 18px;
+    }
+
+    .card h2,
+    .section-header h2 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+    }
+
+    .track-card h3,
+    .lesson-card h3,
+    .callout h3,
+    .footer h3,
+    details.component summary,
+    .table-wrap caption {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .kicker {
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      background: rgba(106,82,216,0.08);
+      color: var(--accent-strong);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 30px;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    .pill,
+    .tag {
+      padding: 7px 11px;
+      font-size: 11px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.74);
+      color: var(--accent-strong);
+    }
+
+    .tag {
+      background: var(--accent-soft);
+      border-color: rgba(106,82,216,0.14);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--toc);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+      background: rgba(255,255,255,0.86);
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .toc a { text-decoration: none; }
+
+    .hero-list,
+    .check-list,
+    .module-list,
+    .step-list {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .hero-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding-left: 0;
+      list-style: none;
+      gap: 10px;
+    }
+
+    .hero-list li {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .track-card {
+      background: rgba(255,255,255,0.84);
+      border-radius: 22px;
+    }
+
+    .track-card em,
+    .lesson-card em {
+      display: inline-block;
+      margin-bottom: 10px;
+      font-style: normal;
+      color: var(--accent-strong);
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .lesson-card {
+      background: rgba(255,255,255,0.82);
+      border-radius: 22px;
+    }
+
+    .table-wrap {
+      padding: 18px 20px;
+      overflow-x: auto;
+      border-radius: 22px;
+      margin-top: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 14px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: var(--accent-strong);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .callout.good { border-color: rgba(21,128,61,0.2); }
+    .callout.warn { border-color: rgba(180,83,9,0.2); }
+    .callout.danger { border-color: rgba(180,35,24,0.2); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+      background: rgba(106,82,216,0.08);
+      color: var(--accent-strong);
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+
+    details.component {
+      padding: 18px 20px;
+    }
+
+    details.component summary {
+      cursor: pointer;
+      list-style: none;
+      margin: 0 0 8px;
+    }
+
+    details.component summary::-webkit-details-marker { display: none; }
+
+    .footer {
+      margin-top: 20px;
+      padding: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .footer-links a {
+      text-decoration: none;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(106,82,216,0.08);
+      border: 1px solid var(--line);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    @media (max-width: 1180px) {
+      .layout,
+      .hero-grid,
+      .metric-grid,
+      .track-grid,
+      .lesson-grid,
+      .two-col,
+      .three-col,
+      .four-col,
+      .practice-grid,
+      .plan-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .toc { position: static; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+<header class="hero">
+<div class="eyebrow">Learning Map</div>
+<h1>透過 Job Radar 專案，你可以學到什麼</h1>
+<p>
+        這份頁面不是介紹功能，而是把這個專案當成教材，拆成一套可學習的課綱。
+        你可以把它當成「從 side project 走向產品與系統設計」的地圖。每一條學習路線都會對應到這個專案裡真實存在的模組與決策，不是抽象空談。
+      </p>
+<div class="hero-grid">
+<section class="card">
+<h2>你能學到的核心能力</h2>
+<ul class="hero-list">
+<li>怎麼把一個工具重新定義成產品，而不是只會做功能。</li>
+<li>怎麼從使用者問題反推功能、狀態與資料邊界。</li>
+<li>怎麼做同步 / 非同步流程切分，讓產品真的能跑。</li>
+<li>怎麼讓 AI 當 enhancement，而不是變成不穩定的核心依賴。</li>
+<li>怎麼拆 DB、拆模組、拆責任，讓系統不失控。</li>
+<li>怎麼從 prototype 往可營運產品演進，而不是一直重寫。</li>
+</ul>
+</section>
+<section class="card">
+<h2>適合誰看</h2>
+<div class="metric-grid">
+<article class="metric">
+<strong>PM</strong>
+<p>學產品定位、JTBD、留存、路線圖、功能優先順序。</p>
+</article>
+<article class="metric">
+<strong>工程師</strong>
+<p>學狀態設計、資料流、模組邊界、AI integration、營運思維。</p>
+</article>
+<article class="metric">
+<strong>創作者</strong>
+<p>學怎麼把 side project 做成能持續長大的產品骨架。</p>
+</article>
+</div>
+</section>
+</div>
+</header>
+<div class="layout">
+<main class="main">
+<section class="section" id="tracks">
+<div class="section-header">
+<div class="kicker">01 Learning Tracks</div>
+<h2>六條主學習路線</h2>
+<p>你不一定要照順序全部學，但這六條基本上就是這個專案最有教材價值的地方。</p>
+</div>
+<div class="track-grid">
+<article class="track-card">
+<em>Track A</em>
+<h3>產品思考</h3>
+<p>學怎麼從「職缺爬蟲」重新定義成「求職工作台」，理解定位、JTBD、旅程、價值鏈、KPI、留存與產品路線。</p>
+<div class="pill-row">
+<span class="pill">定位</span>
+<span class="pill">JTBD</span>
+<span class="pill">留存</span>
+</div>
+</article>
+<article class="track-card">
+<em>Track B</em>
+<h3>系統設計</h3>
+<p>學怎麼切同步 / 非同步流程、狀態 ownership、模組邊界、查詢身份、背景 worker 與產品 runtime。</p>
+<div class="pill-row">
+<span class="pill">queue</span>
+<span class="pill">runtime</span>
+<span class="pill">ownership</span>
+</div>
+</article>
+<article class="track-card">
+<em>Track C</em>
+<h3>AI 產品化</h3>
+<p>學 RAG 怎麼接產品、履歷分析怎麼 fallback-first、AI 監控怎麼做、AI 該放在哪一層。</p>
+<div class="pill-row">
+<span class="pill">RAG</span>
+<span class="pill">fallback</span>
+<span class="pill">monitoring</span>
+</div>
+</article>
+<article class="track-card">
+<em>Track D</em>
+<h3>資料與 DB</h3>
+<p>學多個 SQLite 邊界怎麼切、產品資料與執行資料怎麼分、歷史資料與即時資料怎麼共存。</p>
+<div class="pill-row">
+<span class="pill">product state</span>
+<span class="pill">query runtime</span>
+<span class="pill">history</span>
+</div>
+</article>
+<article class="track-card">
+<em>Track E</em>
+<h3>前端架構</h3>
+<p>學 UI 不只是版面，而是導航、session state、launcher、頁面 orchestration、section renderer、styles 模組化。</p>
+<div class="pill-row">
+<span class="pill">navigation</span>
+<span class="pill">session</span>
+<span class="pill">sections</span>
+</div>
+</article>
+<article class="track-card">
+<em>Track F</em>
+<h3>重構與營運</h3>
+<p>學怎麼把大檔拆乾淨、保留相容入口、補 smoke test、做備份、監控、runbook 與維運思維。</p>
+<div class="pill-row">
+<span class="pill">refactor</span>
+<span class="pill">backup</span>
+<span class="pill">ops</span>
+</div>
+</article>
+</div>
+</section>
+<section class="section" id="curriculum">
+<div class="section-header">
+<div class="kicker">02 Curriculum</div>
+<h2>建議課綱順序</h2>
+<p>如果你要真的把它學進腦子裡，而不是只看熱鬧，我建議照下面順序走。</p>
+</div>
+<div class="lesson-grid">
+<article class="lesson-card">
+<em>Lesson 1</em>
+<h3>先重新定義產品</h3>
+<p>先回答這個專案到底在賣什麼價值。學會把「抓資料」升級成「幫助求職決策」。</p>
+<ul class="step-list">
+<li>產品定位</li>
+<li>核心承諾</li>
+<li>使用者旅程</li>
+<li>留存機制</li>
+</ul>
+</article>
+<article class="lesson-card">
+<em>Lesson 2</em>
+<h3>學會切狀態與資料邊界</h3>
+<p>你會理解為什麼有 session、product store、query runtime、history store，不是所有東西都塞一個地方。</p>
+<ul class="step-list">
+<li>state ownership</li>
+<li>query signature</li>
+<li>snapshot boundary</li>
+<li>saved search identity</li>
+</ul>
+</article>
+<article class="lesson-card">
+<em>Lesson 3</em>
+<h3>學同步 / 非同步設計</h3>
+<p>你會理解哪些流程該在畫面上等，哪些該交給 scheduler / worker。</p>
+<ul class="step-list">
+<li>初始波查詢</li>
+<li>背景刷新</li>
+<li>queue lease</li>
+<li>retry / finalize</li>
+</ul>
+</article>
+<article class="lesson-card">
+<em>Lesson 4</em>
+<h3>學 AI 怎麼放對位置</h3>
+<p>這個專案可以直接教你 AI 不應該當唯一 source of truth，而是做理解層與增強層。</p>
+<ul class="step-list">
+<li>履歷 fallback-first</li>
+<li>snapshot-centered RAG</li>
+<li>AI monitoring</li>
+<li>token / cache 策略</li>
+</ul>
+</article>
+<article class="lesson-card">
+<em>Lesson 5</em>
+<h3>學 UI 與頁面分層</h3>
+<p>你會看到複雜 UI 不是只靠一個頁面大檔撐，而是 orchestration、actions、sections、styles 分開。</p>
+<ul class="step-list">
+<li>page orchestration</li>
+<li>actions / sections</li>
+<li>navigation / launcher</li>
+<li>style modules</li>
+</ul>
+</article>
+<article class="lesson-card">
+<em>Lesson 6</em>
+<h3>學怎麼把專案做成可營運</h3>
+<p>不是只有能跑，而是知道怎麼備份、怎麼看健康、怎麼分類失敗、怎麼擴充。</p>
+<ul class="step-list">
+<li>backup / restore</li>
+<li>monitoring KPI</li>
+<li>maintenance</li>
+<li>roadmap</li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="teach-topics">
+<div class="section-header">
+<div class="kicker">03 What It Teaches</div>
+<h2>透過這個專案，你能被教會的東西</h2>
+<p>下面這張表是最實用的部分。它不是介紹名詞，而是直接告訴你這個專案能教你哪一類真本事。</p>
+</div>
+<div class="table-wrap">
+<table>
+<caption>Job Radar 可教的能力地圖</caption>
+<thead>
+<tr>
+<th>能力</th>
+<th>在這個專案裡怎麼學</th>
+<th>你會真正理解什麼</th>
+<th>如果學會了能做什麼</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>產品定位</td>
+<td>從搜尋、saved search、履歷分析、AI 助理、看板串起來看整體價值鏈。</td>
+<td>工具和產品的差別。</td>
+<td>你之後做任何 side project，都更能想清楚真正賣的是什麼。</td>
+</tr>
+<tr>
+<td>產品旅程設計</td>
+<td>看第一次搜尋、第二次回來、定期刷新、通知、追蹤與看板之間的關聯。</td>
+<td>activation、retention、action 不是三個分開的功能。</td>
+<td>你能設計更完整的使用者旅程，而不是只做頁面功能。</td>
+</tr>
+<tr>
+<td>系統分層</td>
+<td>研究 UI、service、store、runtime、scheduler、worker 的邊界。</td>
+<td>同一個產品怎麼同時有同步互動與背景工作。</td>
+<td>你能設計更穩的中小型產品系統。</td>
+</tr>
+<tr>
+<td>資料邊界</td>
+<td>看多個 SQLite 與 snapshots 的分工。</td>
+<td>不是所有資料都應該放同一個 DB。</td>
+<td>你之後做 SaaS、internal tool、AI 產品都比較不會把資料做亂。</td>
+</tr>
+<tr>
+<td>AI 產品化</td>
+<td>看履歷分析、RAG、fallback、monitoring。</td>
+<td>AI 該放在什麼位置才合理。</td>
+<td>你可以設計更穩、更可控的 AI 功能，而不是只會 call API。</td>
+</tr>
+<tr>
+<td>前端架構</td>
+<td>看 navigation、launcher、page actions、section renderers、style modules。</td>
+<td>複雜 UI 怎麼維持可讀性。</td>
+<td>你能把越做越大的前端保持可維護。</td>
+</tr>
+<tr>
+<td>重構能力</td>
+<td>這次你前面做的 20 多輪拆檔，本身就是教材。</td>
+<td>怎麼拆大檔、保相容、清責任邊界。</td>
+<td>你之後接手爛專案時，會比較知道怎麼下刀。</td>
+</tr>
+<tr>
+<td>營運思維</td>
+<td>看 scheduler、worker、backup、maintenance、notification、health views。</td>
+<td>產品做出來後，不是放著就好。</td>
+<td>你會開始思考 runbook、告警、備份、恢復與健康度。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="section" id="repo-map">
+<div class="section-header">
+<div class="kicker">04 Repo Map</div>
+<h2>每一條學習線，對應到哪些檔案</h2>
+<p>你如果真的要學，最好知道去哪裡看。下面是我會叫你直接對照的模組。</p>
+</div>
+<div class="two-col">
+<article class="track-card">
+<h3>產品與系統思考</h3>
+<ul class="module-list">
+<li><code>src/job_spy_tw/crawl_application_service.py</code></li>
+<li><code>src/job_spy_tw/query_runtime.py</code></li>
+<li><code>src/job_spy_tw/product_store.py</code></li>
+<li><code>src/job_spy_tw/ui/bootstrap*.py</code></li>
+<li><code>src/job_spy_tw/ui/session*.py</code></li>
+</ul>
+</article>
+<article class="track-card">
+<h3>抓取與資料流</h3>
+<ul class="module-list">
+<li><code>src/job_spy_tw/pipeline.py</code></li>
+<li><code>src/job_spy_tw/connectors/*.py</code></li>
+<li><code>src/job_spy_tw/market_analysis/analyzer.py</code></li>
+<li><code>src/job_spy_tw/storage.py</code></li>
+<li><code>src/job_spy_tw/market_history_store.py</code></li>
+</ul>
+</article>
+<article class="track-card">
+<h3>AI</h3>
+<ul class="module-list">
+<li><code>src/job_spy_tw/resume/*.py</code></li>
+<li><code>src/job_spy_tw/assistant/*.py</code></li>
+<li><code>src/job_spy_tw/ui/assistant_actions.py</code></li>
+<li><code>src/job_spy_tw/ui/pages_resume_actions.py</code></li>
+<li><code>src/job_spy_tw/store/metrics.py</code></li>
+</ul>
+</article>
+<article class="track-card">
+<h3>前端與重構</h3>
+<ul class="module-list">
+<li><code>src/job_spy_tw/ui/navigation*.py</code></li>
+<li><code>src/job_spy_tw/ui/search_setup*.py</code></li>
+<li><code>src/job_spy_tw/ui/pages_*.py</code></li>
+<li><code>src/job_spy_tw/ui/styles.py</code> 與 style modules</li>
+<li><code>src/job_spy_tw/ui/assistant_launcher*.py</code></li>
+</ul>
+</article>
+</div>
+</section>
+<section class="section" id="practice">
+<div class="section-header">
+<div class="kicker">05 Practice</div>
+<h2>如果我真的要教你，我會叫你做哪些練習</h2>
+<p>學系統設計不是只讀文章。下面這些練習都能直接用這個專案來做。</p>
+</div>
+<div class="practice-grid">
+<article class="lesson-card">
+<em>Practice 1</em>
+<h3>重寫產品定位</h3>
+<p>用一句話、一段 50 字說明、一段 150 字說明，重新定義這個專案在賣什麼。</p>
+</article>
+<article class="lesson-card">
+<em>Practice 2</em>
+<h3>畫 state ownership 圖</h3>
+<p>把 session、product store、runtime queue、history store、user submissions 的責任畫出來。</p>
+</article>
+<article class="lesson-card">
+<em>Practice 3</em>
+<h3>拆同步 / 非同步流程</h3>
+<p>把搜尋、履歷分析、AI 助理、saved search 刷新分成應該同步和應該背景化的部分。</p>
+</article>
+<article class="lesson-card">
+<em>Practice 4</em>
+<h3>設計 KPI 儀表板</h3>
+<p>定義 activation、retention、crawl health、AI cost 四種指標，寫出你要看什麼。</p>
+</article>
+<article class="lesson-card">
+<em>Practice 5</em>
+<h3>設計企業版擴充</h3>
+<p>想像你要做 team workspace，畫出 user / workspace / role / shared search / shared board 模型。</p>
+</article>
+<article class="lesson-card">
+<em>Practice 6</em>
+<h3>做 AI fallback 設計</h3>
+<p>針對履歷分析與助理問答，分別定義 blocked、fallback、error 三種狀態與 UI 表現。</p>
+</article>
+</div>
+</section>
+<section class="section" id="paths">
+<div class="section-header">
+<div class="kicker">06 Learning Paths</div>
+<h2>如果你是不同角色，我會怎麼教你</h2>
+<p>同一個專案，可以教不同角色不同東西。重點是順序不一樣。</p>
+</div>
+<div class="three-col">
+<article class="callout good">
+<h3>PM 路線</h3>
+<p>先學產品定位、JTBD、旅程、KPI、路線圖，再看系統拓樸。不要一開始就鑽實作細節。</p>
+</article>
+<article class="callout">
+<h3>工程師路線</h3>
+<p>先學 state、資料流、同步 / 非同步，再看 UI 分層與 AI integration。這樣最能把技術和產品對起來。</p>
+</article>
+<article class="callout warn">
+<h3>創業者路線</h3>
+<p>先學產品定位、留存機制、可營運性、成本與 AI 位置。你最需要的是知道什麼該先做、什麼不該先做。</p>
+</article>
+</div>
+</section>
+<section class="section" id="plan">
+<div class="section-header">
+<div class="kicker">07 30-Day Plan</div>
+<h2>如果你要用這個專案練功，建議 30 天學習計畫</h2>
+<p>這不是唯一方式，但如果你想有效率地吸收，我會這樣排。</p>
+</div>
+<div class="plan-grid">
+<article class="lesson-card">
+<em>Week 1</em>
+<h3>產品與旅程</h3>
+<p>看產品手冊、系統總架構頁，重新寫一版產品定位與 JTBD。</p>
+</article>
+<article class="lesson-card">
+<em>Week 2</em>
+<h3>狀態、資料與 runtime</h3>
+<p>看 DB 手冊、完整結構圖，自己畫 state ownership 與主要資料流。</p>
+</article>
+<article class="lesson-card">
+<em>Week 3</em>
+<h3>AI 與 fallback</h3>
+<p>看 AI 詳細流程頁，整理 resume flow、RAG flow、monitoring flow，自己重講一次。</p>
+</article>
+<article class="lesson-card">
+<em>Week 4</em>
+<h3>重構與擴充</h3>
+<p>用這個專案練一次模組拆分、頁面分層與 roadmap 設計，寫出你的下一版產品計畫。</p>
+</article>
+</div>
+</section>
+<section class="section" id="why-this-project">
+<div class="section-header">
+<div class="kicker">08 Why This Project</div>
+<h2>為什麼這個專案很適合拿來教你</h2>
+<p>不是每個專案都適合教學。這個專案特別適合，是因為它剛好卡在「不是太小，也還沒大到失控」的點。</p>
+</div>
+<div class="four-col">
+<article class="callout">
+<h3>有產品性</h3>
+<p>不是單點 script，而是一條完整價值鏈。</p>
+</article>
+<article class="callout">
+<h3>有系統性</h3>
+<p>有 UI、service、store、queue、scheduler、worker、AI、DB。</p>
+</article>
+<article class="callout">
+<h3>有真實取捨</h3>
+<p>不是課本範例，而是真的要面對延遲、成本、fallback、營運。</p>
+</article>
+<article class="callout">
+<h3>還能演進</h3>
+<p>它還沒被框架或組織規模鎖死，很適合拿來練產品與架構決策。</p>
+</article>
+</div>
+<details class="component" style="margin-top:16px;">
+<summary>一句話總結這份學習地圖</summary>
+<p>這個專案最能教你的，不是「怎麼寫一個爬蟲」，而是「怎麼把資料、AI、使用者流程和系統邊界組成一個真的能成長的產品」。</p>
+</details>
+</section>
+<footer class="footer">
+<p>這份頁面是學習地圖，適合拿來規劃你接下來要補強的工程、AI、資料與測試能力。</p>
+<div style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:1rem;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">文件首頁</a><a href="job-radar-system-architecture.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">總架構手冊</a><a href="job-radar-complete-structure-diagram.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">完整結構圖</a><a href="job-radar-ai-detailed-flow.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI 詳細流程</a><a href="job-radar-ai-llm-rag-report.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">AI / LLM / RAG 報告</a><a href="job-radar-db-schema-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">DB Schema 手冊</a><a href="job-radar-product-system-playbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">產品與系統 Playbook</a><a href="job-radar-testing-handbook.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">Testing 手冊</a><a href="job-radar-learning-curriculum.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">學習地圖</a><a href="ui-catalog.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">UI Catalog</a><a href="legacy-system-design-course.html" style="display:inline-flex;align-items:center;justify-content:center;padding:0.62rem 0.9rem;border-radius:999px;border:1px solid rgba(90,79,136,0.18);background:rgba(255,255,255,0.72);color:inherit;text-decoration:none;font-size:0.92rem;font-weight:700;">歷史保留</a></div>
+<div style="margin-top:1rem;font-size:0.92rem;line-height:1.75;color:rgba(79,72,107,0.88);">
+  最後整理：2026-04-12。主入口、文件串接與頁尾導覽已統一，舊的股票盯盤課程內容已移到
+  <a href="legacy-system-design-course.html" style="color:inherit;font-weight:700;">歷史保留頁</a>。
+</div>
+</footer>
+</main>
+<aside class="toc">
+<h2>本頁索引</h2>
+<ol>
+<li><a href="#tracks">學習路線</a></li>
+<li><a href="#curriculum">建議課綱</a></li>
+<li><a href="#teach-topics">可學能力</a></li>
+<li><a href="#repo-map">對應模組</a></li>
+<li><a href="#practice">實作練習</a></li>
+<li><a href="#paths">角色路線</a></li>
+<li><a href="#plan">30 天計畫</a></li>
+<li><a href="#why-this-project">為什麼值得學</a></li>
+</ol>
+</aside>
+</div>
+</div>
+</body>
+</html>

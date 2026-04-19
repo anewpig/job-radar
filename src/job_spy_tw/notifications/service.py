@@ -7,6 +7,12 @@ import ssl
 from typing import Callable
 from urllib import error, request
 
+from ..error_taxonomy import (
+    ERROR_CODE_NOTIFICATION_EMAIL_NOT_CONFIGURED,
+    ERROR_CODE_NOTIFICATION_EMAIL_SEND_FAILED,
+    build_application_error,
+    build_error_info,
+)
 from ..settings import Settings
 from .email_channel import send_email_message
 from .line_channel import (
@@ -81,10 +87,16 @@ class NotificationService:
         max_jobs: int = 8,
     ) -> dict[str, object]:
         notes: list[str] = []
+        error_details: list[dict[str, object]] = []
         email_sent = False
         line_sent = False
         if not new_jobs:
-            return {"email_sent": False, "line_sent": False, "notes": ["沒有新職缺可通知。"]}
+            return {
+                "email_sent": False,
+                "line_sent": False,
+                "notes": ["沒有新職缺可通知。"],
+                "errors": [],
+            }
 
         selected_jobs = new_jobs[:max_jobs] if max_jobs > 0 else new_jobs
         message = self._build_message(search_name, selected_jobs)
@@ -99,7 +111,17 @@ class NotificationService:
                 )
                 email_sent = True
             except Exception as exc:  # noqa: BLE001
-                notes.append(f"Email 推播失敗：{exc}")
+                error_info = build_error_info(
+                    exc,
+                    metadata={
+                        "channel": "email",
+                        "operation": "new_job_alert",
+                        "search_name": search_name,
+                        "recipient_count": len(recipients),
+                    },
+                )
+                notes.append(f"Email 推播失敗：{error_info.user_message}")
+                error_details.append(error_info.to_dict())
         elif email_enabled:
             if not self.email_service_configured:
                 notes.append("Email 服務尚未設定。")
@@ -113,7 +135,17 @@ class NotificationService:
                 self._line_sender(message, resolved_line_target)
                 line_sent = True
             except Exception as exc:  # noqa: BLE001
-                notes.append(f"LINE 推播失敗：{exc}")
+                error_info = build_error_info(
+                    exc,
+                    metadata={
+                        "channel": "line",
+                        "operation": "new_job_alert",
+                        "search_name": search_name,
+                        "line_target": resolved_line_target,
+                    },
+                )
+                notes.append(f"LINE 推播失敗：{error_info.user_message}")
+                error_details.append(error_info.to_dict())
         elif line_enabled:
             if not self.line_service_configured:
                 notes.append("LINE 服務尚未設定。")
@@ -130,22 +162,48 @@ class NotificationService:
             "email_sent": email_sent,
             "line_sent": line_sent,
             "notes": notes,
+            "errors": error_details,
         }
 
     def send_password_reset_code(self, *, email: str, reset_code: str) -> None:
         if not self.email_service_configured:
-            raise RuntimeError("Email 服務尚未設定，暫時無法寄送重設碼。")
+            raise build_application_error(
+                code=ERROR_CODE_NOTIFICATION_EMAIL_NOT_CONFIGURED,
+                technical_message="Email 服務尚未設定，暫時無法寄送重設碼。",
+                metadata={
+                    "channel": "email",
+                    "operation": "password_reset",
+                    "email": email.strip(),
+                },
+            )
         body = (
             "你剛剛在職缺雷達申請重設密碼。\n\n"
             f"重設碼：{reset_code}\n"
             "有效時間為 15 分鐘。\n"
             "如果這不是你本人操作，可以忽略這封信。"
         )
-        self._email_sender(
-            "職缺雷達｜密碼重設碼",
-            body,
-            [email.strip()],
-        )
+        try:
+            self._email_sender(
+                "職缺雷達｜密碼重設碼",
+                body,
+                [email.strip()],
+            )
+        except Exception as exc:  # noqa: BLE001
+            error_info = build_error_info(
+                exc,
+                metadata={
+                    "channel": "email",
+                    "operation": "password_reset",
+                    "email": email.strip(),
+                },
+            )
+            raise build_application_error(
+                code=error_info.code or ERROR_CODE_NOTIFICATION_EMAIL_SEND_FAILED,
+                technical_message=error_info.technical_message,
+                metadata=error_info.metadata,
+                retryable=error_info.retryable,
+                user_message=error_info.user_message,
+            ) from exc
 
     def _build_message(self, search_name: str, new_jobs: list[dict]) -> str:
         return build_alert_message(search_name, new_jobs)

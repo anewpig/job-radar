@@ -10,6 +10,7 @@ import sqlite3
 from typing import Any
 
 from .crawl_tuning import CrawlPreset, apply_crawl_preset, get_crawl_preset
+from .error_taxonomy import build_error_info
 from .global_search import ensure_global_saved_search
 from .models import (
     JobListing,
@@ -83,6 +84,11 @@ class ProcessQueuedJobResult:
     status: str
     snapshot: MarketSnapshot | None = None
     error_message: str = ""
+    error_code: str = ""
+    error_kind: str = ""
+    error_user_message: str = ""
+    is_retryable: bool = False
+    error_metadata: dict[str, Any] = field(default_factory=dict)
     attempt_count: int = 0
     max_attempts: int = 0
     next_retry_at: str = ""
@@ -740,7 +746,24 @@ def start_crawl(
             ),
         )
     except Exception as exc:
-        job_queue.fail_job(leased_job.id, str(exc))
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "start_crawl",
+                "query_signature": query_signature,
+                "execution_mode": execution_mode,
+            },
+        )
+        job_queue.fail_job(leased_job.id, error_info)
+        registry.record_snapshot_error(
+            query_signature,
+            error_info,
+            status="failed",
+            metadata={
+                "operation": "start_crawl",
+                "job_id": int(leased_job.id),
+            },
+        )
         raise
 
 
@@ -868,35 +891,10 @@ def advance_finalize_batch(
 
 def is_retryable_crawl_job_error(exc: Exception) -> bool:
     """Return whether one worker failure looks transient enough to retry once."""
-    if isinstance(exc, (TimeoutError, ConnectionError, sqlite3.OperationalError)):
-        return True
-    lowered = str(exc).strip().lower()
-    if not lowered:
-        return False
-    retryable_tokens = (
-        "timed out",
-        "timeout",
-        "temporary failure",
-        "temporarily unavailable",
-        "connection reset",
-        "connection aborted",
-        "connection refused",
-        "connection closed",
-        "remote disconnected",
-        "name or service not known",
-        "429",
-        "403",
-        "449",
-        "999",
-        "rate limit",
-        "too many requests",
-        "request denied",
-        "forbidden",
-        "database is locked",
-        "database table is locked",
-        "database busy",
-    )
-    return any(token in lowered for token in retryable_tokens)
+    return build_error_info(
+        exc,
+        metadata={"operation": "process_queued_crawl_job"},
+    ).retryable
 
 
 def process_queued_crawl_job(
@@ -1012,23 +1010,52 @@ def process_queued_crawl_job(
                 )
         return ProcessQueuedJobResult(status="completed", snapshot=final_snapshot)
     except Exception as exc:
+        error_info = build_error_info(
+            exc,
+            metadata={
+                "operation": "process_queued_crawl_job",
+                "job_id": int(job.id),
+                "query_signature": job.query_signature,
+            },
+        )
         updated_job = job_queue.record_attempt_failure(
             job.id,
-            str(exc),
-            allow_retry=is_retryable_crawl_job_error(exc),
+            error_info,
+            allow_retry=bool(error_info.retryable),
             retry_backoff_seconds=settings.runtime_job_retry_backoff_seconds,
+        )
+        registry.record_snapshot_error(
+            job.query_signature,
+            error_info,
+            status="failed" if updated_job.status == "failed" else "pending",
+            metadata={
+                "operation": "process_queued_crawl_job",
+                "job_id": int(job.id),
+                "attempt_count": int(updated_job.attempt_count),
+                "max_attempts": int(updated_job.max_attempts),
+            },
         )
         if updated_job.status == "pending" and updated_job.next_retry_at:
             return ProcessQueuedJobResult(
                 status="retry_scheduled",
-                error_message=str(exc),
+                error_message=error_info.technical_message,
+                error_code=error_info.code,
+                error_kind=error_info.kind,
+                error_user_message=error_info.user_message,
+                is_retryable=bool(error_info.retryable),
+                error_metadata=error_info.metadata,
                 attempt_count=int(updated_job.attempt_count),
                 max_attempts=int(updated_job.max_attempts),
                 next_retry_at=updated_job.next_retry_at,
             )
         return ProcessQueuedJobResult(
             status="failed",
-            error_message=str(exc),
+            error_message=error_info.technical_message,
+            error_code=error_info.code,
+            error_kind=error_info.kind,
+            error_user_message=error_info.user_message,
+            is_retryable=bool(error_info.retryable),
+            error_metadata=error_info.metadata,
             attempt_count=int(updated_job.attempt_count),
             max_attempts=int(updated_job.max_attempts),
         )
